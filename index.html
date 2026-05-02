@@ -7,17 +7,18 @@
     <script src="config.js"></script>
     <style>
         :root {
-            --accent:     #81D4FA;
-            --accent-dim: rgba(129,212,250,0.12);
-            --accent-glow:rgba(129,212,250,0.28);
-            --bg:         #0D1117;
-            --card:       #161C26;
-            --card-done:  #111418;
-            --border:     rgba(129,212,250,0.2);
-            --text:       #E6EDF3;
-            --muted:      #6B7A8D;
-            --done-text:  #3A4450;
-            --radius:     16px;
+            --accent:      #81D4FA;
+            --accent-dim:  rgba(129,212,250,0.12);
+            --accent-glow: rgba(129,212,250,0.28);
+            --bg:          #0D1117;
+            --card:        #161C26;
+            --card-done:   #0F1318;
+            --card-locked: #12181F;
+            --border:      rgba(129,212,250,0.2);
+            --text:        #E6EDF3;
+            --muted:       #6B7A8D;
+            --done-text:   #3A4450;
+            --radius:      16px;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,11 +30,9 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            /* Sayfadan taşmayı önle */
             overflow-x: hidden;
         }
 
-        /* Arka plan ışıması */
         body::before {
             content: '';
             position: fixed;
@@ -45,10 +44,9 @@
             z-index: 0;
         }
 
-        /* ── Header ───────────────────────────── */
+        /* ── Header ─────────────────────────────── */
         header {
-            position: relative;
-            z-index: 1;
+            position: relative; z-index: 1;
             padding: 52px 24px 20px;
             text-align: center;
         }
@@ -72,10 +70,10 @@
             transition: all 0.3s;
         }
         #ar-badge.ok   { background: rgba(129,212,250,0.09); color: var(--accent); border: 1px solid var(--border); }
-        #ar-badge.fail { background: rgba(239,100,100,0.09); color: #F97583; border: 1px solid rgba(239,100,100,0.3); }
+        #ar-badge.fail { background: rgba(239,100,100,0.09); color: #F97583;       border: 1px solid rgba(239,100,100,0.3); }
         .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-        /* ── Görev İlerleme ────────────────────── */
+        /* ── Görev İlerleme ─────────────────────── */
         .progress-bar-wrap {
             position: relative; z-index: 1;
             margin: 0 24px 20px;
@@ -120,7 +118,7 @@
             box-shadow: 0 0 8px var(--accent-glow);
         }
 
-        /* ── Kart Listesi ──────────────────────── */
+        /* ── Kart Listesi ───────────────────────── */
         .section-label {
             position: relative; z-index: 1;
             padding: 0 24px 10px;
@@ -137,10 +135,10 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            /* Tamamlananlar en alta gittiğinde ani kayma engellenir */
+            padding-bottom: 16px;
         }
 
-        /* ─ Aktif Kart ─ */
+        /* ─ Kart Base ─ */
         .dest-card {
             display: flex;
             align-items: center;
@@ -156,6 +154,18 @@
             overflow: hidden;
         }
 
+        /* Görev sıra çizgisi (sol kenar) */
+        .dest-card::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 16px; bottom: 16px;
+            width: 3px;
+            border-radius: 0 2px 2px 0;
+            background: transparent;
+            transition: background 0.2s;
+        }
+        .dest-card.active-next::after { background: var(--accent); }
+
         /* Seçili kart parlama efekti */
         .dest-card.selected {
             border-color: var(--accent);
@@ -170,38 +180,66 @@
             background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
 
-        .dest-card:active:not(.done) { opacity: 0.75; }
+        .dest-card:active:not(.done):not(.locked) { opacity: 0.75; }
 
         /* ─ Tamamlanmış Kart ─ */
         .dest-card.done {
             cursor: default;
             background: var(--card-done);
             border-color: rgba(255,255,255,0.04);
-            opacity: 0.55;
+            opacity: 0.45;
         }
 
         .dest-card.done .dest-name  { color: var(--done-text); }
         .dest-card.done .dest-desc  { color: var(--done-text); }
         .dest-card.done .dest-emoji { filter: grayscale(1); }
 
-        /* Tamamlandı rozeti */
+        /* ─ Kilitli Kart ─ */
+        .dest-card.locked {
+            cursor: not-allowed;
+            background: var(--card-locked);
+            border-color: rgba(255,255,255,0.03);
+            opacity: 0.38;
+        }
+
+        .dest-card.locked .dest-name { color: var(--muted); }
+        .dest-card.locked .dest-desc { color: var(--done-text); }
+        .dest-card.locked .dest-emoji { filter: grayscale(0.8); }
+
+        /* Tamamlandı / Kilitli rozeti */
         .done-badge {
             display: none;
             font-size: 0.7rem;
-            color: var(--muted);
-            background: rgba(255,255,255,0.05);
+            color: #3d8c4c;
+            background: rgba(60,180,80,0.12);
+            border: 1px solid rgba(60,180,80,0.25);
             border-radius: 6px;
             padding: 3px 8px;
             white-space: nowrap;
         }
         .dest-card.done .done-badge { display: inline-block; }
-        .dest-card.done .leg-count  { display: none; }
-        .dest-card.done .dest-check { display: none; }
+
+        .locked-badge {
+            display: none;
+            font-size: 0.68rem;
+            color: var(--muted);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+        }
+        .dest-card.locked .locked-badge { display: inline-block; }
+
+        .dest-card.done .leg-count,
+        .dest-card.done .dest-check  { display: none; }
+        .dest-card.locked .leg-count { display: none; }
+        .dest-card.locked .dest-check { display: none; }
 
         /* Görev numarası chip */
         .task-chip {
             position: absolute;
-            top: 10px; right: 10px;
+            top: 10px; right: 12px;
             font-size: 0.62rem;
             font-weight: 700;
             color: var(--muted);
@@ -212,23 +250,29 @@
         }
 
         .dest-emoji { font-size: 1.9rem; flex-shrink: 0; }
-
         .dest-info  { flex: 1; min-width: 0; }
 
-        .dest-name  {
+        .dest-name {
             font-size: 0.98rem;
             font-weight: 700;
             margin-bottom: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            padding-right: 60px; /* task-chip'i aşma */
         }
 
-        .dest-desc  { font-size: 0.75rem; color: var(--muted); }
+        .dest-desc { font-size: 0.75rem; color: var(--muted); }
 
-        .dest-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+        .dest-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
 
-        .leg-count  {
+        .leg-count {
             font-size: 0.72rem;
             color: var(--muted);
             background: rgba(255,255,255,0.05);
@@ -252,7 +296,22 @@
             color: #000;
         }
 
-        /* ── Başlat Butonu ─────────────────────── */
+        /* Sıradaki durak etiketi */
+        .next-label {
+            display: none;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+        }
+        .dest-card.active-next .next-label { display: inline-block; }
+        .dest-card.active-next .leg-count  { display: none; }
+
+        /* ── Başlat Butonu ──────────────────────── */
         .bottom-bar {
             position: sticky;
             bottom: 0; left: 0; right: 0;
@@ -283,7 +342,7 @@
 
         #start-btn:not(:disabled):active { transform: scale(0.97); }
 
-        /* ── Filigran ──────────────────────────── */
+        /* ── Filigran ───────────────────────────── */
         .watermark {
             position: fixed;
             bottom: 8px; right: 10px;
@@ -291,6 +350,31 @@
             color: rgba(255,255,255,0.1);
             pointer-events: none;
             z-index: 9999;
+        }
+
+        /* ── Kilitli uyarı toast ────────────────── */
+        #lock-toast {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1E2530;
+            border: 1px solid rgba(255,180,0,0.3);
+            color: #FFD580;
+            font-size: 0.82rem;
+            padding: 10px 18px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 100;
+            text-align: center;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #lock-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
     </style>
 </head>
@@ -327,20 +411,21 @@
         <button id="start-btn" disabled>Hedef seçin</button>
     </div>
 
+    <div id="lock-toast">🔒 Önce sıradaki durağı tamamlayın</div>
+
     <div class="watermark">by Arda24</div>
 
     <script>
     /**
-     * index.html scripti
+     * index.html — Sıralı Durak Seçimi
      *
-     * Tamamlanma durumu sessionStorage'da tutulur.
-     * sessionStorage → sekme/tarayıcı kapanınca otomatik sıfırlanır.
-     * localStorage gibi kalıcı DEĞİLDİR — istenen davranış bu.
+     * - Duraklar sırayla açılır; önceki tamamlanmadan sonraki kilitli.
+     * - Tamamlananlar en alta taşınır, tıklanamaz.
+     * - Durum sessionStorage'da tutulur → sekme/tarayıcı kapanınca sıfırlanır.
      */
 
     const STORAGE_KEY = 'ar_completed_routes';
 
-    // ── Tamamlanan rotaları yükle (Set olarak) ───────────
     function loadCompleted() {
         try {
             const raw = sessionStorage.getItem(STORAGE_KEY);
@@ -348,44 +433,56 @@
         } catch { return new Set(); }
     }
 
-    // ── Tamamlananları kaydet ─────────────────────────────
     function saveCompleted(set) {
         try {
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
         } catch {}
     }
 
-    // ── Dışarıdan erişim: ar.html yönlendirmesi sonrası ──
-    // ar.html tamamlanınca ?done=ID ile geri döner
+    // ar.html'den ?done=ID ile dönüş kontrolü
     (function checkReturnFromAR() {
-        const params    = new URLSearchParams(window.location.search);
-        const doneId    = params.get('done');
+        const params = new URLSearchParams(window.location.search);
+        const doneId = params.get('done');
         if (!doneId) return;
-
         const completed = loadCompleted();
         completed.add(doneId);
         saveCompleted(completed);
-
-        // URL'i temizle (geri tuşu sorununu önle)
         history.replaceState(null, '', 'index.html');
     })();
 
-    // ── Kartları oluştur ──────────────────────────────────
-    const completed  = loadCompleted();
-    let   selected   = null;
+    const completed = loadCompleted();
+    let selected    = null;
 
-    const activeCards = [];
-    const doneCards   = [];
+    // Sıralama: order alanına göre
+    const sortedRoutes = [...NAV_ROUTES].sort((a, b) => a.order - b.order);
 
-    NAV_ROUTES.forEach(route => {
-        const isDone = completed.has(route.id);
+    // Sıradaki aktif durak (tamamlanmamış ilk durak)
+    const nextUnlocked = sortedRoutes.find(r => !completed.has(r.id));
+    const nextId       = nextUnlocked ? nextUnlocked.id : null;
+
+    // Kart durumu hesapla
+    function getCardState(route) {
+        if (completed.has(route.id)) return 'done';
+        if (route.id === nextId)     return 'next';   // seçilebilir
+        return 'locked';
+    }
+
+    const activeCards = [];   // seçilebilir
+    const doneCards   = [];   // tamamlanmış (en alta)
+
+    sortedRoutes.forEach(route => {
+        const state      = getCardState(route);
+        const isDone     = state === 'done';
+        const isLocked   = state === 'locked';
+        const isNext     = state === 'next';
+        const arLegCount = route.legs.filter(l => l.type === 'ar').length;
 
         const card = document.createElement('div');
-        card.className = 'dest-card' + (isDone ? ' done' : '');
+        card.className  = 'dest-card'
+            + (isDone   ? ' done'        : '')
+            + (isLocked ? ' locked'      : '')
+            + (isNext   ? ' active-next' : '');
         card.dataset.id = route.id;
-
-        // AR leg sayısı (sadece "ar" tipindekiler)
-        const arLegCount = route.legs.filter(l => l.type === 'ar').length;
 
         card.innerHTML = `
             <div class="task-chip">GÖREV ${route.task}</div>
@@ -396,34 +493,52 @@
             </div>
             <div class="dest-right">
                 <div class="leg-count">${arLegCount} durak</div>
+                <div class="next-label">▶ Sıradaki</div>
                 <div class="done-badge">✓ Rota Tamamlandı</div>
+                <div class="locked-badge">🔒 Kilitli</div>
                 <div class="dest-check">✓</div>
             </div>
         `;
 
-        if (!isDone) {
+        if (isNext) {
             card.addEventListener('click', () => selectCard(route.id, card, route));
             activeCards.push(card);
+        } else if (isLocked) {
+            card.addEventListener('click', showLockToast);
         } else {
+            // done
             doneCards.push(card);
         }
-
-        // Sıralama: önce aktifler, sonra tamamlananlar
-        // (appendChild sırasında ayarlanır)
     });
 
     const listEl = document.getElementById('dest-list');
-
-    // Önce aktif kartları ekle
     activeCards.forEach(c => listEl.appendChild(c));
-    // Sonra tamamlananları ekle (en alta)
+    // Kilitli kartları da aktif bölümde göster (ama tıklanamaz)
+    sortedRoutes
+        .filter(r => getCardState(r) === 'locked')
+        .forEach(r => {
+            const el = document.querySelector(`.dest-card[data-id="${r.id}"]`);
+            if (el) listEl.appendChild(el);
+        });
+    doneCards.forEach(c => listEl.appendChild(c));
+
+    // Kilitli kartlar henüz DOM'a eklenmemiş olabilir (forEach içinde oluşturuldu ama listeye eklenmedi)
+    // Tekrar doğru sırayla ekleyelim
+    listEl.innerHTML = '';
+    sortedRoutes.forEach(route => {
+        const state = getCardState(route);
+        const el = document.querySelector(`.dest-card[data-id="${route.id}"]`);
+        if (!el) return;
+        if (state === 'done') return; // done'lar en sona
+        listEl.appendChild(el);
+    });
     doneCards.forEach(c => listEl.appendChild(c));
 
     // ── Görev ilerleme barını güncelle ───────────────────
     function updateProgress() {
-        const total  = NAV_ROUTES.length;
-        const done   = completed.size;
-        const pct    = Math.round((done / total) * 100);
+        const total = NAV_ROUTES.length;
+        const done  = completed.size;
+        const pct   = Math.round((done / total) * 100);
         document.getElementById('progress-fill').style.width = pct + '%';
         document.getElementById('progress-text').textContent = `${done} / ${total} Tamamlandı`;
     }
@@ -431,13 +546,22 @@
 
     // ── Kart seçimi ───────────────────────────────────────
     function selectCard(id, cardEl, route) {
-        document.querySelectorAll('.dest-card:not(.done)').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.dest-card.active-next').forEach(c => c.classList.remove('selected'));
         cardEl.classList.add('selected');
         selected = id;
 
         const btn = document.getElementById('start-btn');
         btn.disabled    = false;
         btn.textContent = `🚀  ${route.name}'e Git`;
+    }
+
+    // ── Kilitli uyarısı ───────────────────────────────────
+    let toastTimer = null;
+    function showLockToast() {
+        const toast = document.getElementById('lock-toast');
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
     // ── AR Destek Kontrolü ────────────────────────────────
