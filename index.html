@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hastane Navigasyon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+
+    <style>
+        /* ── CSS Değişkenleri ────────────────────────────── */
+        :root {
+            --accent:       #81D4FA;
+            --accent-dim:   rgba(129, 212, 250, 0.15);
+            --accent-glow:  rgba(129, 212, 250, 0.35);
+            --bg:           #0A0E14;
+            --surface:      #131820;
+            --surface-2:    #1C2330;
+            --border:       rgba(129, 212, 250, 0.2);
+            --text:         #E8EDF2;
+            --text-muted:   #6B7A8D;
+            --danger:       #EF9A9A;
+            --success:      #A5D6A7;
+            --radius:       16px;
+            --font-body:    'DM Sans', sans-serif;
+            --font-mono:    'Space Mono', monospace;
+        }
+
+        /* ── Reset & Base ────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ── Arka Plan Animasyonu ─────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 20% 20%, rgba(129,212,250,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 80% 80%, rgba(129,212,250,0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Üst Bar ─────────────────────────────────────── */
+        header {
+            position: relative;
+            z-index: 10;
+            padding: 24px 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            width: 44px; height: 44px;
+            background: var(--accent-dim);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .header-text h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .header-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* ── Konum Chip ──────────────────────────────────── */
+        .location-chip {
+            position: relative;
+            z-index: 10;
+            margin: 20px 20px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .location-dot {
+            width: 10px; height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px var(--accent-dim);
+            flex-shrink: 0;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 0 4px var(--accent-dim); }
+            50%       { box-shadow: 0 0 0 8px rgba(129,212,250,0.05); }
+        }
+
+        .location-label {
+            flex: 1;
+        }
+
+        .location-label span {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: var(--font-mono);
+            margin-bottom: 2px;
+        }
+
+        .location-label strong {
+            font-size: 0.95rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ── Ana İçerik ──────────────────────────────────── */
+        main {
+            position: relative;
+            z-index: 10;
+            flex: 1;
+            padding: 24px 20px 100px;
+        }
+
+        .section-label {
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 14px;
+        }
+
+        /* ── Hedef Kartları ──────────────────────────────── */
+        .dest-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dest-card {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Seçili kart */
+        .dest-card.selected {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .dest-card.selected::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(129,212,250,0.08), transparent);
+            pointer-events: none;
+        }
+
+        .dest-card:active {
+            transform: scale(0.98);
+        }
+
+        .dest-icon {
+            width: 48px; height: 48px;
+            background: var(--surface-2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .dest-card.selected .dest-icon {
+            background: rgba(129,212,250,0.2);
+        }
+
+        .dest-info {
+            flex: 1;
+        }
+
+        .dest-info strong {
+            display: block;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .dest-info small {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .dest-meta {
+            text-align: right;
+        }
+
+        .leg-badge {
+            font-size: 0.68rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: var(--surface-2);
+            padding: 3px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .dest-card.selected .leg-badge {
+            background: rgba(129,212,250,0.2);
+            color: var(--accent);
+        }
+
+        /* Seçim işareti */
+        .check-circle {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem;
+            color: transparent;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .dest-card.selected .check-circle {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+
+        /* ── Başlat Butonu ───────────────────────────────── */
+        .start-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            padding: 16px 20px 28px;
+            background: linear-gradient(to top, var(--bg) 60%, transparent);
+            z-index: 100;
+        }
+
+        #start-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--accent);
+            color: #000;
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-family: var(--font-body);
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        #start-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #start-btn:not(:disabled):active {
+            transform: scale(0.97);
+        }
+
+        /* ── AR Desteği Badge ────────────────────────────── */
+        .ar-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+        }
+
+        .ar-status.checking { background: rgba(255,255,255,0.04); color: var(--text-muted); }
+        .ar-status.ok       { background: rgba(165,214,167,0.1);  color: var(--success); border: 1px solid rgba(165,214,167,0.25); }
+        .ar-status.fail     { background: rgba(239,154,154,0.1);  color: var(--danger);  border: 1px solid rgba(239,154,154,0.25); }
+
+        .ar-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+        /* ── Filigran ─────────────────────────────────────── */
+        .watermark {
+            position: fixed;
+            bottom: 8px; right: 12px;
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.15);
+            font-family: var(--font-mono);
+            pointer-events: none;
+            z-index: 9999;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Üst Bar -->
+    <header>
+        <div class="header-icon">🏥</div>
+        <div class="header-text">
+            <h1>AR Navigasyon</h1>
+            <p>Hastane Yönlendirme Sistemi</p>
+        </div>
+    </header>
+
+    <!-- Mevcut Konum -->
+    <div class="location-chip">
+        <div class="location-dot"></div>
+        <div class="location-label">
+            <span>Şu Anki Konumunuz</span>
+            <strong id="location-name">Yükleniyor...</strong>
+        </div>
+    </div>
+
+    <!-- Ana İçerik -->
+    <main>
+        <!-- AR Desteği Durumu -->
+        <div class="ar-status checking" id="ar-status">
+            <div class="ar-dot"></div>
+            <span id="ar-status-text">AR desteği kontrol ediliyor...</span>
+        </div>
+
+        <!-- Hedef Listesi -->
+        <p class="section-label">Hedef Seçin</p>
+        <div class="dest-grid" id="dest-grid">
+            <!-- JavaScript tarafından doldurulur -->
+        </div>
+    </main>
+
+    <!-- Başlat Butonu -->
+    <div class="start-bar">
+        <button id="start-btn" disabled>Hedef Seçin</button>
+    </div>
+
+    <!-- Filigran -->
+    <div class="watermark">by Arda24</div>
+
+    <script>
+    /**
+     * index.html — Ana Menü Scripti
+     * Görevleri:
+     *  1. NavConfig'den hedef listesini çekip kartları oluştur
+     *  2. WebXR AR desteğini arka planda kontrol et
+     *  3. Kullanıcı seçim yapınca "Başlat" butonunu aktif et
+     *  4. Başlat → ar.html?hedef=XXX adresine yönlendir
+     */
+
+        const DURAK = "durak1"; // Aktif konum anahtarı
+
+        // ── DOM Referansları ─────────────────────────────────
+        const destGrid     = document.getElementById("dest-grid");
+        const startBtn     = document.getElementById("start-btn");
+        const arStatus     = document.getElementById("ar-status");
+        const arStatusText = document.getElementById("ar-status-text");
+        const locationName = document.getElementById("location-name");
+
+        let selectedDest = null; // Seçili hedef id'si
+        let arSupported  = false;
+
+        // ── Konum Adını Yaz ──────────────────────────────────
+        locationName.textContent = NavConfig[DURAK]?.locationName || "Bilinmiyor";
+
+        // ── AR Desteğini Asenkron Kontrol Et ─────────────────
+        (async () => {
+            if (!navigator.xr) {
+                setArStatus("fail", "❌ WebXR desteklenmiyor — HTTPS ile açın");
+                return;
+            }
+            try {
+                arSupported = await navigator.xr.isSessionSupported("immersive-ar");
+                if (arSupported) {
+                    setArStatus("ok", "✅ ARCore hazır — başlayabilirsiniz");
+                } else {
+                    setArStatus("fail", "❌ Bu cihaz ARCore desteklemiyor");
+                }
+            } catch (e) {
+                setArStatus("fail", "⚠️ AR kontrolü başarısız");
+            }
+        })();
+
+        function setArStatus(type, msg) {
+            arStatus.className = "ar-status " + type;
+            arStatusText.textContent = msg;
+        }
+
+        // ── Hedef Kartlarını Oluştur ──────────────────────────
+        const destinations = NavConfig[DURAK]?.destinations || {};
+
+        Object.entries(destinations).forEach(([id, data]) => {
+            const legCount = data.legs.length;
+
+            const card = document.createElement("div");
+            card.className = "dest-card";
+            card.dataset.id = id;
+
+            card.innerHTML = `
+                <div class="dest-icon">${data.icon || "📍"}</div>
+                <div class="dest-info">
+                    <strong>${data.name}</strong>
+                    <small>${data.description || ""}</small>
+                </div>
+                <div class="dest-meta">
+                    <div class="leg-badge">${legCount} bacak</div>
+                </div>
+                <div class="check-circle">✓</div>
+            `;
+
+            card.addEventListener("click", () => selectDest(id, card));
+            destGrid.appendChild(card);
+        });
+
+        // ── Kart Seçimi ───────────────────────────────────────
+        function selectDest(id, cardEl) {
+            // Önceki seçimi temizle
+            document.querySelectorAll(".dest-card").forEach(c => c.classList.remove("selected"));
+
+            cardEl.classList.add("selected");
+            selectedDest = id;
+
+            // Butonu aktif et
+            const destName = destinations[id]?.name || "Hedefe";
+            startBtn.disabled = false;
+            startBtn.textContent = `🚀 ${destName}'e Git`;
+        }
+
+        // ── Başlat ────────────────────────────────────────────
+        startBtn.addEventListener("click", () => {
+            if (!selectedDest) return;
+
+            // Hedefi hem localStorage'a hem URL'e yaz (çift güvenlik)
+            NavigationState.setDestination(selectedDest);
+            window.location.href = `ar.html?hedef=${encodeURIComponent(selectedDest)}`;
+        });
+    </script>
+</body>
+</html>

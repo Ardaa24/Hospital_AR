@@ -2,213 +2,796 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Hastane AR Navigasyon</title>
+
+    <!-- A-Frame: WebXR + Three.js katmanı -->
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+
+    <!-- Rota verileri -->
     <script src="config.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        :root { --accent: #81D4FA; --bg: #121212; }
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; transition: background 0.3s; }
-        
-        #overlay-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
-        
-        /* Modern Üst Bar */
-        #top-bar {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            width: 85%; max-width: 400px; background: rgba(18, 18, 18, 0.9);
-            backdrop-filter: blur(10px); border: 2px solid var(--accent); border-radius: 20px;
-            padding: 15px; text-align: center; display: none; box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        /* ── CSS Değişkenleri ────────────────────────────── */
+        :root {
+            --accent:      #81D4FA;
+            --accent-dim:  rgba(129, 212, 250, 0.15);
+            --accent-glow: rgba(129, 212, 250, 0.4);
+            --bg:          #0A0E14;
+            --surface:     rgba(10, 14, 20, 0.88);
+            --border:      rgba(129, 212, 250, 0.25);
+            --text:        #E8EDF2;
+            --text-muted:  #6B7A8D;
+            --danger:      #EF9A9A;
+            --radius:      18px;
+            --font-body:   'DM Sans', sans-serif;
+            --font-mono:   'Space Mono', monospace;
         }
-        .distance-text { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin: 5px 0; }
-        .instruction-text { font-size: 1rem; color: #E0E0E0; }
 
-        /* Modern Hamburger Menü */
-        #menu-btn { position: absolute; top: 25px; right: 20px; background: rgba(18, 18, 18, 0.9); border: 1px solid var(--accent); color: white; border-radius: 12px; padding: 10px 15px; cursor: pointer; font-size: 1.5rem; pointer-events: auto; display: none; }
-        #menu-panel { display: none; position: absolute; top: 75px; right: 20px; width: 250px; background: rgba(18, 18, 18, 0.95); border: 1px solid #333; border-radius: 15px; pointer-events: auto; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .menu-action { width: 100%; padding: 12px; background: var(--accent); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        /* ── Reset ───────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Giriş Ekranı */
-        #intro-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; padding: 20px; box-sizing: border-box; }
-        .instruction-box { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 2px solid var(--accent); text-align: center; max-width: 400px; width: 100%; }
-        
-        #start-ar-btn { background: var(--accent); color: #000; font-size: 1.4rem; font-weight: bold; padding: 15px; border: none; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 20px; transition: background 0.3s; }
-        #start-ar-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            transition: background 0.4s ease;
+        }
 
-        .watermark { position: fixed; bottom: 8px; right: 12px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 10000; }
+        /* A-Frame canvas'ı tam ekran kaplar */
+        a-scene { width: 100vw; height: 100vh; }
+
+        /* ══════════════════════════════════════════════════
+           AR Overlay Katmanı
+           DOM Overlay API ile AR görüntüsünün üstüne bindirilen
+           tüm UI elementleri bu kapsayıcıda olmalıdır.
+           pointer-events: none → A-Frame'in touch kontrolünü bloklamaz.
+           Butonlar kendi pointer-events: auto değerini taşır.
+        ════════════════════════════════════════════════════ */
+        #overlay-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* ── Üst Mesafe Barı ─────────────────────────────── */
+        #top-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 88%;
+            max-width: 380px;
+            background: var(--surface);
+            backdrop-filter: blur(16px) saturate(1.5);
+            -webkit-backdrop-filter: blur(16px) saturate(1.5);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            display: none;          /* AR başlayana kadar gizli */
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .instruction-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 6px;
+        }
+
+        #ui-instruction {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .distance-block {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        #ui-distance {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+            line-height: 1;
+        }
+
+        .distance-unit {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* Bacak ilerleme göstergesi */
+        #leg-progress {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .leg-pip {
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.15);
+            flex: 1;
+            transition: background 0.4s;
+        }
+
+        .leg-pip.done    { background: var(--accent); }
+        .leg-pip.active  { background: var(--accent); opacity: 0.6; animation: pip-pulse 1.5s ease-in-out infinite; }
+
+        @keyframes pip-pulse { 0%,100%{ opacity:0.6; } 50%{ opacity:1; } }
+
+        /* ── Hamburger Menü ──────────────────────────────── */
+        #menu-btn {
+            position: absolute;
+            top: 20px; right: 16px;
+            width: 48px; height: 48px;
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            font-size: 1.2rem;
+            display: none;          /* AR başlayana kadar gizli */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: border-color 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        }
+
+        #menu-btn:active { background: var(--accent-dim); border-color: var(--accent); }
+
+        /* ── Menü Paneli ─────────────────────────────────── */
+        #menu-panel {
+            position: absolute;
+            top: 78px; right: 16px;
+            width: 240px;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: none;
+            pointer-events: auto;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+            animation: menu-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
+        }
+
+        @keyframes menu-in {
+            from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+
+        .menu-title {
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+
+        .menu-btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: var(--accent);
+            color: #000;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .menu-btn-primary:active { transform: scale(0.97); opacity: 0.85; }
+
+        .menu-btn-secondary {
+            width: 100%;
+            margin-top: 8px;
+            padding: 11px;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-btn-secondary:active { background: rgba(255,255,255,0.1); }
+
+        /* ── Giriş Ekranı ────────────────────────────────── */
+        #intro-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 24px;
+            gap: 20px;
+            /* Arka plan desen */
+            background-image:
+                radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(129,212,250,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 70% at 50% 100%, rgba(129,212,250,0.04) 0%, transparent 70%);
+        }
+
+        .intro-card {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(255,255,255,0.03);
+            border: 1.5px solid var(--border);
+            border-radius: 24px;
+            padding: 28px 24px;
+            text-align: center;
+        }
+
+        .intro-icon {
+            font-size: 2.5rem;
+            margin-bottom: 14px;
+            display: block;
+        }
+
+        #target-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        #target-desc {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            white-space: pre-line;
+            font-family: var(--font-mono);
+        }
+
+        /* Talimat Kutusu */
+        .step-box {
+            width: 100%;
+            max-width: 380px;
+            background: var(--accent-dim);
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 20px;
+        }
+
+        .step-box-label {
+            font-size: 0.7rem;
+            font-family: var(--font-mono);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        #leg-instruction-preview {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Başlat Butonu */
+        #start-ar-btn {
+            width: 100%;
+            max-width: 380px;
+            padding: 18px;
+            background: var(--accent);
+            color: #000;
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: opacity 0.25s, transform 0.15s, box-shadow 0.25s;
+            box-shadow: 0 6px 24px var(--accent-glow);
+            letter-spacing: 0.02em;
+        }
+
+        #start-ar-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #start-ar-btn:not(:disabled):active {
+            transform: scale(0.97);
+        }
+
+        /* ── Toast Bildirimi ─────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(20, 28, 38, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 0.88rem;
+            color: var(--text);
+            font-family: var(--font-mono);
+            pointer-events: none;
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            text-align: center;
+            max-width: 300px;
+            backdrop-filter: blur(12px);
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Filigran ─────────────────────────────────────── */
+        .watermark {
+            position: fixed;
+            bottom: 8px; right: 12px;
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.15);
+            font-family: var(--font-mono);
+            pointer-events: none;
+            z-index: 9999;
+            letter-spacing: 0.05em;
+        }
     </style>
 </head>
 <body>
 
+    <!-- ════════════════════════════════════════════════════
+         GİRİŞ EKRANI
+         AR başlayana kadar gösterilir.
+         Her yeni bacakta tekrar görünür.
+    ═══════════════════════════════════════════════════════ -->
     <div id="intro-screen">
-        <div class="instruction-box">
-            <h2 id="target-title" style="color: var(--accent); margin-top:0;">Navigasyon</h2>
-            <p id="target-desc">Sistem Hazırlanıyor...</p>
-            <button id="start-ar-btn" disabled>⏳ Lütfen Bekleyin...</button>
+        <div class="intro-card">
+            <span class="intro-icon" id="intro-icon">🏥</span>
+            <h2 id="target-title">AR Navigasyon</h2>
+            <p id="target-desc">Sistem hazırlanıyor...</p>
         </div>
+
+        <!-- Mevcut bacağın talimatını göster -->
+        <div class="step-box">
+            <div class="step-box-label">📍 Sonraki Adım</div>
+            <div id="leg-instruction-preview">—</div>
+        </div>
+
+        <button id="start-ar-btn" disabled>⏳ Lütfen Bekleyin...</button>
     </div>
 
+    <!-- ════════════════════════════════════════════════════
+         AR OVERLAY — A-Frame DOM Overlay API'si ile kullanılır.
+         A-Scene "overlayElement: #overlay-container" parametresi
+         bu div'i kameranın üstüne tam ekran yerleştirir.
+    ═══════════════════════════════════════════════════════ -->
     <div id="overlay-container">
+
+        <!-- Üst Mesafe Barı -->
         <div id="top-bar">
-            <div class="instruction-text" id="ui-instruction">İlerleyiniz</div>
-            <div class="distance-text"><span id="ui-distance">--</span> m</div>
+            <div class="instruction-label">Yönlendirme</div>
+            <div class="bar-row">
+                <div id="ui-instruction">İlerleyiniz</div>
+                <div class="distance-block">
+                    <div id="ui-distance">--</div>
+                    <div class="distance-unit">metre</div>
+                </div>
+            </div>
+            <!-- Bacak ilerleme pipleri (JS tarafından oluşturulur) -->
+            <div id="leg-progress"></div>
         </div>
 
+        <!-- Hamburger Menü Butonu -->
         <button id="menu-btn" onclick="toggleMenu()">☰</button>
+
+        <!-- Menü Paneli -->
         <div id="menu-panel">
-            <div style="font-weight: bold; color: var(--accent); margin-bottom: 10px;">Rota İşlemleri</div>
-            <button class="menu-action" id="next-leg-btn" onclick="handleLegComplete()">✅ Noktaya Vardım</button>
-            <button onclick="window.location.href='index.html'" style="width:100%; margin-top:10px; padding:10px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer;">İptal Et</button>
+            <div class="menu-title">Rota İşlemleri</div>
+            <button class="menu-btn-primary" id="next-leg-btn" onclick="handleLegComplete()">
+                ✅ Noktaya Vardım
+            </button>
+            <button class="menu-btn-secondary" onclick="cancelNavigation()">
+                ✕ Navigasyonu İptal Et
+            </button>
         </div>
     </div>
 
-    <a-scene 
-        webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay-container;" 
-        renderer="alpha: true; antialias: true;"
-        vr-mode-ui="enabled: false">
-        <a-camera id="user-camera" position="0 0 0"></a-camera>
+    <!-- Toast Bildirimi -->
+    <div id="toast"></div>
+
+    <!-- ════════════════════════════════════════════════════
+         A-FRAME SAHNESI
+         renderer="alpha: true" → WebGL tuvalinin arka planını
+         saydam yapar; böylece kamera görüntüsü (AR) görünür.
+         vr-mode-ui → A-Frame'in kendi VR butonunu gizler.
+         webxr → referenceSpaceType: local-floor
+                  okları zemine sabitlemek için gerekli.
+    ═══════════════════════════════════════════════════════ -->
+    <a-scene
+        webxr="referenceSpaceType: local-floor;
+               requiredFeatures: local-floor;
+               optionalFeatures: dom-overlay;
+               overlayElement: #overlay-container;"
+        renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true;"
+        vr-mode-ui="enabled: false"
+        loading-screen="enabled: false">
+
+        <!-- Kullanıcı Kamerası — konumu WebXR tarafından güncellenir -->
+        <a-camera id="user-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- Rota Okları bu entity içine yerleştirilir.
+             Her bacak başında temizlenip yeniden çizilir. -->
         <a-entity id="route-container"></a-entity>
     </a-scene>
 
+    <!-- Filigran -->
     <div class="watermark">by Arda24</div>
 
+    <!-- ══════════════════════════════════════════════════
+         ANA NAVİGASYON MOTORU
+    ════════════════════════════════════════════════════ -->
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            let targetId = urlParams.get('hedef') || 'noroloji';
-            
-            if (!NavConfig["durak1"].destinations[targetId]) targetId = 'noroloji';
+    /**
+     * ar.html — Ana Navigasyon Scripti
+     *
+     * Mimari Kurallar:
+     *  [1] Anti-Drift Multi-Leg: Her bacak ayrı AR oturumu.
+     *  [2] Kuantum Yön Sabitleme: route-container kameranın
+     *      anlık dünya pozisyonu ve Yaw açısına kilitlenir.
+     *  [3] 2D Mesafe Takibi: Math.hypot(ΔX, ΔZ) — Y yok sayılır.
+     *  [4] Güvenli Başlatma: isSessionSupported asenkron kontrolü.
+     *  [5] Zero-Click URL: ?hedef=noroloji → direkt rota.
+     */
 
-            const routeData = NavConfig["durak1"].destinations[targetId];
-            let currentLegIndex = 0;
-            let routeLegs = routeData.legs;
-            
-            const sceneEl = document.querySelector('a-scene');
-            const routeContainer = document.getElementById("route-container");
-            const startBtn = document.getElementById("start-ar-btn");
+        // ── URL Parametresi ile Hedef Belirleme ──────────────
+        // Kural [5]: URL parametresi önceliklidir.
+        const urlParams  = new URLSearchParams(window.location.search);
+        let targetId     = urlParams.get("hedef") || NavigationState.getDestination() || "noroloji";
 
-            // 🎯 ÇÖZÜM 2: Cihaz ARCore destekliyor mu arka planda kontrol et, butonu aktif et.
-            if (navigator.xr) {
-                navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-                    if (supported) {
-                        startBtn.innerText = "🚀 AR'yi Başlat";
-                        startBtn.disabled = false;
-                    } else {
-                        startBtn.innerText = "❌ AR Desteklenmiyor";
-                        document.getElementById("target-desc").innerText = "Cihazınız ARCore teknolojisini desteklemiyor.";
-                    }
-                });
-            } else {
-                startBtn.innerText = "❌ WebXR Bulunamadı";
-                document.getElementById("target-desc").innerText = "Lütfen tarayıcıdan HTTPS ile giriş yapın.";
+        const DURAK      = "durak1";
+        const durakData  = NavConfig[DURAK];
+
+        // Geçersiz hedef gelirse varsayılana düş
+        if (!durakData || !durakData.destinations[targetId]) {
+            targetId = Object.keys(durakData?.destinations || {})[0] || "noroloji";
+        }
+
+        const routeData      = durakData.destinations[targetId];
+        const routeLegs      = routeData.legs;
+        let   currentLegIdx  = 0;    // Aktif bacak indeksi
+
+        // ── DOM Referansları ─────────────────────────────────
+        const sceneEl             = document.querySelector("a-scene");
+        const routeContainer      = document.getElementById("route-container");
+        const startBtn            = document.getElementById("start-ar-btn");
+        const introScreen         = document.getElementById("intro-screen");
+        const topBar              = document.getElementById("top-bar");
+        const menuBtn             = document.getElementById("menu-btn");
+        const menuPanel           = document.getElementById("menu-panel");
+        const uiInstruction       = document.getElementById("ui-instruction");
+        const uiDistance          = document.getElementById("ui-distance");
+        const legProgress         = document.getElementById("leg-progress");
+        const legInstructPreview  = document.getElementById("leg-instruction-preview");
+        const nextLegBtn          = document.getElementById("next-leg-btn");
+        const toastEl             = document.getElementById("toast");
+
+        // ── Giriş Ekranını Doldur ────────────────────────────
+        document.getElementById("intro-icon").textContent    = routeData.icon || "🏥";
+        document.getElementById("target-title").textContent  = routeData.name || "Navigasyon";
+
+        // ── Bacak İlerleme Pip'lerini Oluştur ────────────────
+        function buildLegPips() {
+            legProgress.innerHTML = "";
+            routeLegs.forEach((_, i) => {
+                const pip = document.createElement("div");
+                pip.className = "leg-pip" + (i < currentLegIdx ? " done" : i === currentLegIdx ? " active" : "");
+                pip.id = `pip-${i}`;
+                legProgress.appendChild(pip);
+            });
+        }
+
+        buildLegPips();
+
+        // ── Giriş Ekranı Güncelle ────────────────────────────
+        function updateIntroScreen() {
+            const leg = routeLegs[currentLegIdx];
+
+            document.getElementById("target-desc").textContent =
+                `Hedef: ${routeData.name}\nBacak ${currentLegIdx + 1} / ${routeLegs.length}`;
+
+            legInstructPreview.textContent = leg.instruction;
+
+            // Son bacakta buton metnini değiştir
+            nextLegBtn.textContent = (currentLegIdx === routeLegs.length - 1)
+                ? "🎉 Hedefe Vardım"
+                : "✅ Noktaya Vardım";
+        }
+
+        updateIntroScreen();
+
+        // ── Kural [4]: AR Desteğini Asenkron Kontrol Et ──────
+        (async () => {
+            if (!navigator.xr) {
+                startBtn.textContent = "❌ WebXR Bulunamadı";
+                document.getElementById("target-desc").textContent =
+                    "Lütfen Chrome ile HTTPS üzerinden açın.";
+                return;
             }
 
-            document.getElementById("target-desc").innerText = `Hedef: ${routeData.name || 'Hedef Noktası'}\nLütfen koridora düz bakın.`;
-
-            window.toggleMenu = function() {
-                const panel = document.getElementById("menu-panel");
-                panel.style.display = panel.style.display === "block" ? "none" : "block";
-            };
-
-            window.handleLegComplete = function() {
-                sceneEl.exitVR();
-                window.toggleMenu();
-                currentLegIndex++;
-
-                if (currentLegIndex < routeLegs.length) {
-                    alert("Noktaya varıldı. Lütfen yeni yöne (sola/sağa) dönün, o koridora düz bakın ve AR'yi tekrar başlatın.");
-                    document.getElementById("target-desc").innerText = routeLegs[currentLegIndex].instruction;
-                    document.getElementById("intro-screen").style.display = "flex";
-                    if (currentLegIndex === routeLegs.length - 1) document.getElementById("next-leg-btn").innerText = "🎉 Hedefe Vardım";
+            try {
+                const supported = await navigator.xr.isSessionSupported("immersive-ar");
+                if (supported) {
+                    startBtn.textContent = "🚀 AR'yi Başlat";
+                    startBtn.disabled    = false;
                 } else {
-                    alert("Tebrikler! Hedefe ulaştınız.");
-                    window.location.href = "index.html";
+                    startBtn.textContent = "❌ ARCore Desteklenmiyor";
+                    document.getElementById("target-desc").textContent =
+                        "Cihazınız ARCore / WebXR AR'yi desteklemiyor.";
                 }
-            };
-
-            startBtn.addEventListener('click', () => {
-                if (sceneEl.hasLoaded) {
-                    sceneEl.enterAR();
-                } else {
-                    alert("3D Motor hazırlanıyor, lütfen 1 saniye bekleyip tekrar deneyin.");
-                }
-            });
-
-            sceneEl.addEventListener('enter-vr', () => {
-                // Kamera açıldığında arkadaki siyah CSS arkaplanını saydam yap
-                document.body.style.background = "transparent";
-                document.getElementById("intro-screen").style.display = "none";
-                document.getElementById("top-bar").style.display = "block";
-                document.getElementById("menu-btn").style.display = "block";
-                
-                setTimeout(() => {
-                    drawCurrentLeg();
-                }, 1500);
-            });
-
-            sceneEl.addEventListener('exit-vr', () => {
-                // AR'den çıkınca eski siyaha dön
-                document.body.style.background = "var(--bg)";
-                document.getElementById("top-bar").style.display = "none";
-                document.getElementById("menu-btn").style.display = "none";
-                document.getElementById("menu-panel").style.display = "none";
-            });
-
-            function drawCurrentLeg() {
-                routeContainer.innerHTML = "";
-                const leg = routeLegs[currentLegIndex];
-                document.getElementById("ui-instruction").innerText = leg.instruction;
-
-                const cameraObj = document.querySelector('#user-camera').object3D;
-                
-                routeContainer.object3D.position.set(cameraObj.position.x, 0, cameraObj.position.z);
-                
-                const euler = new THREE.Euler().setFromQuaternion(cameraObj.quaternion, 'YXZ');
-                routeContainer.object3D.rotation.set(0, euler.y, 0);
-
-                leg.path.forEach((p, i) => {
-                    const arrow = document.createElement('a-cone');
-                    arrow.setAttribute('radius-bottom', '0.12');
-                    arrow.setAttribute('height', '0.04');
-                    arrow.setAttribute('segments-radial', '4');
-                    arrow.setAttribute('color', leg.color);
-                    arrow.setAttribute('position', p.pos);
-                    arrow.setAttribute('rotation', p.rot);
-                    arrow.setAttribute('material', 'opacity: 0.5; transparent: true;');
-                    arrow.setAttribute('animation', `property: material.opacity; from: 0.2; to: 0.8; dir: alternate; dur: 500; loop: true; delay: ${i * 150};`);
-                    routeContainer.appendChild(arrow);
-                });
-                startDistanceTracking();
+            } catch (err) {
+                startBtn.textContent = "⚠️ Kontrol Başarısız";
+                console.error("[AR] isSessionSupported hatası:", err);
             }
+        })();
 
-            function startDistanceTracking() {
-                if (AFRAME.components['distance-tracker']) delete AFRAME.components['distance-tracker'];
-                
-                AFRAME.registerComponent('distance-tracker', {
-                    tick: function () {
-                        const camObj = document.querySelector('#user-camera').object3D;
-                        const lastArrow = routeContainer.lastChild;
-                        if (!lastArrow) return;
-                        
-                        const camWorldPos = new THREE.Vector3();
-                        camObj.getWorldPosition(camWorldPos);
-                        
-                        const targetWorldPos = new THREE.Vector3();
-                        lastArrow.getWorldPosition(targetWorldPos);
-                        
-                        // Yüksekliği (Y eksenini) görmezden gelerek sadece Kuş Uçuşu (2D) mesafe ölçümü yap
-                        const dist2D = Math.hypot(camWorldPos.x - targetWorldPos.x, camWorldPos.z - targetWorldPos.z);
-                        
-                        if (dist2D < 0.6) {
-                            document.getElementById("ui-distance").innerText = "0";
-                            document.getElementById("ui-instruction").innerText = "📍 Noktaya Ulaştınız!";
-                        } else {
-                            document.getElementById("ui-distance").innerText = dist2D.toFixed(1);
-                        }
-                    }
-                });
-                sceneEl.setAttribute('distance-tracker', '');
+        // ── Toast Bildirimi ───────────────────────────────────
+        let toastTimer = null;
+        function showToast(msg, duration = 3000) {
+            toastEl.textContent = msg;
+            toastEl.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove("show"), duration);
+        }
+
+        // ── Global: Hamburger Menü Aç/Kapat ──────────────────
+        window.toggleMenu = function () {
+            const isOpen = menuPanel.style.display === "block";
+            menuPanel.style.display = isOpen ? "none" : "block";
+        };
+
+        // Menü dışına tıklayınca kapat
+        document.addEventListener("touchstart", (e) => {
+            if (!menuPanel.contains(e.target) && e.target !== menuBtn) {
+                menuPanel.style.display = "none";
             }
+        }, { passive: true });
+
+        // ── Global: Navigasyonu İptal Et ─────────────────────
+        window.cancelNavigation = function () {
+            NavigationState.clearDestination();
+            if (sceneEl.is("vr-mode")) sceneEl.exitVR();
+            window.location.href = "index.html";
+        };
+
+        // ── Başlat Butonu ─────────────────────────────────────
+        startBtn.addEventListener("click", () => {
+            if (!sceneEl.hasLoaded) {
+                showToast("3D motor hazırlanıyor, 1 saniye bekleyip tekrar deneyin.");
+                return;
+            }
+            // DOM Overlay destekli AR oturumunu başlat
+            sceneEl.enterAR();
         });
+
+        // ════════════════════════════════════════════════════
+        //  A-Frame Olay Dinleyicileri
+        // ════════════════════════════════════════════════════
+
+        /**
+         * enter-vr: AR kamerası açıldı.
+         * Kural [2] burada uygulanır.
+         */
+        sceneEl.addEventListener("enter-vr", () => {
+            // CSS arkaplanı saydam yap (kamera görünsün)
+            document.body.style.background = "transparent";
+
+            introScreen.style.display = "none";
+            topBar.style.display      = "block";
+            menuBtn.style.display     = "flex";
+            menuPanel.style.display   = "none";
+
+            buildLegPips(); // pip'leri yenile
+
+            // A-Frame'in WebXR pozisyonunu ataması için kısa bekleme
+            setTimeout(drawCurrentLeg, 1200);
+        });
+
+        /**
+         * exit-vr: AR oturumu kapandı (handleLegComplete tarafından tetiklenir).
+         * UI'ı gizle, arka planı geri yükle.
+         */
+        sceneEl.addEventListener("exit-vr", () => {
+            document.body.style.background = "";
+            topBar.style.display            = "none";
+            menuBtn.style.display           = "none";
+            menuPanel.style.display         = "none";
+        });
+
+        // ════════════════════════════════════════════════════
+        //  Kural [1]: Bacak Tamamlama (Anti-Drift)
+        // ════════════════════════════════════════════════════
+        window.handleLegComplete = function () {
+            menuPanel.style.display = "none";
+
+            // AR oturumunu kapat → kayma sıfırlanır
+            sceneEl.exitVR();
+            currentLegIdx++;
+
+            if (currentLegIdx < routeLegs.length) {
+                // Sonraki bacak var: intro ekranını güncelle
+                updateIntroScreen();
+                buildLegPips();
+                introScreen.style.display = "flex";
+
+                showToast(
+                    `Noktaya varıldı! Lütfen yeni yöne dönün ve AR'yi tekrar başlatın.`,
+                    4000
+                );
+            } else {
+                // Tüm bacaklar bitti: navigasyon tamamlandı
+                showToast("🎉 Tebrikler! Hedefe ulaştınız.", 3000);
+                setTimeout(() => {
+                    NavigationState.clearDestination();
+                    window.location.href = "index.html";
+                }, 3200);
+            }
+        };
+
+        // ════════════════════════════════════════════════════
+        //  Kural [2]: Kuantum Yön Sabitleme + Ok Çizimi
+        // ════════════════════════════════════════════════════
+        function drawCurrentLeg() {
+            // Önceki okları temizle
+            routeContainer.innerHTML = "";
+
+            const leg      = routeLegs[currentLegIdx];
+            uiInstruction.textContent = leg.instruction;
+
+            // Kameranın anlık Three.js Object3D'sine eriş
+            const cameraObj = document.querySelector("#user-camera").object3D;
+
+            /**
+             * [2a] Pozisyon Sabitleme:
+             * route-container'ı kameranın anlık X ve Z dünya koordinatlarına taşı.
+             * Y=0 → oklar her zaman zemin düzleminde görünür.
+             */
+            routeContainer.object3D.position.set(
+                cameraObj.position.x,
+                0,
+                cameraObj.position.z
+            );
+
+            /**
+             * [2b] Yaw (Y-Ekseni) Sabitleme:
+             * Kameranın quaternion'ından Euler açılarını çıkar.
+             * Sadece Y (yaw) açısını al → yatay yön kilidi.
+             * Böylece kullanıcı hangi yöne dönmüş olursa olsun
+             * AR başlarken "-Z yönü = düz ön" olur.
+             */
+            const euler = new THREE.Euler().setFromQuaternion(
+                cameraObj.quaternion, "YXZ"
+            );
+            routeContainer.object3D.rotation.set(0, euler.y, 0);
+
+            // ── Okları Oluştur ───────────────────────────────
+            leg.path.forEach((point, index) => {
+                /**
+                 * Her ok için a-cone elementi:
+                 * segments-radial: 4 → elmas/karo şekli (daha iyi okunurluk)
+                 * Animasyon: dalga efekti ile görünürlük artar.
+                 */
+                const arrow = document.createElement("a-cone");
+
+                arrow.setAttribute("radius-bottom", "0.14");
+                arrow.setAttribute("radius-top",    "0");
+                arrow.setAttribute("height",         "0.05");
+                arrow.setAttribute("segments-radial","4");
+                arrow.setAttribute("color",          leg.color || "#81D4FA");
+                arrow.setAttribute("position",       point.pos);
+                arrow.setAttribute("rotation",       point.rot);
+                arrow.setAttribute("material",       "opacity: 0.5; transparent: true; side: double;");
+
+                // Dalga animasyonu: her ok biraz gecikmeli yanıp söner
+                arrow.setAttribute("animation", [
+                    `property: material.opacity;`,
+                    `from: 0.15;`,
+                    `to: 0.85;`,
+                    `dir: alternate;`,
+                    `dur: 520;`,
+                    `loop: true;`,
+                    `delay: ${index * 160};`,
+                    `easing: easeInOutSine`
+                ].join(" "));
+
+                routeContainer.appendChild(arrow);
+            });
+
+            // Mesafe takibini başlat
+            startDistanceTracking();
+        }
+
+        // ════════════════════════════════════════════════════
+        //  Kural [3]: 2D Mesafe Takibi (A-Frame tick — 60fps)
+        // ════════════════════════════════════════════════════
+        function startDistanceTracking() {
+            /**
+             * A-Frame component'i her frame'de çalışır.
+             * Önceki tracker'ı sil; birden fazla tick kaydı olmasın.
+             */
+            if (AFRAME.components["distance-tracker"]) {
+                delete AFRAME.components["distance-tracker"];
+            }
+
+            AFRAME.registerComponent("distance-tracker", {
+                tick: function () {
+                    const cam      = document.querySelector("#user-camera")?.object3D;
+                    const lastArrow = routeContainer.lastChild;
+
+                    if (!cam || !lastArrow) return;
+
+                    // Dünya koordinatlarını al (parent transform'larını da hesaba katar)
+                    const camPos    = new THREE.Vector3();
+                    const targetPos = new THREE.Vector3();
+                    cam.getWorldPosition(camPos);
+                    lastArrow.getWorldPosition(targetPos);
+
+                    /**
+                     * [3] Kuş Uçuşu (2D) Mesafe:
+                     * Y ekseni atlanır → telefon yüksekliği mesafeyi etkilemez.
+                     */
+                    const dist2D = Math.hypot(
+                        camPos.x - targetPos.x,
+                        camPos.z - targetPos.z
+                    );
+
+                    if (dist2D < 0.6) {
+                        // Hedefe ulaşıldı
+                        uiDistance.textContent     = "0";
+                        uiInstruction.textContent  = "📍 Noktaya Ulaştınız!";
+                    } else {
+                        uiDistance.textContent = dist2D.toFixed(1);
+                    }
+                }
+            });
+
+            // Component'i sahneye bağla
+            sceneEl.setAttribute("distance-tracker", "");
+        }
+
     </script>
 </body>
 </html>
