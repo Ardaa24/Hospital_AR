@@ -7,16 +7,20 @@
     <script src="config.js"></script>
     <style>
         :root {
-            --accent: #81D4FA;
-            --accent-glow: rgba(129,212,250,0.3);
-            --bg: #0D1117;
-            --card: #161C26;
-            --border: rgba(129,212,250,0.2);
-            --text: #E6EDF3;
-            --muted: #768390;
+            --accent:     #81D4FA;
+            --accent-dim: rgba(129,212,250,0.12);
+            --accent-glow:rgba(129,212,250,0.28);
+            --bg:         #0D1117;
+            --card:       #161C26;
+            --card-done:  #111418;
+            --border:     rgba(129,212,250,0.2);
+            --text:       #E6EDF3;
+            --muted:      #6B7A8D;
+            --done-text:  #3A4450;
+            --radius:     16px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: -apple-system, 'Segoe UI', sans-serif;
@@ -25,147 +29,242 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            /* Sayfadan taşmayı önle */
+            overflow-x: hidden;
         }
 
-        /* Arka plan ışıma */
+        /* Arka plan ışıması */
         body::before {
             content: '';
             position: fixed;
-            top: -20%;
-            left: 50%;
+            top: -10%; left: 50%;
             transform: translateX(-50%);
-            width: 80vw;
-            height: 60vh;
-            background: radial-gradient(ellipse, rgba(129,212,250,0.07) 0%, transparent 70%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse, rgba(129,212,250,0.06) 0%, transparent 70%);
             pointer-events: none;
+            z-index: 0;
         }
 
+        /* ── Header ───────────────────────────── */
         header {
-            padding: 48px 24px 24px;
+            position: relative;
+            z-index: 1;
+            padding: 52px 24px 20px;
             text-align: center;
         }
 
-        .hospital-icon {
-            font-size: 2.8rem;
-            margin-bottom: 12px;
-            display: block;
-        }
+        .header-icon { font-size: 2.6rem; display: block; margin-bottom: 10px; }
 
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 6px;
-        }
+        h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 4px; }
 
-        .subtitle {
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
+        .header-sub { font-size: 0.82rem; color: var(--muted); }
 
-        /* AR Destek Durumu */
+        /* AR Destek badge */
         #ar-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 24px 28px;
-            padding: 10px 16px;
+            position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 8px;
+            margin: 4px 24px 20px;
+            padding: 9px 14px;
             border-radius: 10px;
-            font-size: 0.8rem;
-            background: rgba(255,255,255,0.04);
+            font-size: 0.78rem;
+            background: rgba(255,255,255,0.03);
             color: var(--muted);
             transition: all 0.3s;
         }
-        #ar-badge.ok   { background: rgba(129,212,250,0.1); color: var(--accent); border: 1px solid var(--border); }
-        #ar-badge.fail { background: rgba(239,100,100,0.1); color: #F97583; border: 1px solid rgba(239,100,100,0.3); }
+        #ar-badge.ok   { background: rgba(129,212,250,0.09); color: var(--accent); border: 1px solid var(--border); }
+        #ar-badge.fail { background: rgba(239,100,100,0.09); color: #F97583; border: 1px solid rgba(239,100,100,0.3); }
         .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-        /* Hedef kartları */
-        .dest-label {
-            padding: 0 24px 12px;
-            font-size: 0.72rem;
+        /* ── Görev İlerleme ────────────────────── */
+        .progress-bar-wrap {
+            position: relative; z-index: 1;
+            margin: 0 24px 20px;
+            padding: 14px 16px;
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-label span:first-child {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .progress-label span:last-child {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .progress-track {
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        /* ── Kart Listesi ──────────────────────── */
+        .section-label {
+            position: relative; z-index: 1;
+            padding: 0 24px 10px;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--muted);
         }
 
         #dest-list {
+            position: relative; z-index: 1;
             flex: 1;
             padding: 0 24px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            /* Tamamlananlar en alta gittiğinde ani kayma engellenir */
         }
 
+        /* ─ Aktif Kart ─ */
         .dest-card {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
             padding: 18px;
             background: var(--card);
             border: 1.5px solid transparent;
-            border-radius: 16px;
+            border-radius: var(--radius);
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color 0.2s, background 0.2s, opacity 0.3s;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
         }
 
-        .dest-card.active {
+        /* Seçili kart parlama efekti */
+        .dest-card.selected {
             border-color: var(--accent);
-            background: rgba(129,212,250,0.06);
+            background: var(--accent-dim);
         }
 
-        .dest-card:active { opacity: 0.8; }
-
-        .dest-emoji {
-            font-size: 1.8rem;
-            width: 44px;
-            text-align: center;
-            flex-shrink: 0;
+        .dest-card.selected::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
 
-        .dest-info { flex: 1; }
+        .dest-card:active:not(.done) { opacity: 0.75; }
 
-        .dest-name {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 3px;
+        /* ─ Tamamlanmış Kart ─ */
+        .dest-card.done {
+            cursor: default;
+            background: var(--card-done);
+            border-color: rgba(255,255,255,0.04);
+            opacity: 0.55;
         }
 
-        .dest-legs {
-            font-size: 0.78rem;
+        .dest-card.done .dest-name  { color: var(--done-text); }
+        .dest-card.done .dest-desc  { color: var(--done-text); }
+        .dest-card.done .dest-emoji { filter: grayscale(1); }
+
+        /* Tamamlandı rozeti */
+        .done-badge {
+            display: none;
+            font-size: 0.7rem;
             color: var(--muted);
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+        }
+        .dest-card.done .done-badge { display: inline-block; }
+        .dest-card.done .leg-count  { display: none; }
+        .dest-card.done .dest-check { display: none; }
+
+        /* Görev numarası chip */
+        .task-chip {
+            position: absolute;
+            top: 10px; right: 10px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--muted);
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 2px 7px;
+            letter-spacing: 0.05em;
+        }
+
+        .dest-emoji { font-size: 1.9rem; flex-shrink: 0; }
+
+        .dest-info  { flex: 1; min-width: 0; }
+
+        .dest-name  {
+            font-size: 0.98rem;
+            font-weight: 700;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dest-desc  { font-size: 0.75rem; color: var(--muted); }
+
+        .dest-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+
+        .leg-count  {
+            font-size: 0.72rem;
+            color: var(--muted);
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 3px 8px;
         }
 
         .dest-check {
             width: 22px; height: 22px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.14);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.7rem;
             color: transparent;
-            flex-shrink: 0;
             transition: all 0.2s;
         }
 
-        .dest-card.active .dest-check {
+        .dest-card.selected .dest-check {
             background: var(--accent);
             border-color: var(--accent);
             color: #000;
         }
 
-        /* Başlat butonu */
+        /* ── Başlat Butonu ─────────────────────── */
         .bottom-bar {
-            padding: 20px 24px 36px;
             position: sticky;
-            bottom: 0;
-            background: linear-gradient(to top, var(--bg) 70%, transparent);
+            bottom: 0; left: 0; right: 0;
+            padding: 18px 24px 36px;
+            background: linear-gradient(to top, var(--bg) 60%, transparent);
+            z-index: 10;
         }
 
         #start-btn {
             width: 100%;
             padding: 17px;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
             background: var(--accent);
             color: #000;
@@ -177,36 +276,51 @@
         }
 
         #start-btn:disabled {
-            opacity: 0.3;
+            opacity: 0.28;
             cursor: not-allowed;
             box-shadow: none;
         }
 
         #start-btn:not(:disabled):active { transform: scale(0.97); }
 
+        /* ── Filigran ──────────────────────────── */
         .watermark {
             position: fixed;
             bottom: 8px; right: 10px;
-            font-size: 0.65rem;
-            color: rgba(255,255,255,0.12);
+            font-size: 0.62rem;
+            color: rgba(255,255,255,0.1);
             pointer-events: none;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <span class="hospital-icon">🏥</span>
-        <h1>AR Navigasyon</h1>
-        <p class="subtitle">Hastane Yönlendirme Sistemi</p>
+        <span class="header-icon">🏥</span>
+        <h1>Hastane AR Navigasyon</h1>
+        <p class="header-sub">Artırılmış Gerçeklik Yönlendirme Sistemi</p>
     </header>
 
+    <!-- AR Destek Durumu -->
     <div id="ar-badge">
         <div class="badge-dot"></div>
         <span id="ar-badge-text">AR desteği kontrol ediliyor...</span>
     </div>
 
-    <p class="dest-label">Nereye gitmek istiyorsunuz?</p>
+    <!-- Görev İlerleme -->
+    <div class="progress-bar-wrap">
+        <div class="progress-label">
+            <span>Görev İlerlemesi</span>
+            <span id="progress-text">0 / 4 Tamamlandı</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+    </div>
+
+    <p class="section-label">Hedef Seçin</p>
+
     <div id="dest-list"></div>
 
     <div class="bottom-bar">
@@ -216,57 +330,141 @@
     <div class="watermark">by Arda24</div>
 
     <script>
-        let selected = null;
+    /**
+     * index.html scripti
+     *
+     * Tamamlanma durumu sessionStorage'da tutulur.
+     * sessionStorage → sekme/tarayıcı kapanınca otomatik sıfırlanır.
+     * localStorage gibi kalıcı DEĞİLDİR — istenen davranış bu.
+     */
 
-        // ── Hedefleri listele ────────────────────────────────
-        Object.entries(NavConfig).forEach(([id, data]) => {
-            const card = document.createElement('div');
-            card.className = 'dest-card';
-            card.innerHTML = `
-                <div class="dest-emoji">${data.icon}</div>
-                <div class="dest-info">
-                    <div class="dest-name">${data.name}</div>
-                    <div class="dest-legs">${data.legs.length} durak</div>
-                </div>
+    const STORAGE_KEY = 'ar_completed_routes';
+
+    // ── Tamamlanan rotaları yükle (Set olarak) ───────────
+    function loadCompleted() {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_KEY);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch { return new Set(); }
+    }
+
+    // ── Tamamlananları kaydet ─────────────────────────────
+    function saveCompleted(set) {
+        try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+        } catch {}
+    }
+
+    // ── Dışarıdan erişim: ar.html yönlendirmesi sonrası ──
+    // ar.html tamamlanınca ?done=ID ile geri döner
+    (function checkReturnFromAR() {
+        const params    = new URLSearchParams(window.location.search);
+        const doneId    = params.get('done');
+        if (!doneId) return;
+
+        const completed = loadCompleted();
+        completed.add(doneId);
+        saveCompleted(completed);
+
+        // URL'i temizle (geri tuşu sorununu önle)
+        history.replaceState(null, '', 'index.html');
+    })();
+
+    // ── Kartları oluştur ──────────────────────────────────
+    const completed  = loadCompleted();
+    let   selected   = null;
+
+    const activeCards = [];
+    const doneCards   = [];
+
+    NAV_ROUTES.forEach(route => {
+        const isDone = completed.has(route.id);
+
+        const card = document.createElement('div');
+        card.className = 'dest-card' + (isDone ? ' done' : '');
+        card.dataset.id = route.id;
+
+        // AR leg sayısı (sadece "ar" tipindekiler)
+        const arLegCount = route.legs.filter(l => l.type === 'ar').length;
+
+        card.innerHTML = `
+            <div class="task-chip">GÖREV ${route.task}</div>
+            <div class="dest-emoji">${route.icon}</div>
+            <div class="dest-info">
+                <div class="dest-name">${route.name}</div>
+                <div class="dest-desc">${route.desc}</div>
+            </div>
+            <div class="dest-right">
+                <div class="leg-count">${arLegCount} durak</div>
+                <div class="done-badge">✓ Rota Tamamlandı</div>
                 <div class="dest-check">✓</div>
-            `;
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.dest-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                selected = id;
-                const btn = document.getElementById('start-btn');
-                btn.disabled = false;
-                btn.textContent = `🚀 ${data.name}'e Git`;
-            });
-            document.getElementById('dest-list').appendChild(card);
-        });
+            </div>
+        `;
 
-        // ── AR Destek Kontrolü ───────────────────────────────
-        const badge = document.getElementById('ar-badge');
-        const badgeText = document.getElementById('ar-badge-text');
-
-        if (navigator.xr) {
-            navigator.xr.isSessionSupported('immersive-ar').then(ok => {
-                badge.className = 'ok';
-                badgeText.textContent = ok
-                    ? '✅ ARCore hazır — başlayabilirsiniz'
-                    : '⚠️ ARCore desteklenmiyor, görünüm sınırlı olabilir';
-            }).catch(() => {
-                badge.className = 'fail';
-                badgeText.textContent = '⚠️ AR kontrolü başarısız';
-            });
+        if (!isDone) {
+            card.addEventListener('click', () => selectCard(route.id, card, route));
+            activeCards.push(card);
         } else {
-            badge.className = 'fail';
-            badgeText.textContent = '❌ WebXR bulunamadı — Chrome + HTTPS gerekli';
+            doneCards.push(card);
         }
 
-        // ── Başlat ───────────────────────────────────────────
-        document.getElementById('start-btn').addEventListener('click', () => {
-            if (!selected) return;
-            // Hedefi URL'e ve localStorage'a yaz
-            localStorage.setItem('ar_hedef', selected);
-            window.location.href = `ar.html?hedef=${selected}`;
+        // Sıralama: önce aktifler, sonra tamamlananlar
+        // (appendChild sırasında ayarlanır)
+    });
+
+    const listEl = document.getElementById('dest-list');
+
+    // Önce aktif kartları ekle
+    activeCards.forEach(c => listEl.appendChild(c));
+    // Sonra tamamlananları ekle (en alta)
+    doneCards.forEach(c => listEl.appendChild(c));
+
+    // ── Görev ilerleme barını güncelle ───────────────────
+    function updateProgress() {
+        const total  = NAV_ROUTES.length;
+        const done   = completed.size;
+        const pct    = Math.round((done / total) * 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-text').textContent = `${done} / ${total} Tamamlandı`;
+    }
+    updateProgress();
+
+    // ── Kart seçimi ───────────────────────────────────────
+    function selectCard(id, cardEl, route) {
+        document.querySelectorAll('.dest-card:not(.done)').forEach(c => c.classList.remove('selected'));
+        cardEl.classList.add('selected');
+        selected = id;
+
+        const btn = document.getElementById('start-btn');
+        btn.disabled    = false;
+        btn.textContent = `🚀  ${route.name}'e Git`;
+    }
+
+    // ── AR Destek Kontrolü ────────────────────────────────
+    const badge     = document.getElementById('ar-badge');
+    const badgeText = document.getElementById('ar-badge-text');
+
+    if (navigator.xr) {
+        navigator.xr.isSessionSupported('immersive-ar').then(ok => {
+            badge.className = 'ok';
+            badgeText.textContent = ok
+                ? '✅ ARCore hazır'
+                : '⚠️ AR sınırlı — yine de deneyin';
+        }).catch(() => {
+            badge.className = 'fail';
+            badgeText.textContent = '⚠️ AR kontrolü başarısız';
         });
+    } else {
+        badge.className = 'fail';
+        badgeText.textContent = '❌ WebXR bulunamadı (Chrome + HTTPS gerekli)';
+    }
+
+    // ── Başlat ────────────────────────────────────────────
+    document.getElementById('start-btn').addEventListener('click', () => {
+        if (!selected) return;
+        sessionStorage.setItem('ar_hedef', selected);
+        window.location.href = `ar.html?hedef=${selected}`;
+    });
     </script>
 </body>
 </html>
