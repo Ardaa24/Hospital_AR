@@ -467,8 +467,8 @@
         return 'locked';
     }
 
-    const activeCards = [];   // seçilebilir
-    const doneCards   = [];   // tamamlanmış (en alta)
+    const listEl    = document.getElementById('dest-list');
+    const doneCards = [];
 
     sortedRoutes.forEach(route => {
         const state      = getCardState(route);
@@ -502,36 +502,18 @@
 
         if (isNext) {
             card.addEventListener('click', () => selectCard(route.id, card, route));
-            activeCards.push(card);
         } else if (isLocked) {
             card.addEventListener('click', showLockToast);
+        }
+
+        if (isDone) {
+            doneCards.push(card);   // done'lar en sona
         } else {
-            // done
-            doneCards.push(card);
+            listEl.appendChild(card);   // next + locked sırayla
         }
     });
 
-    const listEl = document.getElementById('dest-list');
-    activeCards.forEach(c => listEl.appendChild(c));
-    // Kilitli kartları da aktif bölümde göster (ama tıklanamaz)
-    sortedRoutes
-        .filter(r => getCardState(r) === 'locked')
-        .forEach(r => {
-            const el = document.querySelector(`.dest-card[data-id="${r.id}"]`);
-            if (el) listEl.appendChild(el);
-        });
-    doneCards.forEach(c => listEl.appendChild(c));
-
-    // Kilitli kartlar henüz DOM'a eklenmemiş olabilir (forEach içinde oluşturuldu ama listeye eklenmedi)
-    // Tekrar doğru sırayla ekleyelim
-    listEl.innerHTML = '';
-    sortedRoutes.forEach(route => {
-        const state = getCardState(route);
-        const el = document.querySelector(`.dest-card[data-id="${route.id}"]`);
-        if (!el) return;
-        if (state === 'done') return; // done'lar en sona
-        listEl.appendChild(el);
-    });
+    // Tamamlananları en alta ekle
     doneCards.forEach(c => listEl.appendChild(c));
 
     // ── Görev ilerleme barını güncelle ───────────────────
