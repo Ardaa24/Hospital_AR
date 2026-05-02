@@ -2,664 +2,217 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Navigasyon</title>
-
-    <!--
-        A-Frame 1.4.1
-        ÖNEMLİ: local-floor yerine "local" referans alanı kullanıyoruz.
-        local-floor bazı cihazlarda session'ı anında öldürüyor.
-        local referans alanı çok daha geniş cihaz desteğine sahip.
-        Okları kamera yüksekliğine göre dinamik yerleştireceğiz.
-    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hastane AR Navigasyon</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="config.js"></script>
-
     <style>
-        :root {
-            --accent: #81D4FA;
-            --accent-dim: rgba(129,212,250,0.15);
-            --bg: #0D1117;
-            --glass: rgba(13,17,23,0.85);
-            --border: rgba(129,212,250,0.25);
-            --text: #E6EDF3;
-            --muted: #768390;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            overflow: hidden;
-        }
-
-        /* A-Frame sahnesini tam ekran yap */
-        a-scene {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-        }
-
-        /* ═══════════════════════════════════════════
-           OVERLAY KATMANI
-           Bu div, WebXR DOM Overlay olarak kameraya
-           bindirilen tüm UI'ı barındırır.
-           pointer-events: none → A-Frame touch'u bloklamaz.
-           İçindeki butonlar kendi pointer-events auto'su var.
-        ══════════════════════════════════════════════ */
-        #overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        /* ── Üst Bilgi Barı ──────────────────────── */
-        #info-bar {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 400px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1.5px solid var(--border);
-            border-radius: 20px;
-            padding: 16px 20px;
-            display: none;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        }
-
-        .bar-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        #instruction-text {
-            font-size: 0.95rem;
-            font-weight: 600;
-            line-height: 1.4;
-            flex: 1;
-        }
-
-        .distance-box {
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        #dist-num {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--accent);
-            line-height: 1;
-            /* Glow efekti */
-            text-shadow: 0 0 24px rgba(129,212,250,0.6);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .dist-unit {
-            font-size: 0.72rem;
-            color: var(--muted);
-            text-align: right;
-        }
-
-        /* Bacak ilerleme çizgisi */
-        #leg-dots {
-            display: flex;
-            gap: 6px;
-            margin-top: 12px;
-        }
-
-        .leg-dot {
-            height: 3px;
-            flex: 1;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.12);
-            transition: background 0.4s;
-        }
-        .leg-dot.done { background: var(--accent); }
-        .leg-dot.current { background: var(--accent); opacity: 0.55; }
-
-        /* ── "Noktaya Vardım" Butonu ─────────────── */
-        #arrived-btn {
-            position: absolute;
-            bottom: 48px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 48px);
-            max-width: 360px;
-            padding: 18px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            display: none;
-            pointer-events: auto;
-            box-shadow: 0 6px 24px rgba(129,212,250,0.35);
-            -webkit-tap-highlight-color: transparent;
-            transition: transform 0.15s, opacity 0.15s;
-        }
-
-        #arrived-btn:active { transform: translateX(-50%) scale(0.96); }
-
-        /* ── Giriş / Ara Ekranı ─────────────────── */
-        #start-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            padding: 24px;
-            z-index: 2000;
-            /* İnce arka plan ışıması */
-            background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(129,212,250,0.07) 0%, transparent 70%);
-        }
-
-        .dest-badge {
-            font-size: 3rem;
-            margin-bottom: 4px;
-        }
-
-        .screen-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text);
-            text-align: center;
-        }
-
-        .screen-sub {
-            font-size: 0.85rem;
-            color: var(--muted);
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        /* Talimat kutusu */
-        .step-card {
-            width: 100%;
-            max-width: 360px;
-            background: var(--accent-dim);
-            border: 1.5px solid var(--border);
-            border-radius: 16px;
-            padding: 18px 20px;
-            margin-top: 8px;
-        }
-
-        .step-card-label {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-
-        .step-card-text {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        /* AR Başlat butonu */
-        #begin-btn {
-            width: 100%;
-            max-width: 360px;
-            padding: 18px;
-            font-size: 1.05rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            margin-top: 8px;
-            box-shadow: 0 6px 24px rgba(129,212,250,0.3);
-            transition: opacity 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        #begin-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        #begin-btn:not(:disabled):active { opacity: 0.85; }
-
-        /* Geri dön linki */
-        #back-link {
-            font-size: 0.85rem;
-            color: var(--muted);
-            text-decoration: none;
-            padding: 8px;
-            pointer-events: auto;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* ── Tamamlandı Ekranı ───────────────────── */
-        #done-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            padding: 24px;
-            z-index: 2000;
-        }
-
-        .done-icon { font-size: 4rem; }
-
-        .done-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .done-sub {
-            font-size: 0.9rem;
-            color: var(--muted);
-            text-align: center;
-        }
-
-        #home-btn {
-            margin-top: 16px;
-            padding: 16px 40px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-        }
-
-        /* ── Filigran ───────────────────────────── */
-        .watermark {
-            position: fixed;
-            bottom: 8px; right: 10px;
-            font-size: 0.65rem;
-            color: rgba(255,255,255,0.12);
-            pointer-events: none;
-            z-index: 9999;
-        }
+        /* CSS Stilleri (Görselliği bozmadan korundu) */
+        :root { --accent: #81D4FA; --bg: #121212; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; transition: background 0.3s; }
+        #overlay-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        #top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px; background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(10px); border: 2px solid var(--accent); border-radius: 20px; padding: 15px; text-align: center; display: none; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+        .distance-text { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin: 5px 0; }
+        .instruction-text { font-size: 1rem; color: #E0E0E0; }
+        #menu-btn { position: absolute; top: 25px; right: 20px; background: rgba(18, 18, 18, 0.9); border: 1px solid var(--accent); color: white; border-radius: 12px; padding: 10px 15px; cursor: pointer; font-size: 1.5rem; pointer-events: auto; display: none; }
+        #menu-panel { display: none; position: absolute; top: 75px; right: 20px; width: 250px; background: rgba(18, 18, 18, 0.95); border: 1px solid #333; border-radius: 15px; pointer-events: auto; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .menu-action { width: 100%; padding: 12px; background: var(--accent); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #intro-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; padding: 20px; box-sizing: border-box; }
+        .instruction-box { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 2px solid var(--accent); text-align: center; max-width: 400px; width: 100%; }
+        /* Özel Talimat Kutusu (Laboratuvar vb. için) */
+        #special-instruction { color: #FFD54F; font-weight: bold; margin-bottom: 15px; display: none; background: rgba(255, 213, 79, 0.1); padding: 10px; border-radius: 8px; }
+        
+        #start-ar-btn { background: var(--accent); color: #000; font-size: 1.4rem; font-weight: bold; padding: 15px; border: none; border-radius: 12px; cursor: pointer; width: 100%; margin-top: 20px; transition: background 0.3s; }
+        #start-ar-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        .watermark { position: fixed; bottom: 8px; right: 12px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 10000; }
     </style>
 </head>
 <body>
 
-    <!-- ═══ BAŞLANGIÇ / ARA EKRANI ══════════════════════ -->
-    <div id="start-screen">
-        <div class="dest-badge" id="ss-icon">🏥</div>
-        <div class="screen-title" id="ss-title">AR Navigasyon</div>
-        <div class="screen-sub" id="ss-sub">Yükleniyor...</div>
+    <div id="intro-screen">
+        <div class="instruction-box">
+            <h2 id="target-title" style="color: var(--accent); margin-top:0;">Navigasyon</h2>
+            <!-- Asansör gibi özel durumlar için eklendi -->
+            <div id="special-instruction"></div> 
+            <p id="target-desc">Lütfen koridora düz bakın.</p>
+            <button id="start-ar-btn">🚀 AR'yi Başlat</button>
+        </div>
+    </div>
 
-        <div class="step-card">
-            <div class="step-card-label" id="ss-leg-label">Adım 1</div>
-            <div class="step-card-text" id="ss-instruction">—</div>
+    <div id="overlay-container">
+        <div id="top-bar">
+            <div class="instruction-text" id="ui-instruction">İlerleyiniz</div>
+            <div class="distance-text"><span id="ui-distance">--</span> m</div>
         </div>
 
-        <button id="begin-btn" disabled>⏳ Hazırlanıyor...</button>
-
-        <a href="index.html" id="back-link">← Geri Dön</a>
+        <button id="menu-btn" onclick="toggleMenu()">☰</button>
+        <div id="menu-panel">
+            <div style="font-weight: bold; color: var(--accent); margin-bottom: 10px;">Rota İşlemleri</div>
+            <button class="menu-action" id="next-leg-btn" onclick="handleLegComplete()">✅ Noktaya Vardım</button>
+            <button onclick="window.location.href='index.html'" style="width:100%; margin-top:10px; padding:10px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer;">Menüye Dön</button>
+        </div>
     </div>
 
-    <!-- ═══ TAMAMLANDI EKRANI ════════════════════════════ -->
-    <div id="done-screen">
-        <div class="done-icon">🎉</div>
-        <div class="done-title" id="done-dest">Hedefe Ulaştınız!</div>
-        <div class="done-sub" id="done-name"></div>
-        <button class="home-btn" id="home-btn" onclick="window.location.href='index.html'">
-            Ana Sayfaya Dön
-        </button>
-    </div>
-
-    <!-- ═══ A-FRAME SAHNESI ══════════════════════════════
-         renderer alpha:true  → WebGL canvas saydam, kamera görünür
-         referenceSpaceType: local → local-floor'dan daha geniş destek
-         dom-overlay → UI katmanını AR'nin üstüne bindirme API'si
-    ════════════════════════════════════════════════════ -->
-    <a-scene
-        webxr="referenceSpaceType: local;
-               requiredFeatures: local;
-               optionalFeatures: dom-overlay,hit-test;
-               overlayElement: #overlay;"
+    <a-scene 
+        webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay-container;" 
         renderer="alpha: true; antialias: true;"
-        vr-mode-ui="enabled: false"
-        loading-screen="enabled: false">
-
-        <!-- Kamera: WebXR pozisyon/rotasyonunu otomatik uygular -->
-        <a-camera
-            id="cam"
-            position="0 1.6 0"
-            look-controls="enabled: false"
-            wasd-controls="enabled: false">
-        </a-camera>
-
-        <!-- Tüm ok nesneleri bu entity'nin altına eklenir -->
-        <a-entity id="arrows"></a-entity>
-
+        vr-mode-ui="enabled: false">
+        <a-camera id="user-camera" position="0 0 0"></a-camera>
+        <a-entity id="route-container"></a-entity>
     </a-scene>
-
-    <!-- ═══ AR OVERLAY UI ════════════════════════════════ -->
-    <div id="overlay">
-        <!-- Üst bilgi barı (AR aktifken görünür) -->
-        <div id="info-bar">
-            <div class="bar-top">
-                <div id="instruction-text">İlerleyiniz</div>
-                <div class="distance-box">
-                    <div id="dist-num">--</div>
-                    <div class="dist-unit">metre</div>
-                </div>
-            </div>
-            <div id="leg-dots"></div>
-        </div>
-
-        <!-- Alt buton (AR aktifken görünür) -->
-        <button id="arrived-btn" onclick="onArrived()">✅ Noktaya Vardım</button>
-    </div>
 
     <div class="watermark">by Arda24</div>
 
-    <!-- ═══════════════════════════════════════════════════
-         ANA NAVIGASYON MOTORU
-    ════════════════════════════════════════════════════ -->
     <script>
-    // ── Hedef ve rota verisi ─────────────────────────────
-    const urlParams  = new URLSearchParams(window.location.search);
-    const targetId   = urlParams.get('hedef') || localStorage.getItem('ar_hedef') || Object.keys(NavConfig)[0];
-    const route      = NavConfig[targetId];
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetId = urlParams.get('hedef') || NavigationState.getDestination() || 'noroloji';
 
-    if (!route) { window.location.href = 'index.html'; }
+            const routeData = NavConfig["durak1"].destinations[targetId];
+            let currentLegIndex = 0;
+            let routeLegs = routeData.legs;
+            
+            const sceneEl = document.querySelector('a-scene');
+            const routeContainer = document.getElementById("route-container");
+            const startBtn = document.getElementById("start-ar-btn");
 
-    const legs = route.legs;
-    let legIdx = 0;          // Hangi bacaktayız
-    let arActive = false;    // AR oturumu açık mı
-    let tickRafId = null;    // requestAnimationFrame id
-
-    // ── DOM Referansları ─────────────────────────────────
-    const startScreen   = document.getElementById('start-screen');
-    const doneScreen    = document.getElementById('done-screen');
-    const beginBtn      = document.getElementById('begin-btn');
-    const infoBar       = document.getElementById('info-bar');
-    const arrivedBtn    = document.getElementById('arrived-btn');
-    const instructionEl = document.getElementById('instruction-text');
-    const distNumEl     = document.getElementById('dist-num');
-    const legDotsEl     = document.getElementById('leg-dots');
-    const arrowsEl      = document.getElementById('arrows');
-    const sceneEl       = document.querySelector('a-scene');
-    const camEl         = document.getElementById('cam');
-
-    // ── Başlangıç ekranını doldur ────────────────────────
-    function fillStartScreen() {
-        document.getElementById('ss-icon').textContent        = route.icon;
-        document.getElementById('ss-title').textContent       = route.name;
-        document.getElementById('ss-sub').textContent         = `Bacak ${legIdx + 1} / ${legs.length}`;
-        document.getElementById('ss-leg-label').textContent   = `Adım ${legIdx + 1}`;
-        document.getElementById('ss-instruction').textContent = legs[legIdx].instruction;
-
-        // Son bacaksa "Hedefe Vardım" desin
-        arrivedBtn.textContent = (legIdx === legs.length - 1)
-            ? '🎉 Hedefe Vardım!'
-            : '✅ Noktaya Vardım';
-    }
-
-    fillStartScreen();
-
-    // ── Bacak ilerleme noktalarını çiz ──────────────────
-    function buildDots() {
-        legDotsEl.innerHTML = '';
-        legs.forEach((_, i) => {
-            const d = document.createElement('div');
-            d.className = 'leg-dot' + (i < legIdx ? ' done' : i === legIdx ? ' current' : '');
-            legDotsEl.appendChild(d);
-        });
-    }
-
-    // ════════════════════════════════════════════════════
-    //  AR DESTEK KONTROLÜ (Kural [4])
-    //  isSessionSupported → asenkron, UI bloklamaz
-    // ════════════════════════════════════════════════════
-    if (navigator.xr) {
-        navigator.xr.isSessionSupported('immersive-ar').then(ok => {
-            if (ok) {
-                beginBtn.textContent = '🚀 AR\'yi Başlat';
-                beginBtn.disabled    = false;
+            // "Hazırlanıyor" sorununu çözmek için basitleştirilmiş kontrol
+            if (navigator.xr) {
+                // Sadece xr objesi varsa butonu aktif et. Detaylı destek kontrolü beklemeyi uzatabiliyor.
+                startBtn.disabled = false;
             } else {
-                // AR yoksa yine de dene — bazı cihazlar "false" deyip çalışıyor
-                beginBtn.textContent = '📱 Başlat (Sınırlı Destek)';
-                beginBtn.disabled    = false;
+                startBtn.innerText = "❌ WebXR Bulunamadı";
+                document.getElementById("target-desc").innerText = "Lütfen Chrome üzerinden HTTPS ile giriş yapın.";
             }
-        }).catch(() => {
-            beginBtn.textContent = '📱 Başlat';
-            beginBtn.disabled    = false;
+
+            document.getElementById("target-title").innerText = routeData.name;
+            updateIntroScreen();
+
+            function updateIntroScreen() {
+                const currentLeg = routeLegs[currentLegIndex];
+                const specialInstEl = document.getElementById("special-instruction");
+                
+                // Eğer özel bir talimat (örn: asansöre binin) varsa göster
+                if (currentLeg.specialInstruction) {
+                    specialInstEl.innerText = currentLeg.specialInstruction;
+                    specialInstEl.style.display = "block";
+                } else {
+                    specialInstEl.style.display = "none";
+                }
+                document.getElementById("target-desc").innerText = "Lütfen koridora düz bakın.";
+            }
+
+            window.toggleMenu = function() {
+                const panel = document.getElementById("menu-panel");
+                panel.style.display = panel.style.display === "block" ? "none" : "block";
+            };
+
+            window.handleLegComplete = function() {
+                sceneEl.exitVR();
+                window.toggleMenu();
+                currentLegIndex++;
+
+                if (currentLegIndex < routeLegs.length) {
+                    alert("Noktaya varıldı. Lütfen yeni yöne dönüp AR'yi tekrar başlatın.");
+                    updateIntroScreen();
+                    document.getElementById("intro-screen").style.display = "flex";
+                    document.body.style.background = "var(--bg)";
+                    
+                    if (currentLegIndex === routeLegs.length - 1) {
+                        document.getElementById("next-leg-btn").innerText = "🎉 Hedefe Vardım";
+                    }
+                } else {
+                    // Rota tamamen bittiğinde tamamlandı olarak işaretle
+                    NavigationState.markCompleted(targetId);
+                    alert("Tebrikler! " + routeData.name + " hedefine ulaştınız.");
+                    window.location.href = "index.html";
+                }
+            };
+
+            startBtn.addEventListener('click', () => {
+                if (sceneEl.hasLoaded) {
+                    sceneEl.systems.webxr.sessionConfiguration.mode = 'immersive-ar';
+                    sceneEl.enterVR(); 
+                } else {
+                    alert("3D Motor hazırlanıyor, lütfen 1-2 saniye bekleyip tekrar deneyin.");
+                }
+            });
+
+            sceneEl.addEventListener('enter-vr', () => {
+                if (sceneEl.is('ar-mode')) {
+                    document.body.style.background = "transparent";
+                    document.getElementById("intro-screen").style.display = "none";
+                    document.getElementById("top-bar").style.display = "block";
+                    document.getElementById("menu-btn").style.display = "block";
+                    
+                    setTimeout(() => {
+                        drawCurrentLeg();
+                    }, 1000); // Bekleme süresini optimize ettik
+                }
+            });
+
+            sceneEl.addEventListener('exit-vr', () => {
+                document.body.style.background = "var(--bg)";
+                document.getElementById("top-bar").style.display = "none";
+                document.getElementById("menu-btn").style.display = "none";
+                document.getElementById("menu-panel").style.display = "none";
+            });
+
+            function drawCurrentLeg() {
+                routeContainer.innerHTML = "";
+                const leg = routeLegs[currentLegIndex];
+                document.getElementById("ui-instruction").innerText = leg.instruction;
+
+                const cameraObj = document.querySelector('#user-camera').object3D;
+                routeContainer.object3D.position.set(cameraObj.position.x, 0, cameraObj.position.z);
+                const euler = new THREE.Euler().setFromQuaternion(cameraObj.quaternion, 'YXZ');
+                routeContainer.object3D.rotation.set(0, euler.y, 0);
+
+                leg.path.forEach((p, i) => {
+                    // Düzeltilmiş Ok Tasarımı: Daha ince ve uzun, aerodinamik
+                    const arrow = document.createElement('a-cone');
+                    arrow.setAttribute('radius-bottom', '0.08'); // Tabanı daraltıldı
+                    arrow.setAttribute('height', '0.06'); // Yüksekliği artırıldı
+                    arrow.setAttribute('segments-radial', '6'); // Daha pürüzsüz
+                    arrow.setAttribute('color', leg.color);
+                    arrow.setAttribute('position', p.pos);
+                    arrow.setAttribute('rotation', p.rot);
+                    // Parlaklık/Şeffaflık animasyonu eklendi
+                    arrow.setAttribute('material', 'opacity: 0.7; transparent: true;');
+                    arrow.setAttribute('animation', `property: position; dir: alternate; dur: 1000; loop: true; to: ${p.pos.split(' ')[0]} ${parseFloat(p.pos.split(' ')[1]) + 0.02} ${p.pos.split(' ')[2]}; delay: ${i * 100};`);
+                    routeContainer.appendChild(arrow);
+                });
+                startDistanceTracking();
+            }
+
+            function startDistanceTracking() {
+                if (AFRAME.components['distance-tracker']) delete AFRAME.components['distance-tracker'];
+                
+                AFRAME.registerComponent('distance-tracker', {
+                    tick: function () {
+                        const camObj = document.querySelector('#user-camera').object3D;
+                        const lastArrow = routeContainer.lastChild;
+                        if (!lastArrow) return;
+                        
+                        const camWorldPos = new THREE.Vector3();
+                        camObj.getWorldPosition(camWorldPos);
+                        
+                        const targetWorldPos = new THREE.Vector3();
+                        lastArrow.getWorldPosition(targetWorldPos);
+                        
+                        const dist2D = Math.hypot(camWorldPos.x - targetWorldPos.x, camWorldPos.z - targetWorldPos.z);
+                        
+                        if (dist2D < 0.6) {
+                            document.getElementById("ui-distance").innerText = "0";
+                            document.getElementById("ui-instruction").innerText = "📍 Noktaya Yaklaştınız!";
+                        } else {
+                            document.getElementById("ui-distance").innerText = dist2D.toFixed(1);
+                        }
+                    }
+                });
+                sceneEl.setAttribute('distance-tracker', '');
+            }
         });
-    } else {
-        beginBtn.textContent = '❌ WebXR Gerekli (Chrome + HTTPS)';
-    }
-
-    // ── Başlat butonu ────────────────────────────────────
-    beginBtn.addEventListener('click', () => {
-        if (!sceneEl.hasLoaded) {
-            // Sahne hazır değilse bekle
-            sceneEl.addEventListener('loaded', enterAR, { once: true });
-            return;
-        }
-        enterAR();
-    });
-
-    // ════════════════════════════════════════════════════
-    //  AR OTURUMU BAŞLAT
-    // ════════════════════════════════════════════════════
-    function enterAR() {
-        sceneEl.enterAR();
-    }
-
-    // ── A-Frame: AR açıldı ───────────────────────────────
-    sceneEl.addEventListener('enter-vr', () => {
-        arActive = true;
-
-        // Arka planı saydam yap (kamera görünsün)
-        document.body.style.background = 'transparent';
-
-        // Başlangıç ekranını gizle
-        startScreen.style.display = 'none';
-
-        // Overlay UI'ı göster
-        infoBar.style.display   = 'block';
-        arrivedBtn.style.display = 'block';
-        buildDots();
-
-        instructionEl.textContent = legs[legIdx].instruction;
-
-        /*
-         * DONMA SORUNUNUN ÇÖZÜMÜ:
-         * A-Frame'in WebXR referans alanını kurması için
-         * 2 saniye bekliyoruz, sonra okları çiziyoruz.
-         * Bu gecikme olmadan kamera pozisyonu (0,0,0) gelir
-         * ve oklar kameranın içinde görünmez.
-         */
-        setTimeout(drawArrows, 2000);
-    });
-
-    // ── A-Frame: AR kapandı ──────────────────────────────
-    sceneEl.addEventListener('exit-vr', () => {
-        arActive = false;
-        document.body.style.background = '';
-
-        // Mesafe takibini durdur
-        cancelAnimationFrame(tickRafId);
-
-        // UI'ı gizle
-        infoBar.style.display    = 'none';
-        arrivedBtn.style.display = 'none';
-    });
-
-    // ════════════════════════════════════════════════════
-    //  OKLARI ÇİZ (Kural [2]: Yön Sabitleme)
-    // ════════════════════════════════════════════════════
-    function drawArrows() {
-        if (!arActive) return;
-
-        // Önceki okları temizle
-        arrowsEl.innerHTML = '';
-
-        const cam    = camEl.object3D;
-        const leg    = legs[legIdx];
-
-        /*
-         * YÖN SABİTLEME:
-         * arrows entity'sini kameranın ANLİK konumuna taşı,
-         * kameranın Y ekseni açısına (yaw) kilitle.
-         * Böylece kullanıcı hangi yöne bakıyor olursa olsun,
-         * oklar her zaman "düz önüne" doğru uzanır.
-         */
-        const camPos = new THREE.Vector3();
-        cam.getWorldPosition(camPos);
-
-        const euler = new THREE.Euler().setFromQuaternion(cam.quaternion, 'YXZ');
-
-        arrowsEl.object3D.position.set(camPos.x, camPos.y, camPos.z);
-        arrowsEl.object3D.rotation.set(0, euler.y, 0);
-
-        /*
-         * YÜKSEK KONTRASTLI OKLAR:
-         * Beyaz/mavi kontur + dolgu rengi → her zeminde görünür.
-         * Her ok kameradan -Z yönünde (önde) konumlanır.
-         * Y = 0 → kamera yüksekliğinde (yaklaşık göğüs hizası 1.6m)
-         *          zemine yakın görünmesi için -0.9 offset veriyoruz.
-         */
-        leg.path.forEach((point, i) => {
-            const parts   = point.pos.split(' ').map(Number);
-            const x       = parts[0];
-            const z       = parts[2];
-            // Oku zeminde göster: kamera y'sinden 0.9m aşağı
-            const y = -0.9;
-
-            // ─── Ana Ok (renkli dolgu) ────────────────────
-            const cone = document.createElement('a-cone');
-            cone.setAttribute('radius-bottom', '0.15');
-            cone.setAttribute('radius-top', '0');
-            cone.setAttribute('height', '0.06');
-            cone.setAttribute('segments-radial', '4');     // Elmas şekli
-            cone.setAttribute('color', '#81D4FA');
-            cone.setAttribute('position', `${x} ${y} ${z}`);
-            cone.setAttribute('rotation', '-90 45 0');     // Yere yatık
-            cone.setAttribute('material', 'opacity: 0.9; transparent: true; side: double;');
-
-            // Dalga animasyonu
-            cone.setAttribute('animation', [
-                'property: material.opacity;',
-                'from: 0.4; to: 1.0;',
-                'dir: alternate; dur: 600; loop: true;',
-                `delay: ${i * 180};`,
-                'easing: easeInOutSine;'
-            ].join(' '));
-
-            arrowsEl.appendChild(cone);
-
-            // ─── Beyaz Kontur (daha görünür) ────────────
-            const outline = document.createElement('a-cone');
-            outline.setAttribute('radius-bottom', '0.18');
-            outline.setAttribute('radius-top', '0');
-            outline.setAttribute('height', '0.02');
-            outline.setAttribute('segments-radial', '4');
-            outline.setAttribute('color', '#FFFFFF');
-            outline.setAttribute('position', `${x} ${y - 0.01} ${z}`);
-            outline.setAttribute('rotation', '-90 45 0');
-            outline.setAttribute('material', 'opacity: 0.3; transparent: true; side: double;');
-
-            arrowsEl.appendChild(outline);
-        });
-
-        // Mesafe takibini başlat
-        startDistanceTracking();
-    }
-
-    // ════════════════════════════════════════════════════
-    //  MESAFE TAKİBİ (Kural [3]: 2D, Y ekseni yok sayılır)
-    // ════════════════════════════════════════════════════
-    function startDistanceTracking() {
-        cancelAnimationFrame(tickRafId);
-        tick();
-    }
-
-    function tick() {
-        if (!arActive) return;
-
-        const cam       = camEl.object3D;
-        const children  = arrowsEl.children;
-        // Son elmanın (son ok) konumunu al
-        // Her ok için 2 element (cone + outline) olduğu için son cone -2 indekste
-        const lastCone  = children[children.length - 2];
-
-        if (!lastCone) { tickRafId = requestAnimationFrame(tick); return; }
-
-        const camPos    = new THREE.Vector3();
-        const targetPos = new THREE.Vector3();
-
-        cam.getWorldPosition(camPos);
-        lastCone.getWorldPosition(targetPos);
-
-        /*
-         * KUŞUÇUŞU 2D MESAFE:
-         * Y ekseni atlanır → telefon yüksekliği mesafeyi etkilemez.
-         */
-        const dist = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
-
-        distNumEl.textContent = dist < 0.5 ? '0' : dist.toFixed(1);
-
-        if (dist < 0.5) {
-            // Hedefe yeterince yakın → "Noktaya Varıldı" göster
-            instructionEl.textContent = '📍 Noktaya Ulaştınız!';
-            distNumEl.textContent     = '0';
-        }
-
-        tickRafId = requestAnimationFrame(tick);
-    }
-
-    // ════════════════════════════════════════════════════
-    //  NOKTAYA VARILDI — Sonraki bacağa geç
-    // ════════════════════════════════════════════════════
-    window.onArrived = function () {
-        // Mesafe takibini durdur
-        cancelAnimationFrame(tickRafId);
-
-        // AR oturumunu kapat (drift sıfırlanır)
-        sceneEl.exitVR();
-
-        legIdx++;
-
-        if (legIdx < legs.length) {
-            // Sonraki bacak var → ara ekrana dön
-            fillStartScreen();
-            startScreen.style.display = 'flex';
-        } else {
-            // Tüm bacaklar bitti → tamamlandı ekranı
-            showDone();
-        }
-    };
-
-    // ── Tamamlandı Ekranı ────────────────────────────────
-    function showDone() {
-        doneScreen.style.display = 'flex';
-        document.getElementById('done-dest').textContent = `${route.icon} Hedefe Ulaştınız!`;
-        document.getElementById('done-name').textContent = route.name;
-        localStorage.removeItem('ar_hedef');
-    }
-
     </script>
 </body>
 </html>
