@@ -248,6 +248,7 @@
 
     <!-- ══ A-FRAME ══ -->
     <a-scene xr-mode-ui="enabled: false"
+             webxr="optionalFeatures: dom-overlay; overlayElement: #overlay"
              device-orientation-permission-ui="enabled: false"
              renderer="antialias: true; alpha: true"
              background="transparent: true">
@@ -401,14 +402,23 @@
         turnOverlay.classList.remove('visible');
     });
 
+    function parsePos(ptObj) {
+        if (!ptObj || !ptObj.pos) return {x: 0, y: 0, z: 0};
+        const p = ptObj.pos.split(' ').map(Number);
+        return {x: p[0] || 0, y: p[1] || 0, z: p[2] || 0};
+    }
+
     function drawArrows() {
         arrowsEl.innerHTML = '';
         const leg = legs[legIdx];
         if (!leg || !leg.path) { tickRafId = requestAnimationFrame(tick); return; }
 
-        leg.path.forEach((pt, i) => {
+        leg.path.forEach((ptObj, i) => {
             if (i === 0) return;
-            const prev = leg.path[i - 1];
+            const prevObj = leg.path[i - 1];
+            
+            const pt = parsePos(ptObj);
+            const prev = parsePos(prevObj);
             
             const dx = pt.x - prev.x;
             const dz = pt.z - prev.z;
