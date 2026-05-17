@@ -3,574 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hastane AR Navigasyon</title>
+    <title>Tarsus Devlet Hastanesi — AR Navigasyon</title>
+    <meta name="description" content="Tarsus Devlet Hastanesi artırılmış gerçeklik ile engelsiz yönlendirme sistemi">
     <script src="config.js"></script>
     <style>
         :root {
-            --accent:      #81D4FA;
-            --accent-dim:  rgba(129,212,250,0.12);
-            --accent-glow: rgba(129,212,250,0.28);
-            --bg:          #0D1117;
-            --card:        #161C26;
-            --card-done:   #0F1318;
-            --card-locked: #12181F;
-            --border:      rgba(129,212,250,0.2);
-            --text:        #E6EDF3;
-            --muted:       #6B7A8D;
-            --done-text:   #3A4450;
-            --radius:      16px;
+            --accent: #00C896;
+            --accent-dark: #00A87A;
+            --accent-dim: rgba(0,200,150,0.08);
+            --accent-border: rgba(0,200,150,0.25);
+            --accent-glow: rgba(0,200,150,0.35);
+            --blue: #0055EE;
+            --bg: #080F1C;
+            --bg-deep: #050E1A;
+            --card: rgba(255,255,255,0.04);
+            --card-border: rgba(255,255,255,0.08);
+            --text: #fff;
+            --text-dim: rgba(255,255,255,0.45);
+            --text-muted: rgba(255,255,255,0.25);
+            --danger: #FF3B5C;
+            --radius: 18px;
         }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ── App Screens ── */
+        .app-screen{display:none;flex-direction:column;min-height:100vh;position:relative}
+        .app-screen.active{display:flex}
 
-        body {
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
+        /* ══ SCREEN 1 — KARŞILAMA ══ */
+        #screen-welcome{
+            align-items:center;justify-content:center;padding:32px 28px;text-align:center;
+            background:linear-gradient(160deg,#0B1E38 0%,#071626 70%,var(--bg-deep) 100%);
         }
+        .s1-glow{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,200,150,0.13) 0%,transparent 70%);top:38%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .logo-wrap{position:relative;z-index:1;width:88px;height:88px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;box-shadow:0 12px 36px var(--accent-glow);margin-bottom:22px}
+        .s1-title{position:relative;z-index:1;font-size:24px;font-weight:800;letter-spacing:-0.4px;margin-bottom:8px}
+        .s1-tagline{position:relative;z-index:1;color:var(--text-dim);font-size:13px;line-height:1.55;margin-bottom:36px}
+        .hospital-pill{position:relative;z-index:1;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:13px 18px;width:100%;max-width:340px;margin-bottom:20px}
+        .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 8px rgba(0,200,150,0.9);animation:pulse-glow 2s infinite}
+        @keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(0,200,150,0.9)}50%{box-shadow:0 0 16px rgba(0,200,150,0.4)}}
+        .hospital-pill span{color:rgba(255,255,255,0.75);font-size:13px;font-weight:500}
+        .route-preview{position:relative;z-index:1;display:flex;align-items:center;gap:8px;background:var(--accent-dim);border:1px solid rgba(0,200,150,0.18);border-radius:12px;padding:10px 14px;width:100%;max-width:340px;margin-bottom:28px}
+        .route-preview span{color:var(--accent);font-size:12px;font-weight:600}
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: -10%; left: 50%;
-            transform: translateX(-50%);
-            width: 100vw; height: 50vh;
-            background: radial-gradient(ellipse, rgba(129,212,250,0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* ══ SCREEN 2 — ROTA LİSTESİ ══ */
+        #screen-routes{background:var(--bg)}
+        .s2-topbar{padding:48px 20px 14px}
+        .s2-top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .s2-page-title{font-size:20px;font-weight:800;letter-spacing:-0.3px}
+        .s2-progress-badge{background:rgba(0,200,150,0.12);border:1px solid var(--accent-border);border-radius:10px;padding:6px 12px;color:var(--accent);font-size:12px;font-weight:700}
+        .s2-progress-track{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden}
+        .s2-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:3px;transition:width 0.5s}
+        .s2-list{flex:1;padding:8px 20px 120px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+        .cat-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-dim);padding:14px 0 6px;display:flex;align-items:center;gap:8px}
+        .cat-header::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
 
-        /* ── Header ─────────────────────────────── */
-        header {
-            position: relative; z-index: 1;
-            padding: 52px 24px 20px;
-            text-align: center;
-        }
+        /* Route Card */
+        .route-card{display:flex;align-items:center;gap:14px;border-radius:var(--radius);padding:16px;border:1.5px solid;position:relative;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+        .route-card.state-next{background:var(--accent-dim);border-color:rgba(0,200,150,0.35)}
+        .route-card.state-locked{background:var(--card);border-color:var(--card-border);opacity:0.6;cursor:not-allowed}
+        .route-card.state-done{background:rgba(0,200,150,0.05);border-color:rgba(0,200,150,0.15);opacity:0.7}
+        .route-card.state-passive{background:var(--card);border-color:var(--card-border);opacity:0.4;cursor:default;pointer-events:none}
+        .route-card.state-next:active{transform:scale(0.98)}
+        .rc-icon-wrap{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem}
+        .state-next .rc-icon-wrap{background:rgba(0,200,150,0.18);border:1px solid rgba(0,200,150,0.3)}
+        .state-locked .rc-icon-wrap,.state-passive .rc-icon-wrap{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08)}
+        .state-done .rc-icon-wrap{background:rgba(0,200,150,0.12);border:1px solid rgba(0,200,150,0.2)}
+        .rc-info{flex:1;min-width:0}
+        .rc-name{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .state-next .rc-name{color:#fff}
+        .state-locked .rc-name,.state-passive .rc-name{color:var(--text-dim)}
+        .state-done .rc-name{color:rgba(255,255,255,0.6)}
+        .rc-loc{font-size:11px}
+        .state-next .rc-loc{color:var(--text-dim)}
+        .state-locked .rc-loc,.state-passive .rc-loc{color:var(--text-muted)}
+        .state-done .rc-loc{color:rgba(255,255,255,0.3)}
+        .rc-badge{font-size:11px;font-weight:700;padding:5px 10px;border-radius:9px;flex-shrink:0;white-space:nowrap}
+        .state-next .rc-badge{background:rgba(0,200,150,0.18);color:var(--accent);border:1px solid rgba(0,200,150,0.3)}
+        .state-locked .rc-badge{background:rgba(255,255,255,0.05);color:var(--text-muted);border:1px solid rgba(255,255,255,0.08)}
+        .state-done .rc-badge{background:rgba(0,200,150,0.1);color:rgba(0,200,150,0.6);border:1px solid rgba(0,200,150,0.15)}
+        .state-passive .rc-badge{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid rgba(255,255,255,0.06);font-size:10px}
 
-        .header-icon { font-size: 2.6rem; display: block; margin-bottom: 10px; }
+        /* ══ SCREEN 3 — ROTA ONAYI ══ */
+        #screen-confirm{background:var(--bg)}
+        .s3-header{display:flex;align-items:center;gap:12px;padding:48px 20px 14px}
+        .s3-header-title{font-size:17px;font-weight:700}
+        .back-btn{width:48px;height:48px;border-radius:13px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;color:rgba(255,255,255,0.65);font-size:20px;-webkit-tap-highlight-color:transparent}
+        .back-btn:active{opacity:0.7}
+        .map-area{margin:0 20px;height:170px;border-radius:20px;background:linear-gradient(135deg,#0C2040,#091830);border:1px solid rgba(255,255,255,0.07);position:relative;overflow:hidden}
+        .map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,150,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.08) 1px,transparent 1px);background-size:22px 22px}
+        .map-floor{position:absolute;top:10px;left:14px;background:rgba(0,200,150,0.12);border:1px solid var(--accent-border);border-radius:7px;padding:4px 9px;color:var(--accent);font-size:11px;font-weight:700}
+        .route-path{position:absolute;top:50%;left:14%;right:14%;height:3px;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:2px;box-shadow:0 0 10px rgba(0,200,150,0.7);transform:translateY(-50%)}
+        .dot-start{position:absolute;left:14%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--accent);border:2.5px solid #fff;box-shadow:0 0 10px rgba(0,200,150,0.8)}
+        .dot-end{position:absolute;right:14%;top:50%;transform:translate(50%,-50%);width:18px;height:18px;border-radius:50%;background:var(--danger);border:2.5px solid #fff;box-shadow:0 0 14px rgba(255,59,92,0.8)}
+        .s3-dest-card{margin:14px 20px 0;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px}
+        .s3-dest-icon{width:48px;height:48px;border-radius:14px;background:rgba(0,200,150,0.12);border:1px solid rgba(0,200,150,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.5rem}
+        .s3-dest-name{font-size:15px;font-weight:700;margin-bottom:3px}
+        .s3-dest-sub{color:var(--text-dim);font-size:12px}
+        .stats-row{display:flex;gap:10px;margin:12px 20px 0}
+        .stat-box{flex:1;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:13px 10px;text-align:center}
+        .stat-box .sv{color:var(--accent);font-size:19px;font-weight:800}
+        .stat-box .sk{color:rgba(255,255,255,0.38);font-size:11px;margin-top:3px}
+        .access-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 20px 0}
+        .access-chip{display:flex;align-items:center;gap:5px;background:var(--accent-dim);border:1px solid rgba(0,200,150,0.18);border-radius:9px;padding:6px 11px;color:var(--accent);font-size:11px;font-weight:600}
+        .s3-actions{padding:14px 20px 36px;display:flex;flex-direction:column;gap:9px;margin-top:auto}
 
-        h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 4px; }
+        /* ── Shared Button Styles ── */
+        .btn-primary{width:100%;padding:18px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));border:none;border-radius:var(--radius);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px var(--accent-glow);-webkit-tap-highlight-color:transparent;transition:transform 0.15s}
+        .btn-primary:active{transform:scale(0.97)}
+        .btn-secondary{width:100%;padding:15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;color:rgba(255,255,255,0.6);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .btn-secondary:active{opacity:0.7}
 
-        .header-sub { font-size: 0.82rem; color: var(--muted); }
+        /* ── Bottom fixed bar ── */
+        .s2-bottom{position:fixed;bottom:0;left:0;right:0;padding:16px 20px 28px;background:linear-gradient(to top,var(--bg) 60%,transparent);z-index:10}
 
-        /* AR Destek badge */
-        #ar-badge {
-            position: relative; z-index: 1;
-            display: flex; align-items: center; gap: 8px;
-            margin: 4px 24px 20px;
-            padding: 9px 14px;
-            border-radius: 10px;
-            font-size: 0.78rem;
-            background: rgba(255,255,255,0.03);
-            color: var(--muted);
-            transition: all 0.3s;
-        }
-        #ar-badge.ok   { background: rgba(129,212,250,0.09); color: var(--accent); border: 1px solid var(--border); }
-        #ar-badge.fail { background: rgba(239,100,100,0.09); color: #F97583;       border: 1px solid rgba(239,100,100,0.3); }
-        .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+        /* ── Lock Toast ── */
+        #lock-toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:#1E2530;border:1px solid rgba(255,180,0,0.3);color:#FFD580;font-size:0.82rem;padding:10px 18px;border-radius:10px;opacity:0;transition:opacity 0.25s,transform 0.25s;z-index:100;text-align:center;pointer-events:none;white-space:nowrap}
+        #lock-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-        /* ── Görev İlerleme ─────────────────────── */
-        .progress-bar-wrap {
-            position: relative; z-index: 1;
-            margin: 0 24px 20px;
-            padding: 14px 16px;
-            background: var(--card);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .progress-label span:first-child {
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .progress-label span:last-child {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .progress-track {
-            height: 4px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 2px;
-            transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
-            box-shadow: 0 0 8px var(--accent-glow);
-        }
-
-        /* ── Kart Listesi ───────────────────────── */
-        .section-label {
-            position: relative; z-index: 1;
-            padding: 0 24px 10px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--muted);
-        }
-
-        #dest-list {
-            position: relative; z-index: 1;
-            flex: 1;
-            padding: 0 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-bottom: 16px;
-        }
-
-        /* ─ Kart Base ─ */
-        .dest-card {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 18px;
-            background: var(--card);
-            border: 1.5px solid transparent;
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s, opacity 0.3s;
-            -webkit-tap-highlight-color: transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Görev sıra çizgisi (sol kenar) */
-        .dest-card::after {
-            content: '';
-            position: absolute;
-            left: 0; top: 16px; bottom: 16px;
-            width: 3px;
-            border-radius: 0 2px 2px 0;
-            background: transparent;
-            transition: background 0.2s;
-        }
-        .dest-card.active-next::after { background: var(--accent); }
-
-        /* Seçili kart parlama efekti */
-        .dest-card.selected {
-            border-color: var(--accent);
-            background: var(--accent-dim);
-        }
-
-        .dest-card.selected::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1.5px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        }
-
-        .dest-card:active:not(.done):not(.locked) { opacity: 0.75; }
-
-        /* ─ Tamamlanmış Kart ─ */
-        .dest-card.done {
-            cursor: default;
-            background: var(--card-done);
-            border-color: rgba(255,255,255,0.04);
-            opacity: 0.45;
-        }
-
-        .dest-card.done .dest-name  { color: var(--done-text); }
-        .dest-card.done .dest-desc  { color: var(--done-text); }
-        .dest-card.done .dest-emoji { filter: grayscale(1); }
-
-        /* ─ Kilitli Kart ─ */
-        .dest-card.locked {
-            cursor: not-allowed;
-            background: var(--card-locked);
-            border-color: rgba(255,255,255,0.03);
-            opacity: 0.38;
-        }
-
-        .dest-card.locked .dest-name { color: var(--muted); }
-        .dest-card.locked .dest-desc { color: var(--done-text); }
-        .dest-card.locked .dest-emoji { filter: grayscale(0.8); }
-
-        /* Tamamlandı / Kilitli rozeti */
-        .done-badge {
-            display: none;
-            font-size: 0.7rem;
-            color: #3d8c4c;
-            background: rgba(60,180,80,0.12);
-            border: 1px solid rgba(60,180,80,0.25);
-            border-radius: 6px;
-            padding: 3px 8px;
-            white-space: nowrap;
-        }
-        .dest-card.done .done-badge { display: inline-block; }
-
-        .locked-badge {
-            display: none;
-            font-size: 0.68rem;
-            color: var(--muted);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 6px;
-            padding: 3px 8px;
-            white-space: nowrap;
-        }
-        .dest-card.locked .locked-badge { display: inline-block; }
-
-        .dest-card.done .leg-count,
-        .dest-card.done .dest-check  { display: none; }
-        .dest-card.locked .leg-count { display: none; }
-        .dest-card.locked .dest-check { display: none; }
-
-        /* Görev numarası chip */
-        .task-chip {
-            position: absolute;
-            top: 10px; right: 12px;
-            font-size: 0.62rem;
-            font-weight: 700;
-            color: var(--muted);
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            padding: 2px 7px;
-            letter-spacing: 0.05em;
-        }
-
-        .dest-emoji { font-size: 1.9rem; flex-shrink: 0; }
-        .dest-info  { flex: 1; min-width: 0; }
-
-        .dest-name {
-            font-size: 0.98rem;
-            font-weight: 700;
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding-right: 60px; /* task-chip'i aşma */
-        }
-
-        .dest-desc { font-size: 0.75rem; color: var(--muted); }
-
-        .dest-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .leg-count {
-            font-size: 0.72rem;
-            color: var(--muted);
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            padding: 3px 8px;
-        }
-
-        .dest-check {
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.14);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.7rem;
-            color: transparent;
-            transition: all 0.2s;
-        }
-
-        .dest-card.selected .dest-check {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #000;
-        }
-
-        /* Sıradaki durak etiketi */
-        .next-label {
-            display: none;
-            font-size: 0.68rem;
-            font-weight: 700;
-            color: var(--accent);
-            background: var(--accent-dim);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 3px 8px;
-            white-space: nowrap;
-        }
-        .dest-card.active-next .next-label { display: inline-block; }
-        .dest-card.active-next .leg-count  { display: none; }
-
-        /* ── Başlat Butonu ──────────────────────── */
-        .bottom-bar {
-            position: sticky;
-            bottom: 0; left: 0; right: 0;
-            padding: 18px 24px 36px;
-            background: linear-gradient(to top, var(--bg) 60%, transparent);
-            z-index: 10;
-        }
-
-        #start-btn {
-            width: 100%;
-            padding: 17px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px var(--accent-glow);
-            transition: opacity 0.2s, transform 0.15s;
-        }
-
-        #start-btn:disabled {
-            opacity: 0.28;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        #start-btn:not(:disabled):active { transform: scale(0.97); }
-
-        /* ── Filigran ───────────────────────────── */
-        .watermark {
-            position: fixed;
-            bottom: 8px; right: 10px;
-            font-size: 0.62rem;
-            color: rgba(255,255,255,0.1);
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* ── Kilitli uyarı toast ────────────────── */
-        #lock-toast {
-            position: fixed;
-            bottom: 110px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: #1E2530;
-            border: 1px solid rgba(255,180,0,0.3);
-            color: #FFD580;
-            font-size: 0.82rem;
-            padding: 10px 18px;
-            border-radius: 10px;
-            opacity: 0;
-            transition: opacity 0.25s, transform 0.25s;
-            z-index: 100;
-            text-align: center;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        #lock-toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        /* ── Watermark ── */
+        .watermark{position:fixed;bottom:8px;right:10px;font-size:0.62rem;color:rgba(255,255,255,0.1);pointer-events:none;z-index:9999}
     </style>
 </head>
 <body>
 
-    <header>
-        <span class="header-icon">🏥</span>
-        <h1>Hastane AR Navigasyon</h1>
-        <p class="header-sub">Artırılmış Gerçeklik Yönlendirme Sistemi</p>
-    </header>
-
-    <!-- AR Destek Durumu -->
-    <div id="ar-badge">
-        <div class="badge-dot"></div>
-        <span id="ar-badge-text">AR desteği kontrol ediliyor...</span>
-    </div>
-
-    <!-- Görev İlerleme -->
-    <div class="progress-bar-wrap">
-        <div class="progress-label">
-            <span>Görev İlerlemesi</span>
-            <span id="progress-text">0 / 4 Tamamlandı</span>
+    <!-- ══ SCREEN 1 — KARŞILAMA ══ -->
+    <div id="screen-welcome" class="app-screen active">
+        <div class="s1-glow"></div>
+        <div class="logo-wrap">
+            <svg width="46" height="46" viewBox="0 0 52 52" fill="none"><rect x="22" y="6" width="8" height="40" rx="4" fill="white"/><rect x="6" y="22" width="40" height="8" rx="4" fill="white"/></svg>
         </div>
-        <div class="progress-track">
-            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        <h1 class="s1-title">Hastane AR<br>Navigasyon</h1>
+        <p class="s1-tagline">Artırılmış gerçeklik ile<br>güvenli ve bağımsız yönlenme</p>
+        <div class="hospital-pill">
+            <div class="pulse-dot"></div>
+            <span>Tarsus Devlet Hastanesi</span>
+        </div>
+        <div class="route-preview">
+            <span id="route-preview-text"></span>
+        </div>
+        <button class="btn-primary" id="btn-start-nav">Navigasyona Başla</button>
+    </div>
+
+    <!-- ══ SCREEN 2 — ROTA LİSTESİ ══ -->
+    <div id="screen-routes" class="app-screen">
+        <div class="s2-topbar">
+            <div class="s2-top-row">
+                <div class="s2-page-title">Rotalar</div>
+                <div class="s2-progress-badge" id="s2-progress-badge">0 / 4 Tamamlandı</div>
+            </div>
+            <div class="s2-progress-track">
+                <div class="s2-progress-fill" id="s2-progress-fill"></div>
+            </div>
+        </div>
+        <div class="s2-list" id="route-list"></div>
+        <div class="s2-bottom">
+            <button class="btn-primary" id="btn-go-route" disabled>Rota Seçin</button>
         </div>
     </div>
 
-    <p class="section-label">Hedef Seçin</p>
-
-    <div id="dest-list"></div>
-
-    <div class="bottom-bar">
-        <button id="start-btn" disabled>Hedef seçin</button>
+    <!-- ══ SCREEN 3 — ROTA ONAYI ══ -->
+    <div id="screen-confirm" class="app-screen">
+        <div class="s3-header">
+            <div class="back-btn" id="btn-confirm-back">←</div>
+            <div class="s3-header-title">Rota Detayı</div>
+        </div>
+        <div class="map-area">
+            <div class="map-grid"></div>
+            <div class="map-floor" id="s3-floor"></div>
+            <div class="route-path"></div>
+            <div class="dot-start"></div>
+            <div class="dot-end"></div>
+        </div>
+        <div class="s3-dest-card">
+            <div class="s3-dest-icon" id="s3-icon"></div>
+            <div>
+                <div class="s3-dest-name" id="s3-name"></div>
+                <div class="s3-dest-sub" id="s3-desc"></div>
+            </div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-box"><div class="sv" id="s3-distance">—</div><div class="sk">Mesafe</div></div>
+            <div class="stat-box"><div class="sv" id="s3-time">—</div><div class="sk">Süre</div></div>
+            <div class="stat-box"><div class="sv" id="s3-turns">—</div><div class="sk">Dönüş</div></div>
+        </div>
+        <div class="access-row">
+            <div class="access-chip">♿ Engelsiz</div>
+            <div class="access-chip" id="s3-elevator-chip" style="display:none">🛗 Asansör</div>
+        </div>
+        <div class="s3-actions">
+            <button class="btn-primary" id="btn-start-ar">🚀 Navigasyonu Başlat</button>
+            <button class="btn-secondary" id="btn-diff-route">Farklı Rota Seç</button>
+        </div>
     </div>
 
-    <div id="lock-toast">🔒 Önce sıradaki durağı tamamlayın</div>
-
+    <div id="lock-toast">🔒 Önce sıradaki rotayı tamamlayın</div>
     <div class="watermark">by Arda24</div>
 
     <script>
-    /**
-     * index.html — Sıralı Durak Seçimi
-     *
-     * - Duraklar sırayla açılır; önceki tamamlanmadan sonraki kilitli.
-     * - Tamamlananlar en alta taşınır, tıklanamaz.
-     * - Durum sessionStorage'da tutulur → sekme/tarayıcı kapanınca sıfırlanır.
-     */
-
+    /* ── sessionStorage — Sıralı Kilit Sistemi ── */
     const STORAGE_KEY = 'ar_completed_routes';
 
     function loadCompleted() {
-        try {
-            const raw = sessionStorage.getItem(STORAGE_KEY);
-            return new Set(raw ? JSON.parse(raw) : []);
-        } catch { return new Set(); }
+        try { const r = sessionStorage.getItem(STORAGE_KEY); return new Set(r ? JSON.parse(r) : []); }
+        catch { return new Set(); }
     }
-
     function saveCompleted(set) {
-        try {
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
-        } catch {}
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set])); } catch {}
     }
 
-    // ar.html'den ?done=ID ile dönüş kontrolü
-    (function checkReturnFromAR() {
-        const params = new URLSearchParams(window.location.search);
-        const doneId = params.get('done');
+    /* ar.html'den ?done=ID ile dönüş kontrolü */
+    (function checkReturn() {
+        const p = new URLSearchParams(location.search);
+        const doneId = p.get('done');
         if (!doneId) return;
-        const completed = loadCompleted();
-        completed.add(doneId);
-        saveCompleted(completed);
+        const c = loadCompleted(); c.add(doneId); saveCompleted(c);
         history.replaceState(null, '', 'index.html');
     })();
 
     const completed = loadCompleted();
-    let selected    = null;
+    let selectedRoute = null;
 
-    // Sıralama: order alanına göre
-    const sortedRoutes = [...NAV_ROUTES].sort((a, b) => a.order - b.order);
+    /* Aktif rotalar sıralı, pasifler ayrı */
+    const activeRoutes = NAV_ROUTES.filter(r => r.isAvailable).sort((a, b) => a.order - b.order);
+    const nextUnlocked = activeRoutes.find(r => !completed.has(r.id));
+    const nextId = nextUnlocked ? nextUnlocked.id : null;
 
-    // Sıradaki aktif durak (tamamlanmamış ilk durak)
-    const nextUnlocked = sortedRoutes.find(r => !completed.has(r.id));
-    const nextId       = nextUnlocked ? nextUnlocked.id : null;
-
-    // Kart durumu hesapla
     function getCardState(route) {
+        if (!route.isAvailable) return 'passive';
         if (completed.has(route.id)) return 'done';
-        if (route.id === nextId)     return 'next';   // seçilebilir
+        if (route.id === nextId) return 'next';
         return 'locked';
     }
 
-    const listEl    = document.getElementById('dest-list');
-    const doneCards = [];
+    /* ── Ekran 1: Preview text ── */
+    document.getElementById('route-preview-text').textContent =
+        `${activeRoutes.length} rota navigasyona hazır`;
 
-    sortedRoutes.forEach(route => {
-        const state      = getCardState(route);
-        const isDone     = state === 'done';
-        const isLocked   = state === 'locked';
-        const isNext     = state === 'next';
-        const arLegCount = route.legs.filter(l => l.type === 'ar').length;
+    /* ── Ekran 2: Kategori bazlı liste ── */
+    function renderRouteList() {
+        const listEl = document.getElementById('route-list');
+        listEl.innerHTML = '';
 
-        const card = document.createElement('div');
-        card.className  = 'dest-card'
-            + (isDone   ? ' done'        : '')
-            + (isLocked ? ' locked'      : '')
-            + (isNext   ? ' active-next' : '');
-        card.dataset.id = route.id;
+        ROUTE_CATEGORIES.forEach(cat => {
+            const routesInCat = NAV_ROUTES.filter(r => r.category === cat);
+            if (routesInCat.length === 0) return;
 
-        card.innerHTML = `
-            <div class="task-chip">GÖREV ${route.task}</div>
-            <div class="dest-emoji">${route.icon}</div>
-            <div class="dest-info">
-                <div class="dest-name">${route.name}</div>
-                <div class="dest-desc">${route.desc}</div>
-            </div>
-            <div class="dest-right">
-                <div class="leg-count">${arLegCount} durak</div>
-                <div class="next-label">▶ Sıradaki</div>
-                <div class="done-badge">✓ Rota Tamamlandı</div>
-                <div class="locked-badge">🔒 Kilitli</div>
-                <div class="dest-check">✓</div>
-            </div>
-        `;
+            const header = document.createElement('div');
+            header.className = 'cat-header';
+            header.textContent = cat;
+            listEl.appendChild(header);
 
-        if (isNext) {
-            card.addEventListener('click', () => selectCard(route.id, card, route));
-        } else if (isLocked) {
-            card.addEventListener('click', showLockToast);
-        }
+            const actives = routesInCat.filter(r => r.isAvailable).sort((a, b) => a.order - b.order);
+            const passives = routesInCat.filter(r => !r.isAvailable);
 
-        if (isDone) {
-            doneCards.push(card);   // done'lar en sona
-        } else {
-            listEl.appendChild(card);   // next + locked sırayla
-        }
+            [...actives, ...passives].forEach(route => {
+                const state = getCardState(route);
+                const card = document.createElement('div');
+                card.className = `route-card state-${state}`;
+                card.dataset.id = route.id;
+
+                let badgeText = '';
+                if (state === 'next') badgeText = '▶ Sıradaki';
+                else if (state === 'locked') badgeText = '🔒 Kilitli';
+                else if (state === 'done') badgeText = '✓ Tamamlandı';
+                else if (state === 'passive') badgeText = '🚫 AR Desteklenmiyor';
+
+                card.innerHTML = `
+                    <div class="rc-icon-wrap">${route.icon}</div>
+                    <div class="rc-info">
+                        <div class="rc-name">${route.name}</div>
+                        <div class="rc-loc">${route.desc}</div>
+                    </div>
+                    <div class="rc-badge">${badgeText}</div>
+                `;
+
+                if (state === 'next') {
+                    card.addEventListener('click', () => selectRoute(route, card));
+                } else if (state === 'locked') {
+                    card.addEventListener('click', showLockToast);
+                }
+
+                listEl.appendChild(card);
+            });
+        });
+
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const total = activeRoutes.length;
+        const done = completed.size;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        document.getElementById('s2-progress-fill').style.width = pct + '%';
+        document.getElementById('s2-progress-badge').textContent = `${done} / ${total} Tamamlandı`;
+    }
+
+    function selectRoute(route, cardEl) {
+        document.querySelectorAll('.route-card').forEach(c => c.style.outline = 'none');
+        cardEl.style.outline = '2px solid ' + getComputedStyle(document.documentElement).getPropertyValue('--accent');
+        selectedRoute = route;
+        const btn = document.getElementById('btn-go-route');
+        btn.disabled = false;
+        btn.textContent = `${route.name} →`;
+    }
+
+    /* ── Ekran 3: Rota Onayı Doldur ── */
+    function fillConfirmScreen(route) {
+        document.getElementById('s3-icon').textContent = route.icon;
+        document.getElementById('s3-name').textContent = route.name;
+        document.getElementById('s3-desc').textContent = route.desc;
+        document.getElementById('s3-floor').textContent = route.desc.split('·').slice(0, 2).join('·').trim().toUpperCase();
+
+        let totalDist = 0;
+        let turns = 0;
+        let hasElevator = false;
+        route.legs.forEach(leg => {
+            if (leg.path) totalDist += leg.path.length;
+            if (leg.type === 'info') hasElevator = true;
+            const instr = (leg.instruction || '').toLowerCase();
+            if (instr.includes('sola') || instr.includes('sağa')) turns++;
+        });
+
+        document.getElementById('s3-distance').textContent = totalDist + 'm';
+        document.getElementById('s3-time').textContent = '~' + Math.max(1, Math.ceil(totalDist / 30)) + 'dk';
+        document.getElementById('s3-turns').textContent = turns;
+        document.getElementById('s3-elevator-chip').style.display = hasElevator ? 'flex' : 'none';
+    }
+
+    /* ── Ekran Geçişleri ── */
+    function showScreen(id) {
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    document.getElementById('btn-start-nav').addEventListener('click', () => {
+        renderRouteList();
+        showScreen('screen-routes');
     });
 
-    // Tamamlananları en alta ekle
-    doneCards.forEach(c => listEl.appendChild(c));
+    document.getElementById('btn-go-route').addEventListener('click', () => {
+        if (!selectedRoute) return;
+        fillConfirmScreen(selectedRoute);
+        showScreen('screen-confirm');
+    });
 
-    // ── Görev ilerleme barını güncelle ───────────────────
-    function updateProgress() {
-        const total = NAV_ROUTES.length;
-        const done  = completed.size;
-        const pct   = Math.round((done / total) * 100);
-        document.getElementById('progress-fill').style.width = pct + '%';
-        document.getElementById('progress-text').textContent = `${done} / ${total} Tamamlandı`;
-    }
-    updateProgress();
+    document.getElementById('btn-confirm-back').addEventListener('click', () => {
+        showScreen('screen-routes');
+    });
 
-    // ── Kart seçimi ───────────────────────────────────────
-    function selectCard(id, cardEl, route) {
-        document.querySelectorAll('.dest-card.active-next').forEach(c => c.classList.remove('selected'));
-        cardEl.classList.add('selected');
-        selected = id;
+    document.getElementById('btn-diff-route').addEventListener('click', () => {
+        showScreen('screen-routes');
+    });
 
-        const btn = document.getElementById('start-btn');
-        btn.disabled    = false;
-        btn.textContent = `🚀  ${route.name}'e Git`;
-    }
+    document.getElementById('btn-start-ar').addEventListener('click', () => {
+        if (!selectedRoute) return;
+        sessionStorage.setItem('ar_hedef', selectedRoute.id);
+        window.location.href = `ar.html?hedef=${selectedRoute.id}`;
+    });
 
-    // ── Kilitli uyarısı ───────────────────────────────────
+    /* ── Lock Toast ── */
     let toastTimer = null;
     function showLockToast() {
-        const toast = document.getElementById('lock-toast');
-        toast.classList.add('show');
+        const t = document.getElementById('lock-toast');
+        t.classList.add('show');
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    // ── AR Destek Kontrolü ────────────────────────────────
-    const badge     = document.getElementById('ar-badge');
-    const badgeText = document.getElementById('ar-badge-text');
-
-    if (navigator.xr) {
-        navigator.xr.isSessionSupported('immersive-ar').then(ok => {
-            badge.className = 'ok';
-            badgeText.textContent = ok
-                ? '✅ ARCore hazır'
-                : '⚠️ AR sınırlı — yine de deneyin';
-        }).catch(() => {
-            badge.className = 'fail';
-            badgeText.textContent = '⚠️ AR kontrolü başarısız';
-        });
-    } else {
-        badge.className = 'fail';
-        badgeText.textContent = '❌ WebXR bulunamadı (Chrome + HTTPS gerekli)';
+    /* Eğer AR'den dönüldüyse direkt Ekran 2'yi göster */
+    if (completed.size > 0) {
+        renderRouteList();
+        showScreen('screen-routes');
     }
-
-    // ── Başlat ────────────────────────────────────────────
-    document.getElementById('start-btn').addEventListener('click', () => {
-        if (!selected) return;
-        sessionStorage.setItem('ar_hedef', selected);
-        window.location.href = `ar.html?hedef=${selected}`;
-    });
     </script>
 </body>
 </html>
