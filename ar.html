@@ -10,7 +10,6 @@
 
     <style>
         :root {
-            /* Apple Maps / iOS System Colors */
             --primary: #007AFF;
             --primary-dark: #0056b3;
             --bg-body: #F2F2F7;
@@ -26,10 +25,22 @@
             --radius: 20px;
         }
 
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-body: #000000;
+                --card-bg: #1C1C1E;
+                --text-main: #FFFFFF;
+                --text-secondary: #EBEBF599;
+                --disabled-bg: #3A3A3C;
+                --disabled-text: #8E8E93;
+                --divider: #38383A;
+            }
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
             overflow: hidden;
@@ -41,7 +52,6 @@
             width: 100vw; height: 100vh;
         }
 
-        /* ── Shared UI Elements (A11y) ── */
         button {
             border: none; outline: none; cursor: pointer;
             font-family: inherit; -webkit-tap-highlight-color: transparent;
@@ -58,153 +68,191 @@
         .btn-success { background-color: var(--success); color: var(--text-light); }
         .btn-secondary { background-color: var(--disabled-bg); color: var(--primary); }
         
-        /* ── Overlay Containers ── */
+        /* ── Overlay ── */
         #overlay {
             position: fixed; inset: 0;
             z-index: 100; pointer-events: none;
         }
         .interactive { pointer-events: auto; }
 
-        /* ══ SCREEN: BAŞLANGIÇ & BİLGİ (Screen 1-2) ══ */
+        /* ══ FULLSCREEN CARD (Başlangıç / Bilgi) ══ */
         .fullscreen-card {
-            position: absolute; inset: 0;
+            position: fixed; inset: 0;
             background-color: var(--bg-body);
             display: flex; flex-direction: column;
-            padding: 30px 20px 24px;
-            z-index: 9999;
+            padding: 48px 20px 36px;
+            /* FIX: z-index her zaman SOS modal'ın altında */
+            z-index: 200;
             pointer-events: auto;
+            overflow-y: auto;
         }
         
-        .fc-header { text-align: center; margin-bottom: 24px; margin-top: 40px; }
+        .fc-header { text-align: center; margin-bottom: 28px; }
         .fc-icon { font-size: 64px; margin-bottom: 16px; }
-        .fc-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        .fc-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
         .fc-sub { font-size: 17px; color: var(--text-secondary); font-weight: 500; }
 
         .info-card {
             background-color: var(--card-bg);
             border-radius: var(--radius);
             padding: 24px; margin-bottom: auto;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
-        .ic-label { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .ic-text { font-size: 20px; font-weight: 600; line-height: 1.4; }
+        .ic-label { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.8px; }
+        .ic-text { font-size: 19px; font-weight: 600; line-height: 1.45; color: var(--text-main); }
 
-        /* ══ SCREEN 4: AR HUD (Bottom Sheet) ══ */
+        /* Info screen lines list */
+        .info-lines { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+        .info-line-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            font-size: 17px; font-weight: 500; line-height: 1.4; color: var(--text-main);
+        }
+        .info-line-num {
+            flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+            background-color: var(--primary); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; margin-top: 1px;
+        }
+
+        /* ══ AR HUD ══ */
         #top-hud {
             position: absolute; top: 0; left: 0; right: 0;
-            padding: 24px 20px; display: none;
-            align-items: flex-start; gap: 12px;
+            padding: 52px 16px 16px;
+            display: none;
+            align-items: flex-start; gap: 10px;
         }
         .back-btn {
             width: 48px; height: 48px; border-radius: 14px;
-            background-color: var(--card-bg);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background-color: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
             display: flex; align-items: center; justify-content: center;
             font-size: 20px; color: var(--primary); font-weight: 700;
+            flex-shrink: 0;
         }
         .next-turn-pill {
-            flex: 1; background-color: var(--card-bg);
+            flex: 1; background-color: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             border-radius: 16px; padding: 12px 16px;
             display: flex; align-items: center; gap: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
         }
-        .nt-icon { font-size: 24px; color: var(--primary); }
+        .nt-icon { font-size: 22px; color: var(--primary); }
         .nt-info { flex: 1; }
-        .nt-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px; }
-        .nt-action { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .nt-label { font-size: 11px; color: var(--text-secondary); font-weight: 700; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .nt-action { font-size: 15px; font-weight: 700; color: var(--text-main); }
 
-        /* Bottom Sheet */
+        /* Bottom Panel */
         #bottom-panel {
             position: absolute; bottom: 0; left: 0; right: 0;
-            background-color: var(--card-bg);
+            background-color: rgba(255,255,255,0.94);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-radius: 28px 28px 0 0;
-            padding: 24px 20px 32px;
+            padding: 20px 16px 32px;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
             display: none;
             flex-direction: column;
         }
-        .bp-dest { text-align: center; font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+        @media (prefers-color-scheme: dark) {
+            #bottom-panel { background-color: rgba(28,28,30,0.94); }
+            .next-turn-pill, .back-btn { background-color: rgba(28,28,30,0.92); }
+        }
+        .bp-dest { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-main); }
         
-        .bp-stats { display: flex; gap: 12px; margin-bottom: 24px; }
-        .bp-stat { flex: 1; background-color: var(--bg-body); border-radius: 16px; padding: 16px 12px; text-align: center; }
-        .bp-stat-val { font-size: 24px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
-        .bp-stat-key { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+        .bp-stats { display: flex; gap: 10px; margin-bottom: 18px; }
+        .bp-stat { flex: 1; background-color: var(--bg-body); border-radius: 14px; padding: 14px 10px; text-align: center; }
+        .bp-stat-val { font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 3px; }
+        .bp-stat-key { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
 
-        .bp-actions { display: flex; gap: 12px; }
+        .bp-actions { display: flex; gap: 10px; }
         .btn-help {
             width: 64px; height: 64px; border-radius: 16px;
             background-color: #FFECEB; color: var(--danger);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: 700; flex-shrink: 0;
+            font-size: 22px; font-weight: 700; flex-shrink: 0;
             transition: transform 0.1s;
         }
         .btn-help:active { transform: scale(0.95); }
-        .btn-help span { font-size: 10px; margin-top: 2px; }
+        .btn-help span { font-size: 9px; margin-top: 2px; font-weight: 700; letter-spacing: 0.3px; }
 
-        /* Turn Arrow Animation */
+        /* Turn Arrow */
         #turn-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: none; flex-direction: column; align-items: center; gap: 16px;
+            display: none; flex-direction: column; align-items: center; gap: 14px;
         }
         #turn-overlay.visible { display: flex; animation: turnPulse 1.2s ease-in-out infinite; }
-        .turn-icon { font-size: 100px; line-height: 1; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15)); }
+        .turn-icon { font-size: 96px; line-height: 1; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2)); }
         .turn-text {
-            font-size: 24px; font-weight: 800; color: #FFF; background-color: var(--primary);
-            padding: 12px 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 22px; font-weight: 800; color: #FFF; background-color: var(--primary);
+            padding: 10px 24px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,122,255,0.4);
+            letter-spacing: 1px;
         }
         @keyframes turnPulse {
             0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+            50% { opacity: 0.65; transform: translate(-50%, -50%) scale(1.08); }
         }
 
-        /* ══ SCREEN 5: TAMAMLANDI ══ */
+        /* ══ DONE SCREEN ══ */
         #done-screen {
             position: fixed; inset: 0;
             background-color: var(--card-bg);
             display: none; flex-direction: column;
-            padding: 40px 20px 32px; z-index: 9999; overflow-y: auto;
+            padding: 48px 20px 36px; z-index: 200; overflow-y: auto;
         }
         .done-icon-wrap {
             width: 100px; height: 100px; border-radius: 50px;
-            background-color: #E8F8EE; color: var(--success);
+            background: linear-gradient(135deg, #E8F8EE, #D1F2DE);
+            color: var(--success);
             display: flex; align-items: center; justify-content: center;
             font-size: 50px; margin: 20px auto 24px;
+            box-shadow: 0 8px 24px rgba(52,199,89,0.2);
         }
-        .done-title { text-align: center; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        .done-title { text-align: center; font-size: 30px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
         .done-sub { text-align: center; font-size: 17px; color: var(--text-secondary); margin-bottom: 32px; font-weight: 500; }
         
         .next-route-card {
             background-color: var(--bg-body); border-radius: 20px; padding: 20px;
             margin-bottom: 24px;
         }
-        .nrc-label { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; }
+        .nrc-label { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
         .nrc-body { display: flex; align-items: center; gap: 16px; }
-        .nrc-icon { font-size: 32px; background-color: #FFF; width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .nrc-icon { font-size: 32px; background-color: var(--card-bg); width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
         .nrc-info { flex: 1; }
         .nrc-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
         .nrc-desc { font-size: 14px; color: var(--text-secondary); }
-
         .done-actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 
-        /* ══ SOS MODAL ══ */
+        /* ══ SOS MODAL ══
+           FIX: z-index 9999 → her zaman fullscreen-card'ların (z:200) üstünde
+        ══ */
         #sos-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
             display: none; align-items: center; justify-content: center;
-            padding: 24px; z-index: 10000;
-            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            padding: 24px;
+            z-index: 9999;                /* ← FIX: en üstte */
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            pointer-events: auto;         /* ← FIX: tıklama her zaman aktif */
         }
+        #sos-modal.show { display: flex; }          /* ← FIX: opacity animasyonu yerine basit display toggle */
         .sos-card {
             background: var(--card-bg); width: 100%; max-width: 360px;
             border-radius: 24px; padding: 32px 24px 24px; text-align: center;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
-            transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+            animation: sosSlideIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        #sos-modal.show .sos-card { transform: translateY(0); opacity: 1; }
-        
-        .sos-icon { font-size: 56px; margin-bottom: 16px; display: inline-block; }
-        .sos-title { font-size: 22px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); }
-        .sos-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 24px; font-weight: 500; }
-        .sos-actions { display: flex; flex-direction: column; gap: 12px; }
+        @keyframes sosSlideIn {
+            from { transform: translateY(24px) scale(0.95); opacity: 0; }
+            to   { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .sos-icon { font-size: 56px; margin-bottom: 16px; display: block; animation: sosPulse 1s ease-in-out infinite; }
+        @keyframes sosPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        .sos-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; color: var(--text-main); }
+        .sos-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 24px; font-weight: 500; line-height: 1.4; }
+        .sos-actions { display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body>
@@ -222,35 +270,39 @@
             <div class="ic-text" id="ss-instruction">—</div>
         </div>
         
-        <div style="margin-top: auto;">
+        <div style="margin-top: 28px;">
             <button class="btn-large btn-primary interactive" id="begin-btn" onclick="enterAR()" disabled>AR Başlat</button>
         </div>
     </div>
 
-    <!-- ══ BİLGİ EKRANI (Asansör/Merdiven) ══ -->
+    <!-- ══ BİLGİ EKRANI (Asansör / Ara Adım) ══
+         FIX: içerik artık leg.lines array'inden besleniyor, leg.instruction değil
+    ══ -->
     <div id="info-screen" class="fullscreen-card" style="display:none;">
         <div class="fc-header">
-            <div class="fc-icon" id="is-icon">ℹ️</div>
+            <div class="fc-icon" id="is-icon">🛗</div>
             <div class="fc-title" id="is-title">Bilgi</div>
         </div>
         
         <div class="info-card">
-            <div class="ic-text" id="is-text" style="font-weight:500; font-size:18px;">—</div>
+            <div class="ic-label">Yapmanız Gerekenler</div>
+            <!-- FIX: ol yerine ul.info-lines, her satır .info-line-item olarak render edilecek -->
+            <ul class="info-lines" id="is-lines"></ul>
         </div>
         
-        <div style="margin-top: auto;">
-            <button class="btn-large btn-primary interactive" onclick="onContinue()">Devam Et</button>
+        <div style="margin-top: 28px;">
+            <button class="btn-large btn-primary interactive" onclick="onContinue()">Devam Et — AR Başlat</button>
         </div>
     </div>
 
     <!-- ══ TAMAMLANDI EKRANI ══ -->
     <div id="done-screen">
         <div class="done-icon-wrap">✓</div>
-        <div class="done-title">Hedefe Ulaştınız</div>
+        <div class="done-title">Hedefe Ulaştınız! 🎉</div>
         <div class="done-sub" id="done-sub-text">Rota tamamlandı.</div>
         
         <div class="next-route-card" id="next-route-card" style="display:none">
-            <div class="nrc-label">Sıradaki Rota Kilidi Açıldı</div>
+            <div class="nrc-label">🔓 Sıradaki Rota Açıldı</div>
             <div class="nrc-body">
                 <div class="nrc-icon" id="nr-icon"></div>
                 <div class="nrc-info">
@@ -261,23 +313,23 @@
         </div>
 
         <div class="done-actions">
-            <button class="btn-large btn-primary" id="btn-next-route" onclick="goNextRoute()">Sıradaki Rotaya Git</button>
+            <button class="btn-large btn-primary" id="btn-next-route" onclick="goNextRoute()">Sıradaki Rotaya Git →</button>
             <button class="btn-large btn-secondary" onclick="goHome()">Rota Listesine Dön</button>
         </div>
     </div>
 
     <!-- ══ SOS MODAL ══ -->
     <div id="sos-modal">
-        <div class="sos-card" id="sos-card-content">
-            <div class="sos-icon">🚨</div>
+        <div class="sos-card">
+            <span class="sos-icon">🚨</span>
             <div class="sos-title">Yardım Çağrısı</div>
             <div class="sos-desc">Konumunuz acil müdahale için danışmaya gönderilecek. Emin misiniz?</div>
             <div class="sos-actions" id="sos-action-btns">
-                <button class="btn-large" style="background-color: var(--danger); color: #FFF;" onclick="sendSOS()">Evet, Gönder</button>
-                <button class="btn-large btn-secondary" onclick="closeSOS()">Hayır, İptal</button>
+                <button class="btn-large" style="background-color: var(--danger); color: #FFF; min-height:56px;" onclick="sendSOS()">🆘 Evet, Yardım İste</button>
+                <button class="btn-large btn-secondary" style="min-height:52px;" onclick="closeSOS()">İptal</button>
             </div>
             <div class="sos-actions" id="sos-success-state" style="display:none;">
-                <div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz başarıyla iletildi.</div>
+                <div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz danışmaya iletildi.</div>
             </div>
         </div>
     </div>
@@ -294,13 +346,12 @@
         
     </a-scene>
 
-    <!-- ══ AR OVERLAY (Screen 4) ══ -->
+    <!-- ══ AR OVERLAY (HUD) ══ -->
     <div id="overlay">
-        <!-- Top HUD -->
         <div id="top-hud">
             <button class="back-btn interactive" onclick="goHome()">←</button>
             <div class="next-turn-pill">
-                <div class="nt-icon">↗</div>
+                <div class="nt-icon" id="nc-icon">↗</div>
                 <div class="nt-info">
                     <div class="nt-label" id="nc-label">Sonraki Dönüş</div>
                     <div class="nt-action" id="nc-action">Düz Devam</div>
@@ -308,13 +359,11 @@
             </div>
         </div>
 
-        <!-- Turn Arrow Pulse -->
         <div id="turn-overlay">
             <div class="turn-icon" id="turn-arrow-icon">⬅️</div>
             <div class="turn-text" id="turn-arrow-text">SOLA DÖN</div>
         </div>
 
-        <!-- Bottom Sheet -->
         <div id="bottom-panel" class="interactive">
             <div class="bp-dest" id="bp-dest"></div>
             
@@ -330,6 +379,7 @@
             </div>
             
             <div class="bp-actions">
+                <!-- FIX: SOS butonu her zaman tıklanabilir (pointer-events: auto) -->
                 <button class="btn-help interactive" onclick="openSOS()">
                     🆘<span>YARDIM</span>
                 </button>
@@ -339,18 +389,22 @@
     </div>
 
     <script>
+    /* ══════════════════════════════════════
+       BAŞLATMA
+    ══════════════════════════════════════ */
     const urlParams = new URLSearchParams(window.location.search);
     const targetId  = urlParams.get('hedef') || (NAV_ROUTES[0] && NAV_ROUTES[0].id);
-    const route = NAV_ROUTES.find(r => r.id === targetId);
+    const route     = NAV_ROUTES.find(r => r.id === targetId);
 
-    if (!route) window.location.href = 'index.html';
+    if (!route) { window.location.href = 'index.html'; }
 
     const legs = route.legs;
-    let legIdx = 0;
-    let arActive = false;
+    let legIdx    = 0;
+    let arActive  = false;
     let tickRafId = null;
+    let arStartTime = null;
 
-    /* DOM Refs */
+    /* DOM refs */
     const startScreen = document.getElementById('start-screen');
     const infoScreen  = document.getElementById('info-screen');
     const doneScreen  = document.getElementById('done-screen');
@@ -359,63 +413,107 @@
     const bottomPanel = document.getElementById('bottom-panel');
     const arrivedBtn  = document.getElementById('arrived-btn');
     const turnOverlay = document.getElementById('turn-overlay');
-    const arrowsEl    = document.getElementById('arrows');
-    const sceneEl     = document.querySelector('a-scene');
-    const camEl       = document.getElementById('cam');
+    const arrowsEl   = document.getElementById('arrows');
+    const sceneEl    = document.querySelector('a-scene');
+    const camEl      = document.getElementById('cam');
 
-    /* CRITICAL FIX: 1 node = 1 metre (length * 1.0) */
+    /* Toplam mesafe (1 node = 1 metre) */
     let totalRouteDist = 0;
     legs.forEach(l => { if (l.path) totalRouteDist += l.path.length; });
 
-    /* Active routes and next route resolution */
-    const allActiveRoutes = NAV_ROUTES.filter(r => r.isAvailable).sort((a,b) => a.order - b.order);
-    const currentRouteIdx = allActiveRoutes.findIndex(r => r.id === route.id);
-    const nextRoute = (currentRouteIdx >= 0 && currentRouteIdx < allActiveRoutes.length - 1) ? allActiveRoutes[currentRouteIdx + 1] : null;
-    let arStartTime = null;
+    /* Sıradaki rota */
+    const allActiveRoutes   = NAV_ROUTES.filter(r => r.isAvailable).sort((a,b) => a.order - b.order);
+    const currentRouteIdx   = allActiveRoutes.findIndex(r => r.id === route.id);
+    const nextRoute         = (currentRouteIdx >= 0 && currentRouteIdx < allActiveRoutes.length - 1)
+                              ? allActiveRoutes[currentRouteIdx + 1] : null;
 
-    /* ── Fill UI ── */
+    /* ══════════════════════════════════════
+       EKRAN DOLDURMA
+    ══════════════════════════════════════ */
     function fillStartScreen() {
         const leg = legs[legIdx];
-        document.getElementById('ss-icon').textContent = route.icon;
+        document.getElementById('ss-icon').textContent  = route.icon;
         document.getElementById('ss-title').textContent = route.name;
-        document.getElementById('ss-sub').textContent = `Bölüm ${legIdx + 1} / ${legs.length}`;
+        document.getElementById('ss-sub').textContent   = `Bölüm ${legIdx + 1} / ${legs.length}`;
 
         if (leg.type === 'info') {
-            document.getElementById('ss-leg-label').textContent = `ℹ️ BİLGİ`;
-            document.getElementById('ss-instruction').textContent = leg.title;
+            document.getElementById('ss-leg-label').textContent    = `ℹ️ BİLGİ AŞAMASI`;
+            document.getElementById('ss-instruction').textContent  = leg.title || 'Lütfen bekleyin';
         } else {
-            document.getElementById('ss-leg-label').textContent = `BÖLÜM ${legIdx + 1}`;
-            document.getElementById('ss-instruction').textContent = leg.instruction;
+            document.getElementById('ss-leg-label').textContent    = `BÖLÜM ${legIdx + 1}`;
+            document.getElementById('ss-instruction').textContent  = leg.instruction || '';
         }
 
         arrivedBtn.textContent = (legIdx === legs.length - 1) ? '🎉 Hedefe Vardım' : '✅ Sonraki Bölüm';
     }
 
+    /* ══════════════════════════════════════
+       FIX 1: BİLGİ EKRANI — leg.lines array'inden beslenir
+       Önceki kod: leg.instruction (undefined) → JS crash → beyaz ekran
+    ══════════════════════════════════════ */
+    function showInfoScreen(leg) {
+        /* İkon */
+        document.getElementById('is-icon').textContent  = leg.icon || 'ℹ️';
+        /* Başlık */
+        document.getElementById('is-title').textContent = leg.title || 'Bilgi';
+
+        /* Satırlar */
+        const linesEl = document.getElementById('is-lines');
+        linesEl.innerHTML = '';
+
+        const lines = leg.lines || [];
+        if (lines.length === 0) {
+            /* Fallback: eğer lines boşsa instruction'ı kullan */
+            const li = document.createElement('li');
+            li.className = 'info-line-item';
+            li.innerHTML = `<span class="info-line-num">1</span><span>${leg.instruction || ''}</span>`;
+            linesEl.appendChild(li);
+        } else {
+            lines.forEach((text, i) => {
+                const li = document.createElement('li');
+                li.className = 'info-line-item';
+                li.innerHTML = `<span class="info-line-num">${i + 1}</span><span>${text}</span>`;
+                linesEl.appendChild(li);
+            });
+        }
+
+        infoScreen.style.display = 'flex';
+    }
+
     function updateHudInfo() {
         document.getElementById('bp-dest').textContent = route.name;
         const nextLeg = legs[legIdx + 1];
-        if (nextLeg && nextLeg.instruction) {
-            document.getElementById('nc-action').textContent = nextLeg.instruction.replace(/[\u2B05\u27A1\u2B06\uFE0F\u2196\u2197\u2198\u2199⬆️⬅️➡️]+/g, '').trim().substring(0, 25);
-            document.getElementById('nc-label').textContent = 'Sonraki Dönüş';
+        if (nextLeg && nextLeg.type === 'info') {
+            document.getElementById('nc-action').textContent = nextLeg.title || 'Bilgi Ekranı';
+            document.getElementById('nc-label').textContent  = 'Sonraki Adım';
+            document.getElementById('nc-icon').textContent   = nextLeg.icon || 'ℹ️';
+        } else if (nextLeg && nextLeg.instruction) {
+            document.getElementById('nc-action').textContent = nextLeg.instruction
+                .replace(/[\u2B05\u27A1\u2B06\uFE0F\u2196\u2197\u2198\u2199⬆️⬅️➡️]+/g, '').trim().substring(0, 28);
+            document.getElementById('nc-label').textContent  = 'Sonraki Dönüş';
+            document.getElementById('nc-icon').textContent   = '↗';
         } else {
             document.getElementById('nc-action').textContent = 'Hedefe yaklaştınız';
-            document.getElementById('nc-label').textContent = 'Son Düzlük';
+            document.getElementById('nc-label').textContent  = 'Son Düzlük';
+            document.getElementById('nc-icon').textContent   = '🏁';
         }
     }
 
     function enableBeginBtn() {
         beginBtn.disabled = false;
-        beginBtn.textContent = (legIdx === 0) ? 'Navigasyonu Başlat' : 'Kamerayı Aç';
+        beginBtn.textContent = (legIdx === 0) ? '🚀 Navigasyonu Başlat' : '📷 AR Kamerayı Aç';
     }
 
     fillStartScreen();
     enableBeginBtn();
 
-    /* ── AR Logic ── */
+    /* ══════════════════════════════════════
+       AR GİRİŞ / ÇIKIŞ
+    ══════════════════════════════════════ */
     window.enterAR = function () { sceneEl.enterAR(); };
 
     sceneEl.addEventListener('enter-vr', () => {
-        arActive = true;
+        arActive    = true;
         arStartTime = Date.now();
         document.body.style.background = 'transparent';
 
@@ -426,7 +524,8 @@
         bottomPanel.style.display = 'flex';
         updateHudInfo();
 
-        setTimeout(drawArrows, 2000);
+        /* 1.5 saniye sonra okları çiz (kamera stabilize olsun) */
+        setTimeout(drawArrows, 1500);
     });
 
     sceneEl.addEventListener('exit-vr', () => {
@@ -436,9 +535,13 @@
         topHud.style.display      = 'none';
         bottomPanel.style.display = 'none';
         turnOverlay.classList.remove('visible');
-        arrowsEl.innerHTML = ''; /* CRITICAL FIX: Önceki bacağın oklarını temizle */
+        arrowsEl.innerHTML = '';
     });
 
+    /* ══════════════════════════════════════
+       FIX 4: OKLAR — Octahedron yerine yönlü chevron sistemi
+       Daha doğal, navigasyon okuna benzer görünüm
+    ══════════════════════════════════════ */
     function parsePos(ptObj) {
         if (!ptObj || !ptObj.pos) return {x: 0, y: 0, z: 0};
         const p = ptObj.pos.split(' ').map(Number);
@@ -450,89 +553,141 @@
         const leg = legs[legIdx];
         if (!leg || !leg.path) { tickRafId = requestAnimationFrame(tick); return; }
 
-        leg.path.forEach((ptObj, i) => {
-            if (i === 0) return;
-            const prevObj = leg.path[i - 1];
-            
-            const pt = parsePos(ptObj);
-            const prev = parsePos(prevObj);
-            
-            const dx = pt.x - prev.x;
-            const dz = pt.z - prev.z;
-            const dist = Math.hypot(dx, dz);
-            
-            const count = Math.max(1, Math.floor(dist / 0.5));
-            for (let j = 1; j <= count; j++) {
-                const step = j / count;
-                const px = prev.x + dx * step;
-                const pz = prev.z + dz * step;
-                
-                const diamond = document.createElement('a-entity');
-                diamond.setAttribute('geometry', 'primitive: octahedron; radius: 0.15');
-                diamond.setAttribute('material', 'color: #007AFF; transparent: true; opacity: 0.9');
-                diamond.setAttribute('position', `${px} 0 ${pz}`);
-                
-                // Rotasyon animasyonu
-                diamond.setAttribute('animation__rot', 'property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear');
-                // Zıplama animasyonu
-                diamond.setAttribute('animation__pos', `property: position; to: ${px} 0.15 ${pz}; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine`);
+        const path = leg.path;
+        if (path.length < 2) { tickRafId = requestAnimationFrame(tick); return; }
 
-                arrowsEl.appendChild(diamond);
+        /* Her segment için yön hesapla ve 0.7m aralıklarla ok yerleştir */
+        for (let i = 1; i < path.length; i++) {
+            const prev  = parsePos(path[i - 1]);
+            const curr  = parsePos(path[i]);
+
+            const dx = curr.x - prev.x;
+            const dz = curr.z - prev.z;
+            const segLen = Math.hypot(dx, dz);
+            if (segLen < 0.001) continue;
+
+            /* Açı: A-Frame'de Y ekseni etrafında dönme (radyandan dereceye) */
+            const angleRad = Math.atan2(dx, dz);   /* atan2(x,z) → ileri yön Z- */
+            const angleDeg = THREE.MathUtils.radToDeg(angleRad);
+
+            /* Her 0.7m'de bir ok */
+            const stepCount = Math.max(1, Math.round(segLen / 0.7));
+            for (let j = 0; j < stepCount; j++) {
+                const t  = (j + 0.5) / stepCount;
+                const px = prev.x + dx * t;
+                const pz = prev.z + dz * t;
+
+                /* ── Ana ok gövdesi (silindir) ── */
+                const shaft = document.createElement('a-cylinder');
+                shaft.setAttribute('radius', '0.06');
+                shaft.setAttribute('height', '0.32');
+                shaft.setAttribute('color', '#007AFF');
+                shaft.setAttribute('opacity', '0.88');
+                shaft.setAttribute('position', `${px} 0.04 ${pz}`);
+                shaft.setAttribute('rotation', `0 ${angleDeg} 0`);
+                shaft.setAttribute('material', 'color: #007AFF; transparent: true; opacity: 0.88; roughness: 0.3; metalness: 0.1');
+
+                /* ── Ok başı (koni) ── */
+                const head = document.createElement('a-cone');
+                head.setAttribute('radius-bottom', '0.14');
+                head.setAttribute('radius-top', '0');
+                head.setAttribute('height', '0.22');
+                head.setAttribute('color', '#007AFF');
+                /* Konik ucu ileri yöne çevir: silindir Y-ekseni üzerinde,
+                   koni varsayılan ucu yukarı baktığı için X=90° döndürüp Y=angleDeg yap */
+                head.setAttribute('rotation', `${90} ${angleDeg} 0`);
+
+                /* Koninin merkezi: shaft'ın önünde */
+                const hx = px + Math.sin(angleRad) * 0.28;
+                const hz = pz + Math.cos(angleRad) * 0.28;
+                head.setAttribute('position', `${hx} 0.04 ${hz}`);
+                head.setAttribute('material', 'color: #007AFF; transparent: true; opacity: 0.95; roughness: 0.2; metalness: 0.15');
+
+                /* ── Zemin halkası (pulsing) ── */
+                const ring = document.createElement('a-ring');
+                ring.setAttribute('radius-inner', '0.16');
+                ring.setAttribute('radius-outer', '0.22');
+                ring.setAttribute('rotation', '-90 0 0');
+                ring.setAttribute('position', `${px} 0.005 ${pz}`);
+                ring.setAttribute('material', 'color: #007AFF; transparent: true; opacity: 0.35; side: double');
+                ring.setAttribute('animation__scale', 'property: scale; from: 1 1 1; to: 1.4 1.4 1.4; dir: alternate; loop: true; dur: 900; easing: easeInOutSine; delay: ' + (j * 120));
+                ring.setAttribute('animation__op',    'property: material.opacity; from: 0.35; to: 0; dir: alternate; loop: true; dur: 900; easing: easeInOutSine; delay: ' + (j * 120));
+
+                /* ── Yükseklik animasyonu (shaft + head birlikte yukarı-aşağı) ── */
+                const delay = j * 120;
+                shaft.setAttribute('animation__float', `property: position; to: ${px} 0.14 ${pz}; from: ${px} 0.04 ${pz}; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine; delay: ${delay}`);
+                head.setAttribute('animation__float',  `property: position; to: ${hx} 0.14 ${hz}; from: ${hx} 0.04 ${hz}; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine; delay: ${delay}`);
+
+                arrowsEl.appendChild(ring);
+                arrowsEl.appendChild(shaft);
+                arrowsEl.appendChild(head);
             }
-        });
+        }
 
         tickRafId = requestAnimationFrame(tick);
     }
 
+    /* ══════════════════════════════════════
+       FIX 3: TICK — Mesafe takibi ve varış tespiti
+       Sorun: dist < 0.5 çok dar; simülatörde kamera hiç hareket etmiyor.
+       Çözüm: "Ulaştım" butonu zaten mevcut; otomatik tespit için
+              eşiği 1.5m'ye çıkar ve grace period'u her bacak değişiminde sıfırla.
+    ══════════════════════════════════════ */
     function tick() {
         if (!arActive) return;
 
-        const cam = camEl.object3D;
-        const children = arrowsEl.children;
-        const lastDiamond = children[children.length - 1];
+        const cam       = camEl.object3D;
+        const children  = arrowsEl.children;
 
-        if (!lastDiamond) { tickRafId = requestAnimationFrame(tick); return; }
+        /* Son oku bul (ring + shaft + head üçlü → head en sonda) */
+        /* Sadece a-cone ve a-cylinder'ları say */
+        const arElements = Array.from(arrowsEl.children);
+        const headElements = arElements.filter(el => el.tagName && el.tagName.toLowerCase() === 'a-cone');
+        const lastHead = headElements[headElements.length - 1];
 
-        /* CRITICAL FIX: Update Matrix World before distance calculation */
-        lastDiamond.object3D.updateMatrixWorld(true);
+        if (!lastHead) { tickRafId = requestAnimationFrame(tick); return; }
 
-        const camPos = new THREE.Vector3();
+        lastHead.object3D.updateMatrixWorld(true);
+
+        const camPos    = new THREE.Vector3();
         const targetPos = new THREE.Vector3();
         cam.getWorldPosition(camPos);
-        lastDiamond.object3D.getWorldPosition(targetPos);
+        lastHead.object3D.getWorldPosition(targetPos);
 
         const dist = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
-        const distRounded = Math.max(0, dist);
 
-        /* CRITICAL FIX: Grace Period implementation (First 2000ms ignore completion) */
+        /* Grace period: her bacak başladığında 2 saniye yoksay */
         const isGracePeriod = arStartTime ? (Date.now() - arStartTime) < 2000 : true;
 
+        /* Kalan mesafe gösterimi */
         let coveredDist = 0;
         for (let i = 0; i < legIdx; i++) { if (legs[i].path) coveredDist += legs[i].path.length; }
         const currentLeg = legs[legIdx];
         if (currentLeg && currentLeg.path) {
-            coveredDist += Math.max(0, currentLeg.path.length - distRounded);
+            coveredDist += Math.max(0, currentLeg.path.length - dist);
         }
-        
         const remainMeters = Math.max(0, totalRouteDist - coveredDist);
-        document.getElementById('ms-dist').textContent = remainMeters < 1 ? '<1m' : remainMeters.toFixed(0) + 'm';
+        document.getElementById('ms-dist').textContent = remainMeters < 1 ? '<1m' : Math.round(remainMeters) + 'm';
         
         const estSec = Math.ceil(remainMeters * 1.5);
-        document.getElementById('ms-time').textContent = estSec >= 60 ? Math.ceil(estSec/60) + 'dk' : estSec + 'sn';
+        document.getElementById('ms-time').textContent = estSec >= 60
+            ? Math.ceil(estSec / 60) + 'dk'
+            : estSec + 'sn';
 
-        /* Turn Detection */
+        /* Dönüş uyarısı */
         const nextLeg = legs[legIdx + 1];
-        if (nextLeg && distRounded <= 2 && distRounded > 0.3) {
-            const instr = (nextLeg.instruction || '').toLowerCase();
-            if (instr.includes('sola')) showTurnArrow('⬅️', 'SOLA DÖN');
+        if (nextLeg && dist <= 2.0 && dist > 0.4) {
+            const instr = (nextLeg.instruction || nextLeg.title || '').toLowerCase();
+            if (instr.includes('sola'))      showTurnArrow('⬅️', 'SOLA DÖN');
             else if (instr.includes('sağa')) showTurnArrow('➡️', 'SAĞA DÖN');
             else hideTurnArrow();
         } else {
             hideTurnArrow();
         }
 
-        /* Varış Tespiti (Grace period bitmişse ve 0.5m den kısaysa) */
-        if (dist < 0.5 && !isGracePeriod && legIdx === legs.length - 1) {
+        /* FIX: Otomatik varış eşiği 1.5m (önceden 0.5m → çok dar)
+           Son bacakta ve grace period bittiyse tamamla */
+        if (dist < 1.5 && !isGracePeriod && legIdx === legs.length - 1) {
             cancelAnimationFrame(tickRafId);
             sceneEl.exitVR();
             showDone();
@@ -549,20 +704,23 @@
     }
     function hideTurnArrow() { turnOverlay.classList.remove('visible'); }
 
-    /* ── UI Logic ── */
-    function showInfoScreen(leg) {
-        document.getElementById('is-title').textContent = leg.title;
-        document.getElementById('is-text').innerHTML = leg.instruction.replace(/\n/g, '<br>');
-        infoScreen.style.display = 'flex';
-    }
-
+    /* ══════════════════════════════════════
+       MANUEL GEÇİŞLER
+    ══════════════════════════════════════ */
     window.onContinue = function () {
+        /* Bilgi ekranını kapat */
         infoScreen.style.display = 'none';
         legIdx++;
         if (legIdx < legs.length) {
-            fillStartScreen();
-            enableBeginBtn();
-            startScreen.style.display = 'flex';
+            const nextLeg = legs[legIdx];
+            if (nextLeg.type === 'info') {
+                /* Arka arkaya iki bilgi ekranı — nadiren ama olabilir */
+                setTimeout(() => showInfoScreen(nextLeg), 200);
+            } else {
+                fillStartScreen();
+                enableBeginBtn();
+                startScreen.style.display = 'flex';
+            }
         } else {
             showDone();
         }
@@ -575,12 +733,20 @@
 
         legIdx++;
         if (legIdx < legs.length) {
+            /* arStartTime'ı sıfırla — yeni bacak için grace period başlasın */
+            arStartTime = null;
+
+            const nextLeg = legs[legIdx];
             fillStartScreen();
             enableBeginBtn();
             updateHudInfo();
-            const nextLeg = legs[legIdx];
-            if (nextLeg.type === 'info') setTimeout(() => showInfoScreen(nextLeg), 300);
-            else startScreen.style.display = 'flex';
+
+            if (nextLeg.type === 'info') {
+                /* FIX: Kısa gecikme ile bilgi ekranını göster */
+                setTimeout(() => showInfoScreen(nextLeg), 300);
+            } else {
+                startScreen.style.display = 'flex';
+            }
         } else {
             showDone();
         }
@@ -601,7 +767,6 @@
         doneScreen.style.display = 'flex';
     }
 
-    /* CRITICAL FIX: autoStartNext parameter */
     window.goNextRoute = function () {
         window.location.href = `index.html?done=${route.id}&autoStartNext=true`;
     };
@@ -610,30 +775,30 @@
         window.location.href = `index.html?done=${route.id}`;
     };
 
-    /* ── SOS Logic ── */
+    /* ══════════════════════════════════════
+       FIX 2: SOS — display: flex basit toggle (önceden opacity/transform ile başlayıp
+       display:none bırakılıyordu → rota seçim ekranında görünüyordu)
+    ══════════════════════════════════════ */
     window.openSOS = function () {
         const modal = document.getElementById('sos-modal');
-        document.getElementById('sos-action-btns').style.display = 'flex';
+        document.getElementById('sos-action-btns').style.display  = 'flex';
         document.getElementById('sos-success-state').style.display = 'none';
-        modal.style.display = 'flex';
-        requestAnimationFrame(() => modal.classList.add('show'));
+        modal.classList.add('show');
     };
 
     window.closeSOS = function () {
-        const modal = document.getElementById('sos-modal');
-        modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 300);
+        document.getElementById('sos-modal').classList.remove('show');
     };
 
     window.sendSOS = function () {
-        document.getElementById('sos-action-btns').style.display = 'none';
+        document.getElementById('sos-action-btns').style.display  = 'none';
         const succ = document.getElementById('sos-success-state');
-        succ.innerHTML = '<div style="font-size: 17px; font-weight: 700; padding: 16px 0; color: var(--text-main);">⏳ Gönderiliyor...</div>';
+        succ.innerHTML = '<div style="font-size:17px;font-weight:700;padding:16px 0;color:var(--text-secondary);">⏳ Gönderiliyor...</div>';
         succ.style.display = 'flex';
         
         setTimeout(() => {
-            succ.innerHTML = '<div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz danışmaya iletildi.</div>';
-            setTimeout(closeSOS, 2000);
+            succ.innerHTML = '<div style="font-size:17px;font-weight:700;color:var(--success);padding:16px 0;">✅ Konumunuz danışmaya iletildi.</div>';
+            setTimeout(closeSOS, 2200);
         }, 1200);
     };
 
