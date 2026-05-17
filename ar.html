@@ -71,7 +71,7 @@
             background-color: var(--bg-body);
             display: flex; flex-direction: column;
             padding: 30px 20px 24px;
-            z-index: 150;
+            z-index: 9999;
             pointer-events: auto;
         }
         
@@ -162,7 +162,7 @@
             position: fixed; inset: 0;
             background-color: var(--card-bg);
             display: none; flex-direction: column;
-            padding: 40px 20px 32px; z-index: 200; overflow-y: auto;
+            padding: 40px 20px 32px; z-index: 9999; overflow-y: auto;
         }
         .done-icon-wrap {
             width: 100px; height: 100px; border-radius: 50px;
@@ -185,6 +185,26 @@
         .nrc-desc { font-size: 14px; color: var(--text-secondary); }
 
         .done-actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+
+        /* ══ SOS MODAL ══ */
+        #sos-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center;
+            padding: 24px; z-index: 10000;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        .sos-card {
+            background: var(--card-bg); width: 100%; max-width: 360px;
+            border-radius: 24px; padding: 32px 24px 24px; text-align: center;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+            transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sos-modal.show .sos-card { transform: translateY(0); opacity: 1; }
+        
+        .sos-icon { font-size: 56px; margin-bottom: 16px; display: inline-block; }
+        .sos-title { font-size: 22px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); }
+        .sos-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 24px; font-weight: 500; }
+        .sos-actions { display: flex; flex-direction: column; gap: 12px; }
     </style>
 </head>
 <body>
@@ -246,6 +266,22 @@
         </div>
     </div>
 
+    <!-- ══ SOS MODAL ══ -->
+    <div id="sos-modal">
+        <div class="sos-card" id="sos-card-content">
+            <div class="sos-icon">🚨</div>
+            <div class="sos-title">Yardım Çağrısı</div>
+            <div class="sos-desc">Konumunuz acil müdahale için danışmaya gönderilecek. Emin misiniz?</div>
+            <div class="sos-actions" id="sos-action-btns">
+                <button class="btn-large" style="background-color: var(--danger); color: #FFF;" onclick="sendSOS()">Evet, Gönder</button>
+                <button class="btn-large btn-secondary" onclick="closeSOS()">Hayır, İptal</button>
+            </div>
+            <div class="sos-actions" id="sos-success-state" style="display:none;">
+                <div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz başarıyla iletildi.</div>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ A-FRAME ══ -->
     <a-scene xr-mode-ui="enabled: false"
              webxr="optionalFeatures: dom-overlay; overlayElement: #overlay"
@@ -294,7 +330,7 @@
             </div>
             
             <div class="bp-actions">
-                <button class="btn-help interactive" onclick="alert('Yardım için 112 veya Danışma.')">
+                <button class="btn-help interactive" onclick="openSOS()">
                     🆘<span>YARDIM</span>
                 </button>
                 <button class="btn-large btn-success interactive" style="flex:1" id="arrived-btn" onclick="onArrived()">✅ Ulaştım</button>
@@ -400,6 +436,7 @@
         topHud.style.display      = 'none';
         bottomPanel.style.display = 'none';
         turnOverlay.classList.remove('visible');
+        arrowsEl.innerHTML = ''; /* CRITICAL FIX: Önceki bacağın oklarını temizle */
     });
 
     function parsePos(ptObj) {
@@ -572,6 +609,34 @@
     window.goHome = function () {
         window.location.href = `index.html?done=${route.id}`;
     };
+
+    /* ── SOS Logic ── */
+    window.openSOS = function () {
+        const modal = document.getElementById('sos-modal');
+        document.getElementById('sos-action-btns').style.display = 'flex';
+        document.getElementById('sos-success-state').style.display = 'none';
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => modal.classList.add('show'));
+    };
+
+    window.closeSOS = function () {
+        const modal = document.getElementById('sos-modal');
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 300);
+    };
+
+    window.sendSOS = function () {
+        document.getElementById('sos-action-btns').style.display = 'none';
+        const succ = document.getElementById('sos-success-state');
+        succ.innerHTML = '<div style="font-size: 17px; font-weight: 700; padding: 16px 0; color: var(--text-main);">⏳ Gönderiliyor...</div>';
+        succ.style.display = 'flex';
+        
+        setTimeout(() => {
+            succ.innerHTML = '<div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz danışmaya iletildi.</div>';
+            setTimeout(closeSOS, 2000);
+        }, 1200);
+    };
+
     </script>
 </body>
 </html>
