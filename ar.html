@@ -171,25 +171,56 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 22px; font-weight: 700; flex-shrink: 0;
             transition: transform 0.1s;
+            pointer-events: auto !important;
         }
         .btn-help:active { transform: scale(0.95); }
         .btn-help span { font-size: 9px; margin-top: 2px; font-weight: 700; letter-spacing: 0.3px; }
 
-        /* Turn Arrow */
         #turn-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: none; flex-direction: column; align-items: center; gap: 14px;
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 55vh;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, transparent 100%);
+            pointer-events: none;
         }
-        #turn-overlay.visible { display: flex; animation: turnPulse 1.2s ease-in-out infinite; }
-        .turn-icon { font-size: 96px; line-height: 1; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2)); }
-        .turn-text {
-            font-size: 22px; font-weight: 800; color: #FFF; background-color: var(--primary);
-            padding: 10px 24px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,122,255,0.4);
-            letter-spacing: 1px;
+        #turn-overlay.visible { display: flex; }
+
+        .turn-direction-badge {
+            font-size: 56px;
+            line-height: 1;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
         }
-        @keyframes turnPulse {
-            0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.65; transform: translate(-50%, -50%) scale(1.08); }
+        .turn-label-box {
+            background: #FF3B30;
+            color: #fff;
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            padding: 16px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(255,59,48,0.5);
+        }
+        .turn-dist-badge {
+            background: rgba(255,255,255,0.18);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 14px;
+        }
+        @keyframes turnBounceLeft {
+            from { transform: translateX(-16px); }
+            to   { transform: translateX(4px); }
+        }
+        @keyframes turnBounceRight {
+            from { transform: translateX(16px); }
+            to   { transform: translateX(-4px); }
         }
 
         /* ══ DONE SCREEN ══ */
@@ -230,9 +261,11 @@
             background: rgba(0,0,0,0.55);
             display: none; align-items: center; justify-content: center;
             padding: 24px;
-            z-index: 9999;                /* ← FIX: en üstte */
+            z-index: 9999;
             backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-            pointer-events: auto;         /* ← FIX: tıklama her zaman aktif */
+            pointer-events: auto;
+            isolation: isolate;
+            will-change: transform;
         }
         #sos-modal.show { display: flex; }          /* ← FIX: opacity animasyonu yerine basit display toggle */
         .sos-card {
@@ -318,21 +351,7 @@
         </div>
     </div>
 
-    <!-- ══ SOS MODAL ══ -->
-    <div id="sos-modal">
-        <div class="sos-card">
-            <span class="sos-icon">🚨</span>
-            <div class="sos-title">Yardım Çağrısı</div>
-            <div class="sos-desc">Konumunuz acil müdahale için danışmaya gönderilecek. Emin misiniz?</div>
-            <div class="sos-actions" id="sos-action-btns">
-                <button class="btn-large" style="background-color: var(--danger); color: #FFF; min-height:56px;" onclick="sendSOS()">🆘 Evet, Yardım İste</button>
-                <button class="btn-large btn-secondary" style="min-height:52px;" onclick="closeSOS()">İptal</button>
-            </div>
-            <div class="sos-actions" id="sos-success-state" style="display:none;">
-                <div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz danışmaya iletildi.</div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- ══ A-FRAME ══ -->
     <a-scene xr-mode-ui="enabled: false"
@@ -360,8 +379,9 @@
         </div>
 
         <div id="turn-overlay">
-            <div class="turn-icon" id="turn-arrow-icon">⬅️</div>
-            <div class="turn-text" id="turn-arrow-text">SOLA DÖN</div>
+            <div class="turn-direction-badge" id="turn-arrow-icon">⬅️</div>
+            <div class="turn-label-box" id="turn-arrow-text">SOLA DÖN</div>
+            <div class="turn-dist-badge" id="turn-dist-text"></div>
         </div>
 
         <div id="bottom-panel" class="interactive">
@@ -380,7 +400,7 @@
             
             <div class="bp-actions">
                 <!-- FIX: SOS butonu her zaman tıklanabilir (pointer-events: auto) -->
-                <button class="btn-help interactive" onclick="openSOS()">
+                <button class="btn-help interactive" onclick="openSOS(event)">
                     🆘<span>YARDIM</span>
                 </button>
                 <button class="btn-large btn-success interactive" style="flex:1" id="arrived-btn" onclick="onArrived()">✅ Ulaştım</button>
@@ -584,20 +604,16 @@
                 shaft.setAttribute('color', '#007AFF');
                 shaft.setAttribute('opacity', '0.88');
                 shaft.setAttribute('position', `${px} 0.04 ${pz}`);
-                shaft.setAttribute('rotation', `0 ${angleDeg} 0`);
+                shaft.setAttribute('rotation', `90 ${angleDeg} 0`);
                 shaft.setAttribute('material', 'color: #007AFF; transparent: true; opacity: 0.88; roughness: 0.3; metalness: 0.1');
 
-                /* ── Ok başı (koni) ── */
                 const head = document.createElement('a-cone');
                 head.setAttribute('radius-bottom', '0.14');
                 head.setAttribute('radius-top', '0');
                 head.setAttribute('height', '0.22');
                 head.setAttribute('color', '#007AFF');
-                /* Konik ucu ileri yöne çevir: silindir Y-ekseni üzerinde,
-                   koni varsayılan ucu yukarı baktığı için X=90° döndürüp Y=angleDeg yap */
-                head.setAttribute('rotation', `${90} ${angleDeg} 0`);
+                head.setAttribute('rotation', `90 ${angleDeg} 0`);
 
-                /* Koninin merkezi: shaft'ın önünde */
                 const hx = px + Math.sin(angleRad) * 0.28;
                 const hz = pz + Math.cos(angleRad) * 0.28;
                 head.setAttribute('position', `${hx} 0.04 ${hz}`);
@@ -633,14 +649,38 @@
        Çözüm: "Ulaştım" butonu zaten mevcut; otomatik tespit için
               eşiği 1.5m'ye çıkar ve grace period'u her bacak değişiminde sıfırla.
     ══════════════════════════════════════ */
+    function getProgressOnPath(camPos, pathPoints) {
+        let closestDist = Infinity;
+        let coveredUpToClosest = 0;
+        let runningLen = 0;
+
+        for (let i = 1; i < pathPoints.length; i++) {
+            const a = pathPoints[i - 1];
+            const b = pathPoints[i];
+            const segLen = Math.hypot(b.x - a.x, b.z - a.z);
+
+            const t = Math.max(0, Math.min(1,
+                ((camPos.x - a.x) * (b.x - a.x) + (camPos.z - a.z) * (b.z - a.z))
+                / (segLen * segLen + 1e-10)
+            ));
+            const nx = a.x + t * (b.x - a.x);
+            const nz = a.z + t * (b.z - a.z);
+            const d = Math.hypot(camPos.x - nx, camPos.z - nz);
+
+            if (d < closestDist) {
+                closestDist = d;
+                coveredUpToClosest = runningLen + t * segLen;
+            }
+            runningLen += segLen;
+        }
+        return coveredUpToClosest;
+    }
+
     function tick() {
         if (!arActive) return;
 
-        const cam       = camEl.object3D;
-        const children  = arrowsEl.children;
+        const cam = camEl.object3D;
 
-        /* Son oku bul (ring + shaft + head üçlü → head en sonda) */
-        /* Sadece a-cone ve a-cylinder'ları say */
         const arElements = Array.from(arrowsEl.children);
         const headElements = arElements.filter(el => el.tagName && el.tagName.toLowerCase() === 'a-cone');
         const lastHead = headElements[headElements.length - 1];
@@ -656,37 +696,36 @@
 
         const dist = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
 
-        /* Grace period: her bacak başladığında 2 saniye yoksay */
         const isGracePeriod = arStartTime ? (Date.now() - arStartTime) < 2000 : true;
 
-        /* Kalan mesafe gösterimi */
         let coveredDist = 0;
         for (let i = 0; i < legIdx; i++) { if (legs[i].path) coveredDist += legs[i].path.length; }
         const currentLeg = legs[legIdx];
         if (currentLeg && currentLeg.path) {
-            coveredDist += Math.max(0, currentLeg.path.length - dist);
+            const pathPoints = currentLeg.path.map(p => parsePos(p));
+            const progressOnCurrentLeg = getProgressOnPath(camPos, pathPoints);
+            coveredDist += progressOnCurrentLeg;
         }
         const remainMeters = Math.max(0, totalRouteDist - coveredDist);
-        document.getElementById('ms-dist').textContent = remainMeters < 1 ? '<1m' : Math.round(remainMeters) + 'm';
-        
+        const remainText = remainMeters < 1 ? '<1m' : Math.round(remainMeters) + 'm';
+        document.getElementById('ms-dist').textContent = remainText;
+        document.getElementById('nc-label').textContent = `${Math.round(remainMeters)}m kaldı`;
+
         const estSec = Math.ceil(remainMeters * 1.5);
         document.getElementById('ms-time').textContent = estSec >= 60
             ? Math.ceil(estSec / 60) + 'dk'
             : estSec + 'sn';
 
-        /* Dönüş uyarısı */
         const nextLeg = legs[legIdx + 1];
         if (nextLeg && dist <= 2.0 && dist > 0.4) {
             const instr = (nextLeg.instruction || nextLeg.title || '').toLowerCase();
-            if (instr.includes('sola'))      showTurnArrow('⬅️', 'SOLA DÖN');
-            else if (instr.includes('sağa')) showTurnArrow('➡️', 'SAĞA DÖN');
+            if (instr.includes('sola'))      showTurnArrow('⬅️', 'SOLA DÖN', dist);
+            else if (instr.includes('sağa')) showTurnArrow('➡️', 'SAĞA DÖN', dist);
             else hideTurnArrow();
         } else {
             hideTurnArrow();
         }
 
-        /* FIX: Otomatik varış eşiği 1.5m (önceden 0.5m → çok dar)
-           Son bacakta ve grace period bittiyse tamamla */
         if (dist < 1.5 && !isGracePeriod && legIdx === legs.length - 1) {
             cancelAnimationFrame(tickRafId);
             sceneEl.exitVR();
@@ -697,9 +736,16 @@
         tickRafId = requestAnimationFrame(tick);
     }
 
-    function showTurnArrow(icon, text) {
-        document.getElementById('turn-arrow-icon').textContent = icon;
+    function showTurnArrow(icon, text, distM) {
+        const el = document.getElementById('turn-arrow-icon');
+        el.textContent = icon;
+        el.style.animationName = icon.includes('⬅') ? 'turnBounceLeft' : 'turnBounceRight';
+        el.style.animationDuration = '0.6s';
+        el.style.animationTimingFunction = 'ease-in-out';
+        el.style.animationIterationCount = 'infinite';
+        el.style.animationDirection = 'alternate';
         document.getElementById('turn-arrow-text').textContent = text;
+        document.getElementById('turn-dist-text').textContent = distM ? `${Math.round(distM)}m sonra` : '';
         turnOverlay.classList.add('visible');
     }
     function hideTurnArrow() { turnOverlay.classList.remove('visible'); }
@@ -779,7 +825,8 @@
        FIX 2: SOS — display: flex basit toggle (önceden opacity/transform ile başlayıp
        display:none bırakılıyordu → rota seçim ekranında görünüyordu)
     ══════════════════════════════════════ */
-    window.openSOS = function () {
+    window.openSOS = function (e) {
+        if (e) e.stopPropagation();
         const modal = document.getElementById('sos-modal');
         document.getElementById('sos-action-btns').style.display  = 'flex';
         document.getElementById('sos-success-state').style.display = 'none';
@@ -803,5 +850,20 @@
     };
 
     </script>
+
+    <div id="sos-modal">
+        <div class="sos-card">
+            <span class="sos-icon">🚨</span>
+            <div class="sos-title">Yardım Çağrısı</div>
+            <div class="sos-desc">Konumunuz acil müdahale için danışmaya gönderilecek. Emin misiniz?</div>
+            <div class="sos-actions" id="sos-action-btns">
+                <button class="btn-large" style="background-color: var(--danger); color: #FFF; min-height:56px;" onclick="sendSOS()">🆘 Evet, Yardım İste</button>
+                <button class="btn-large btn-secondary" style="min-height:52px;" onclick="closeSOS()">İptal</button>
+            </div>
+            <div class="sos-actions" id="sos-success-state" style="display:none;">
+                <div style="font-size: 17px; font-weight: 700; color: var(--success); padding: 16px 0;">✅ Konumunuz danışmaya iletildi.</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
