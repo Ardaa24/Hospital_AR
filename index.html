@@ -2,204 +2,305 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Tarsus Devlet Hastanesi — AR Navigasyon</title>
     <meta name="description" content="Tarsus Devlet Hastanesi artırılmış gerçeklik ile engelsiz yönlendirme sistemi">
     <script src="config.js"></script>
     <style>
         :root {
-            --accent: #00C896;
-            --accent-dark: #00A87A;
-            --accent-dim: rgba(0,200,150,0.08);
-            --accent-border: rgba(0,200,150,0.25);
-            --accent-glow: rgba(0,200,150,0.35);
-            --blue: #0055EE;
-            --bg: #080F1C;
-            --bg-deep: #050E1A;
-            --card: rgba(255,255,255,0.04);
-            --card-border: rgba(255,255,255,0.08);
-            --text: #fff;
-            --text-dim: rgba(255,255,255,0.45);
-            --text-muted: rgba(255,255,255,0.25);
-            --danger: #FF3B5C;
-            --radius: 18px;
+            /* Apple Maps / iOS System Colors */
+            --primary: #007AFF;
+            --primary-dark: #0056b3;
+            --bg-body: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-main: #000000;
+            --text-secondary: #8E8E93;
+            --text-light: #FFFFFF;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --disabled-bg: #E5E5EA;
+            --disabled-text: #AEAEB2;
+            --divider: #C6C6C8;
+            --radius: 20px;
         }
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-body: #000000;
+                --card-bg: #1C1C1E;
+                --text-main: #FFFFFF;
+                --text-secondary: #EBEBF5;
+                --disabled-bg: #3A3A3C;
+                --disabled-text: #8E8E93;
+                --divider: #38383A;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
 
         /* ── App Screens ── */
-        .app-screen{display:none;flex-direction:column;min-height:100vh;position:relative}
-        .app-screen.active{display:flex}
+        .app-screen {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+        }
+        .app-screen.active {
+            display: flex;
+        }
+
+        /* ── Shared UI Elements (A11y) ── */
+        button {
+            border: none;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .btn-large {
+            width: 100%;
+            min-height: 64px; /* A11y large touch target */
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-large:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
+        .btn-primary { background-color: var(--primary); color: var(--text-light); }
+        .btn-primary:disabled { background-color: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; }
+        .btn-secondary { background-color: var(--disabled-bg); color: var(--primary); }
+
+        .header {
+            padding: 30px 20px 16px;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--divider);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .header-title { font-size: 28px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .header-subtitle { font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
 
         /* ══ SCREEN 1 — KARŞILAMA ══ */
-        #screen-welcome{
-            align-items:center;justify-content:center;padding:32px 28px;text-align:center;
-            background:linear-gradient(160deg,#0B1E38 0%,#071626 70%,var(--bg-deep) 100%);
+        #screen-welcome {
+            justify-content: center;
+            align-items: center;
+            padding: 32px 24px;
+            background-color: var(--card-bg);
         }
-        .s1-glow{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,200,150,0.13) 0%,transparent 70%);top:38%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
-        .logo-wrap{position:relative;z-index:1;width:88px;height:88px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;box-shadow:0 12px 36px var(--accent-glow);margin-bottom:22px}
-        .s1-title{position:relative;z-index:1;font-size:24px;font-weight:800;letter-spacing:-0.4px;margin-bottom:8px}
-        .s1-tagline{position:relative;z-index:1;color:var(--text-dim);font-size:13px;line-height:1.55;margin-bottom:36px}
-        .hospital-pill{position:relative;z-index:1;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:13px 18px;width:100%;max-width:340px;margin-bottom:20px}
-        .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 8px rgba(0,200,150,0.9);animation:pulse-glow 2s infinite}
-        @keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(0,200,150,0.9)}50%{box-shadow:0 0 16px rgba(0,200,150,0.4)}}
-        .hospital-pill span{color:rgba(255,255,255,0.75);font-size:13px;font-weight:500}
-        .route-preview{position:relative;z-index:1;display:flex;align-items:center;gap:8px;background:var(--accent-dim);border:1px solid rgba(0,200,150,0.18);border-radius:12px;padding:10px 14px;width:100%;max-width:340px;margin-bottom:28px}
-        .route-preview span{color:var(--accent);font-size:12px;font-weight:600}
+        .welcome-icon { font-size: 80px; margin-bottom: 24px; }
+        .welcome-title { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 12px; line-height: 1.1; letter-spacing: -0.5px; }
+        .welcome-desc { font-size: 17px; color: var(--text-secondary); text-align: center; margin-bottom: 40px; line-height: 1.4; font-weight: 500; }
+        .hospital-pill {
+            display: inline-flex; align-items: center; gap: 10px;
+            background-color: var(--bg-body);
+            border-radius: 14px;
+            padding: 14px 20px;
+            margin-bottom: 30px;
+        }
+        .pulse-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--success); }
+        .hospital-pill span { color: var(--text-main); font-size: 15px; font-weight: 600; }
 
         /* ══ SCREEN 2 — ROTA LİSTESİ ══ */
-        #screen-routes{background:var(--bg)}
-        .s2-topbar{padding:48px 20px 14px}
-        .s2-top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-        .s2-page-title{font-size:20px;font-weight:800;letter-spacing:-0.3px}
-        .s2-progress-badge{background:rgba(0,200,150,0.12);border:1px solid var(--accent-border);border-radius:10px;padding:6px 12px;color:var(--accent);font-size:12px;font-weight:700}
-        .s2-progress-track{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden}
-        .s2-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:3px;transition:width 0.5s}
-        .s2-list{flex:1;padding:8px 20px 120px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
-        .cat-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-dim);padding:14px 0 6px;display:flex;align-items:center;gap:8px}
-        .cat-header::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+        .progress-container {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 16px;
+            background-color: var(--bg-body);
+            padding: 12px 16px;
+            border-radius: 14px;
+        }
+        .progress-text { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .progress-bar-wrap { flex: 1; margin-left: 16px; height: 8px; background-color: var(--disabled-bg); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background-color: var(--success); transition: width 0.4s ease; border-radius: 4px; }
 
-        /* Route Card */
-        .route-card{display:flex;align-items:center;gap:14px;border-radius:var(--radius);padding:16px;border:1.5px solid;position:relative;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
-        .route-card.state-next{background:var(--accent-dim);border-color:rgba(0,200,150,0.35)}
-        .route-card.state-locked{background:var(--card);border-color:var(--card-border);opacity:0.6;cursor:not-allowed}
-        .route-card.state-done{background:rgba(0,200,150,0.05);border-color:rgba(0,200,150,0.15);opacity:0.7}
-        .route-card.state-passive{background:var(--card);border-color:var(--card-border);opacity:0.4;cursor:default;pointer-events:none}
-        .route-card.state-next:active{transform:scale(0.98)}
-        .rc-icon-wrap{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem}
-        .state-next .rc-icon-wrap{background:rgba(0,200,150,0.18);border:1px solid rgba(0,200,150,0.3)}
-        .state-locked .rc-icon-wrap,.state-passive .rc-icon-wrap{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08)}
-        .state-done .rc-icon-wrap{background:rgba(0,200,150,0.12);border:1px solid rgba(0,200,150,0.2)}
-        .rc-info{flex:1;min-width:0}
-        .rc-name{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .state-next .rc-name{color:#fff}
-        .state-locked .rc-name,.state-passive .rc-name{color:var(--text-dim)}
-        .state-done .rc-name{color:rgba(255,255,255,0.6)}
-        .rc-loc{font-size:11px}
-        .state-next .rc-loc{color:var(--text-dim)}
-        .state-locked .rc-loc,.state-passive .rc-loc{color:var(--text-muted)}
-        .state-done .rc-loc{color:rgba(255,255,255,0.3)}
-        .rc-badge{font-size:11px;font-weight:700;padding:5px 10px;border-radius:9px;flex-shrink:0;white-space:nowrap}
-        .state-next .rc-badge{background:rgba(0,200,150,0.18);color:var(--accent);border:1px solid rgba(0,200,150,0.3)}
-        .state-locked .rc-badge{background:rgba(255,255,255,0.05);color:var(--text-muted);border:1px solid rgba(255,255,255,0.08)}
-        .state-done .rc-badge{background:rgba(0,200,150,0.1);color:rgba(0,200,150,0.6);border:1px solid rgba(0,200,150,0.15)}
-        .state-passive .rc-badge{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid rgba(255,255,255,0.06);font-size:10px}
+        .route-list-content {
+            padding: 16px 20px 140px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .category-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 24px 0 12px;
+        }
+        .category-header:first-child { margin-top: 8px; }
+
+        .route-card {
+            background-color: var(--card-bg);
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            min-height: 84px; /* A11y */
+            border: 2.5px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .route-card.state-next { border-color: var(--primary); }
+        .route-card.state-locked { opacity: 0.55; cursor: not-allowed; }
+        .route-card.state-done { opacity: 0.8; }
+        .route-card.state-passive { opacity: 0.45; cursor: default; }
+
+        .rc-icon {
+            font-size: 32px; width: 56px; height: 56px;
+            background-color: var(--bg-body);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .rc-info { flex: 1; min-width: 0; }
+        .rc-name { font-size: 17px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rc-desc { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+        
+        .rc-badge {
+            font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+        }
+        .state-next .rc-badge { background-color: var(--primary); color: #FFF; }
+        .state-locked .rc-badge { background-color: var(--disabled-bg); color: var(--text-secondary); }
+        .state-done .rc-badge { background-color: var(--success); color: #FFF; }
+        .state-passive .rc-badge { background-color: var(--disabled-bg); color: var(--text-secondary); }
+
+        .bottom-action-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: var(--card-bg);
+            padding: 16px 20px 24px;
+            border-top: 1px solid var(--divider);
+            z-index: 20;
+        }
 
         /* ══ SCREEN 3 — ROTA ONAYI ══ */
-        #screen-confirm{background:var(--bg)}
-        .s3-header{display:flex;align-items:center;gap:12px;padding:48px 20px 14px}
-        .s3-header-title{font-size:17px;font-weight:700}
-        .back-btn{width:48px;height:48px;border-radius:13px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;color:rgba(255,255,255,0.65);font-size:20px;-webkit-tap-highlight-color:transparent}
-        .back-btn:active{opacity:0.7}
-        .map-area{margin:0 20px;height:170px;border-radius:20px;background:linear-gradient(135deg,#0C2040,#091830);border:1px solid rgba(255,255,255,0.07);position:relative;overflow:hidden}
-        .map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,150,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.08) 1px,transparent 1px);background-size:22px 22px}
-        .map-floor{position:absolute;top:10px;left:14px;background:rgba(0,200,150,0.12);border:1px solid var(--accent-border);border-radius:7px;padding:4px 9px;color:var(--accent);font-size:11px;font-weight:700}
-        .route-path{position:absolute;top:50%;left:14%;right:14%;height:3px;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:2px;box-shadow:0 0 10px rgba(0,200,150,0.7);transform:translateY(-50%)}
-        .dot-start{position:absolute;left:14%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--accent);border:2.5px solid #fff;box-shadow:0 0 10px rgba(0,200,150,0.8)}
-        .dot-end{position:absolute;right:14%;top:50%;transform:translate(50%,-50%);width:18px;height:18px;border-radius:50%;background:var(--danger);border:2.5px solid #fff;box-shadow:0 0 14px rgba(255,59,92,0.8)}
-        .s3-dest-card{margin:14px 20px 0;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px}
-        .s3-dest-icon{width:48px;height:48px;border-radius:14px;background:rgba(0,200,150,0.12);border:1px solid rgba(0,200,150,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.5rem}
-        .s3-dest-name{font-size:15px;font-weight:700;margin-bottom:3px}
-        .s3-dest-sub{color:var(--text-dim);font-size:12px}
-        .stats-row{display:flex;gap:10px;margin:12px 20px 0}
-        .stat-box{flex:1;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:13px 10px;text-align:center}
-        .stat-box .sv{color:var(--accent);font-size:19px;font-weight:800}
-        .stat-box .sk{color:rgba(255,255,255,0.38);font-size:11px;margin-top:3px}
-        .access-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 20px 0}
-        .access-chip{display:flex;align-items:center;gap:5px;background:var(--accent-dim);border:1px solid rgba(0,200,150,0.18);border-radius:9px;padding:6px 11px;color:var(--accent);font-size:11px;font-weight:600}
-        .s3-actions{padding:14px 20px 36px;display:flex;flex-direction:column;gap:9px;margin-top:auto}
+        .confirm-content { padding: 20px; flex: 1; overflow-y: auto; }
+        .back-nav {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 17px; font-weight: 600; color: var(--primary);
+            margin-bottom: 24px; cursor: pointer; padding: 8px 0;
+        }
+        
+        .confirm-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            margin-bottom: 20px;
+        }
+        .cc-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+        .cc-icon { font-size: 48px; }
+        .cc-title { font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }
+        .cc-desc { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
 
-        /* ── Shared Button Styles ── */
-        .btn-primary{width:100%;padding:18px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));border:none;border-radius:var(--radius);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px var(--accent-glow);-webkit-tap-highlight-color:transparent;transition:transform 0.15s}
-        .btn-primary:active{transform:scale(0.97)}
-        .btn-secondary{width:100%;padding:15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;color:rgba(255,255,255,0.6);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
-        .btn-secondary:active{opacity:0.7}
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+        .stat-item { background-color: var(--bg-body); padding: 16px; border-radius: 16px; text-align: center; }
+        .stat-val { font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+        .stat-key { font-size: 14px; color: var(--text-secondary); font-weight: 600; }
 
-        /* ── Bottom fixed bar ── */
-        .s2-bottom{position:fixed;bottom:0;left:0;right:0;padding:16px 20px 28px;background:linear-gradient(to top,var(--bg) 60%,transparent);z-index:10}
+        .access-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+        .access-tag { font-size: 14px; font-weight: 700; padding: 8px 14px; border-radius: 12px; background-color: var(--bg-body); color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; }
+
+        .s3-actions { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 
         /* ── Lock Toast ── */
-        #lock-toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:#1E2530;border:1px solid rgba(255,180,0,0.3);color:#FFD580;font-size:0.82rem;padding:10px 18px;border-radius:10px;opacity:0;transition:opacity 0.25s,transform 0.25s;z-index:100;text-align:center;pointer-events:none;white-space:nowrap}
-        #lock-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-        /* ── Watermark ── */
-        .watermark{position:fixed;bottom:8px;right:10px;font-size:0.62rem;color:rgba(255,255,255,0.1);pointer-events:none;z-index:9999}
+        #lock-toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background-color: var(--text-main); color: var(--bg-body);
+            padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 700;
+            opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap;
+        }
+        #lock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
 
     <!-- ══ SCREEN 1 — KARŞILAMA ══ -->
     <div id="screen-welcome" class="app-screen active">
-        <div class="s1-glow"></div>
-        <div class="logo-wrap">
-            <svg width="46" height="46" viewBox="0 0 52 52" fill="none"><rect x="22" y="6" width="8" height="40" rx="4" fill="white"/><rect x="6" y="22" width="40" height="8" rx="4" fill="white"/></svg>
-        </div>
-        <h1 class="s1-title">Hastane AR<br>Navigasyon</h1>
-        <p class="s1-tagline">Artırılmış gerçeklik ile<br>güvenli ve bağımsız yönlenme</p>
+        <div class="welcome-icon">🏥</div>
+        <h1 class="welcome-title">Hastane İçi<br>Navigasyon</h1>
+        <p class="welcome-desc">Artırılmış gerçeklik ile engelsiz<br>ve güvenli yönlendirme sistemi</p>
+        
         <div class="hospital-pill">
             <div class="pulse-dot"></div>
             <span>Tarsus Devlet Hastanesi</span>
         </div>
-        <div class="route-preview">
-            <span id="route-preview-text"></span>
-        </div>
-        <button class="btn-primary" id="btn-start-nav">Navigasyona Başla</button>
+        
+        <button class="btn-large btn-primary" id="btn-start-nav">Navigasyona Başla</button>
     </div>
 
     <!-- ══ SCREEN 2 — ROTA LİSTESİ ══ -->
     <div id="screen-routes" class="app-screen">
-        <div class="s2-topbar">
-            <div class="s2-top-row">
-                <div class="s2-page-title">Rotalar</div>
-                <div class="s2-progress-badge" id="s2-progress-badge">0 / 4 Tamamlandı</div>
-            </div>
-            <div class="s2-progress-track">
-                <div class="s2-progress-fill" id="s2-progress-fill"></div>
+        <div class="header">
+            <div class="header-title">Rotalar</div>
+            <div class="progress-container">
+                <span class="progress-text" id="s2-progress-text">0/4 Tamamlandı</span>
+                <div class="progress-bar-wrap">
+                    <div class="progress-fill" id="s2-progress-fill"></div>
+                </div>
             </div>
         </div>
-        <div class="s2-list" id="route-list"></div>
-        <div class="s2-bottom">
-            <button class="btn-primary" id="btn-go-route" disabled>Rota Seçin</button>
+        
+        <div class="route-list-content" id="route-list"></div>
+        
+        <div class="bottom-action-bar">
+            <button class="btn-large btn-primary" id="btn-go-route" disabled>Rota Seçin</button>
         </div>
     </div>
 
     <!-- ══ SCREEN 3 — ROTA ONAYI ══ -->
     <div id="screen-confirm" class="app-screen">
-        <div class="s3-header">
-            <div class="back-btn" id="btn-confirm-back">←</div>
-            <div class="s3-header-title">Rota Detayı</div>
-        </div>
-        <div class="map-area">
-            <div class="map-grid"></div>
-            <div class="map-floor" id="s3-floor"></div>
-            <div class="route-path"></div>
-            <div class="dot-start"></div>
-            <div class="dot-end"></div>
-        </div>
-        <div class="s3-dest-card">
-            <div class="s3-dest-icon" id="s3-icon"></div>
-            <div>
-                <div class="s3-dest-name" id="s3-name"></div>
-                <div class="s3-dest-sub" id="s3-desc"></div>
+        <div class="header" style="padding-bottom: 24px;">
+            <div class="back-nav" id="btn-confirm-back">
+                <span style="font-size:22px;">←</span> Geri Dön
             </div>
+            <div class="header-title">Rota Detayı</div>
         </div>
-        <div class="stats-row">
-            <div class="stat-box"><div class="sv" id="s3-distance">—</div><div class="sk">Mesafe</div></div>
-            <div class="stat-box"><div class="sv" id="s3-time">—</div><div class="sk">Süre</div></div>
-            <div class="stat-box"><div class="sv" id="s3-turns">—</div><div class="sk">Dönüş</div></div>
-        </div>
-        <div class="access-row">
-            <div class="access-chip">♿ Engelsiz</div>
-            <div class="access-chip" id="s3-elevator-chip" style="display:none">🛗 Asansör</div>
-        </div>
-        <div class="s3-actions">
-            <button class="btn-primary" id="btn-start-ar">🚀 Navigasyonu Başlat</button>
-            <button class="btn-secondary" id="btn-diff-route">Farklı Rota Seç</button>
+        
+        <div class="confirm-content">
+            <div class="confirm-card">
+                <div class="cc-header">
+                    <div class="cc-icon" id="s3-icon"></div>
+                    <div>
+                        <div class="cc-title" id="s3-name"></div>
+                        <div class="cc-desc" id="s3-desc"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item"><div class="stat-val" id="s3-distance">—</div><div class="stat-key">Mesafe</div></div>
+                    <div class="stat-item"><div class="stat-val" id="s3-time">—</div><div class="stat-key">Tahmini Süre</div></div>
+                </div>
+
+                <div class="access-tags">
+                    <div class="access-tag">♿ Engelsiz Rota</div>
+                    <div class="access-tag" id="s3-elevator-chip" style="display:none">🛗 Asansör İçerir</div>
+                </div>
+            </div>
+
+            <div class="s3-actions">
+                <button class="btn-large btn-primary" id="btn-start-ar">AR ile Navigasyonu Başlat</button>
+                <button class="btn-large btn-secondary" id="btn-diff-route">Farklı Rota Seç</button>
+            </div>
         </div>
     </div>
 
     <div id="lock-toast">🔒 Önce sıradaki rotayı tamamlayın</div>
-    <div class="watermark">by Arda24</div>
 
     <script>
     /* ── sessionStorage — Sıralı Kilit Sistemi ── */
@@ -213,22 +314,46 @@
         try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set])); } catch {}
     }
 
-    /* ar.html'den ?done=ID ile dönüş kontrolü */
-    (function checkReturn() {
-        const p = new URLSearchParams(location.search);
-        const doneId = p.get('done');
-        if (!doneId) return;
-        const c = loadCompleted(); c.add(doneId); saveCompleted(c);
-        history.replaceState(null, '', 'index.html');
-    })();
-
     const completed = loadCompleted();
     let selectedRoute = null;
 
-    /* Aktif rotalar sıralı, pasifler ayrı */
     const activeRoutes = NAV_ROUTES.filter(r => r.isAvailable).sort((a, b) => a.order - b.order);
     const nextUnlocked = activeRoutes.find(r => !completed.has(r.id));
     const nextId = nextUnlocked ? nextUnlocked.id : null;
+
+    /* URL Parametrelerini Kontrol Et (autoStartNext, done) */
+    (function checkUrlParams() {
+        const p = new URLSearchParams(location.search);
+        const doneId = p.get('done');
+        const autoStart = p.get('autoStartNext') === 'true';
+
+        if (doneId) {
+            completed.add(doneId);
+            saveCompleted(completed);
+            
+            // Eğer autoStartNext istenmişse ve sıradaki rota varsa doğrudan Screen 3'e geç
+            const newNext = activeRoutes.find(r => !completed.has(r.id));
+            if (autoStart && newNext) {
+                selectedRoute = newNext;
+                history.replaceState(null, '', 'index.html');
+                // DOMContentLoaded bekleyip yönlendir
+                document.addEventListener('DOMContentLoaded', () => {
+                    fillConfirmScreen(selectedRoute);
+                    showScreen('screen-confirm');
+                });
+                return;
+            }
+            history.replaceState(null, '', 'index.html');
+        }
+
+        // Normal durumda AR'den dönülmüşse Screen 2'yi göster
+        if (completed.size > 0 && !autoStart) {
+            document.addEventListener('DOMContentLoaded', () => {
+                renderRouteList();
+                showScreen('screen-routes');
+            });
+        }
+    })();
 
     function getCardState(route) {
         if (!route.isAvailable) return 'passive';
@@ -237,11 +362,6 @@
         return 'locked';
     }
 
-    /* ── Ekran 1: Preview text ── */
-    document.getElementById('route-preview-text').textContent =
-        `${activeRoutes.length} rota navigasyona hazır`;
-
-    /* ── Ekran 2: Kategori bazlı liste ── */
     function renderRouteList() {
         const listEl = document.getElementById('route-list');
         listEl.innerHTML = '';
@@ -251,7 +371,7 @@
             if (routesInCat.length === 0) return;
 
             const header = document.createElement('div');
-            header.className = 'cat-header';
+            header.className = 'category-header';
             header.textContent = cat;
             listEl.appendChild(header);
 
@@ -268,13 +388,13 @@
                 if (state === 'next') badgeText = '▶ Sıradaki';
                 else if (state === 'locked') badgeText = '🔒 Kilitli';
                 else if (state === 'done') badgeText = '✓ Tamamlandı';
-                else if (state === 'passive') badgeText = '🚫 AR Desteklenmiyor';
+                else if (state === 'passive') badgeText = 'Desteklenmiyor';
 
                 card.innerHTML = `
-                    <div class="rc-icon-wrap">${route.icon}</div>
+                    <div class="rc-icon">${route.icon}</div>
                     <div class="rc-info">
                         <div class="rc-name">${route.name}</div>
-                        <div class="rc-loc">${route.desc}</div>
+                        <div class="rc-desc">${route.desc}</div>
                     </div>
                     <div class="rc-badge">${badgeText}</div>
                 `;
@@ -297,85 +417,76 @@
         const done = completed.size;
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         document.getElementById('s2-progress-fill').style.width = pct + '%';
-        document.getElementById('s2-progress-badge').textContent = `${done} / ${total} Tamamlandı`;
+        document.getElementById('s2-progress-text').textContent = `${done}/${total} Tamamlandı`;
     }
 
     function selectRoute(route, cardEl) {
-        document.querySelectorAll('.route-card').forEach(c => c.style.outline = 'none');
-        cardEl.style.outline = '2px solid ' + getComputedStyle(document.documentElement).getPropertyValue('--accent');
+        document.querySelectorAll('.route-card').forEach(c => c.style.borderColor = 'transparent');
+        cardEl.style.borderColor = 'var(--primary)';
         selectedRoute = route;
         const btn = document.getElementById('btn-go-route');
         btn.disabled = false;
-        btn.textContent = `${route.name} →`;
+        btn.textContent = `${route.name} Detayı →`;
     }
 
-    /* ── Ekran 3: Rota Onayı Doldur ── */
     function fillConfirmScreen(route) {
         document.getElementById('s3-icon').textContent = route.icon;
         document.getElementById('s3-name').textContent = route.name;
         document.getElementById('s3-desc').textContent = route.desc;
-        document.getElementById('s3-floor').textContent = route.desc.split('·').slice(0, 2).join('·').trim().toUpperCase();
 
         let totalDist = 0;
-        let turns = 0;
         let hasElevator = false;
         route.legs.forEach(leg => {
-            if (leg.path) totalDist += leg.path.length;
+            if (leg.path) totalDist += leg.path.length; // 1 node = 1 metre (totalRouteDist)
             if (leg.type === 'info') hasElevator = true;
-            const instr = (leg.instruction || '').toLowerCase();
-            if (instr.includes('sola') || instr.includes('sağa')) turns++;
         });
 
         document.getElementById('s3-distance').textContent = totalDist + 'm';
-        document.getElementById('s3-time').textContent = '~' + Math.max(1, Math.ceil(totalDist / 30)) + 'dk';
-        document.getElementById('s3-turns').textContent = turns;
-        document.getElementById('s3-elevator-chip').style.display = hasElevator ? 'flex' : 'none';
+        document.getElementById('s3-time').textContent = '~' + Math.max(1, Math.ceil(totalDist / 30)) + ' dk';
+        document.getElementById('s3-elevator-chip').style.display = hasElevator ? 'inline-flex' : 'none';
     }
 
-    /* ── Ekran Geçişleri ── */
     function showScreen(id) {
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
     }
 
-    document.getElementById('btn-start-nav').addEventListener('click', () => {
-        renderRouteList();
-        showScreen('screen-routes');
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn-start-nav').addEventListener('click', () => {
+            renderRouteList();
+            showScreen('screen-routes');
+        });
+
+        document.getElementById('btn-go-route').addEventListener('click', () => {
+            if (!selectedRoute) return;
+            fillConfirmScreen(selectedRoute);
+            showScreen('screen-confirm');
+        });
+
+        document.getElementById('btn-confirm-back').addEventListener('click', () => {
+            renderRouteList();
+            showScreen('screen-routes');
+        });
+
+        document.getElementById('btn-diff-route').addEventListener('click', () => {
+            renderRouteList();
+            showScreen('screen-routes');
+        });
+
+        document.getElementById('btn-start-ar').addEventListener('click', () => {
+            if (!selectedRoute) return;
+            sessionStorage.setItem('ar_hedef', selectedRoute.id);
+            window.location.href = `ar.html?hedef=${selectedRoute.id}`;
+        });
     });
 
-    document.getElementById('btn-go-route').addEventListener('click', () => {
-        if (!selectedRoute) return;
-        fillConfirmScreen(selectedRoute);
-        showScreen('screen-confirm');
-    });
-
-    document.getElementById('btn-confirm-back').addEventListener('click', () => {
-        showScreen('screen-routes');
-    });
-
-    document.getElementById('btn-diff-route').addEventListener('click', () => {
-        showScreen('screen-routes');
-    });
-
-    document.getElementById('btn-start-ar').addEventListener('click', () => {
-        if (!selectedRoute) return;
-        sessionStorage.setItem('ar_hedef', selectedRoute.id);
-        window.location.href = `ar.html?hedef=${selectedRoute.id}`;
-    });
-
-    /* ── Lock Toast ── */
     let toastTimer = null;
     function showLockToast() {
         const t = document.getElementById('lock-toast');
         t.classList.add('show');
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
-    }
-
-    /* Eğer AR'den dönüldüyse direkt Ekran 2'yi göster */
-    if (completed.size > 0) {
-        renderRouteList();
-        showScreen('screen-routes');
     }
     </script>
 </body>
