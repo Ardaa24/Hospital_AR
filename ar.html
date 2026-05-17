@@ -15,13 +15,17 @@
 
     <style>
         :root {
-            --accent:     #81D4FA;
-            --accent-dim: rgba(129,212,250,0.15);
-            --bg:         #0D1117;
-            --glass:      rgba(13,17,23,0.88);
-            --border:     rgba(129,212,250,0.25);
+            --accent:     #00C896;
+            --accent-dark: #00A87A;
+            --accent-dim: rgba(0,200,150,0.08);
+            --accent-glow: rgba(0,200,150,0.35);
+            --blue:       #0055EE;
+            --bg:         #080F1C;
+            --glass:      rgba(8,15,28,0.92);
+            --border:     rgba(0,200,150,0.25);
             --text:       #E6EDF3;
             --muted:      #768390;
+            --danger:     #FF3B5C;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,99 +55,87 @@
             z-index: 999;
         }
 
-        /* ── Üst Bilgi Barı ──────────────────────── */
-        #info-bar {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 400px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1.5px solid var(--border);
-            border-radius: 20px;
-            padding: 16px 20px;
-            display: none;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        /* ── Top HUD ──────────────────────────── */
+        #top-hud {
+            position: absolute; top: 0; left: 0; right: 0;
+            z-index: 20; padding: 36px 16px 12px;
+            display: none; align-items: flex-start; gap: 10px;
         }
-
-        .bar-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        #instruction-text {
-            font-size: 0.95rem;
-            font-weight: 600;
-            line-height: 1.4;
-            flex: 1;
-        }
-
-        .distance-box {
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        #dist-num {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--accent);
-            line-height: 1;
-            text-shadow: 0 0 24px rgba(129,212,250,0.6);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .dist-unit {
-            font-size: 0.72rem;
-            color: var(--muted);
-            text-align: right;
-        }
-
-        /* Bacak ilerleme çizgisi */
-        #leg-dots {
-            display: flex;
-            gap: 6px;
-            margin-top: 12px;
-        }
-
-        .leg-dot {
-            height: 3px;
-            flex: 1;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.12);
-            transition: background 0.4s;
-        }
-        .leg-dot.done    { background: var(--accent); }
-        .leg-dot.current { background: var(--accent); opacity: 0.55; }
-
-        /* ── "Noktaya Vardım" Butonu ─────────────── */
-        #arrived-btn {
-            position: absolute;
-            bottom: 48px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 48px);
-            max-width: 360px;
-            padding: 18px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            display: none;
-            pointer-events: auto;
-            box-shadow: 0 6px 24px rgba(129,212,250,0.35);
+        #top-hud .back-btn {
+            width: 42px; height: 42px; border-radius: 13px;
+            background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto; color: rgba(255,255,255,0.65); font-size: 18px;
             -webkit-tap-highlight-color: transparent;
-            transition: transform 0.15s, opacity 0.15s;
+        }
+        .next-card {
+            flex: 1; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; gap: 10px;
+            backdrop-filter: blur(12px);
+        }
+        .nc-icon {
+            width: 36px; height: 36px; border-radius: 11px;
+            background: rgba(0,200,150,0.18); border: 1px solid rgba(0,200,150,0.35);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            color: var(--accent); font-size: 18px;
+        }
+        .nc-label { color: rgba(255,255,255,0.45); font-size: 10px; margin-bottom: 2px; }
+        .nc-action { color: #fff; font-size: 13px; font-weight: 700; }
+
+        /* ── Bottom Panel ─────────────────────── */
+        #bottom-panel {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+            background: linear-gradient(180deg, transparent 0%, rgba(8,15,28,0.95) 28%, #080F1C 100%);
+            padding: 32px 16px 24px; display: none;
+            pointer-events: auto;
+        }
+        .prog-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .prog-dest { color: rgba(255,255,255,0.55); font-size: 12px; }
+        .prog-pct { color: var(--accent); font-size: 12px; font-weight: 700; }
+        .prog-bar { height: 5px; background: rgba(255,255,255,0.09); border-radius: 3px; overflow: hidden; margin-bottom: 14px; }
+        .prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00C896, #0055EE); box-shadow: 0 0 8px rgba(0,200,150,0.5); border-radius: 3px; transition: width 0.3s; }
+        .mini-stats { display: flex; gap: 10px; margin-bottom: 14px; }
+        .mini-stat { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07); border-radius: 13px; padding: 11px 8px; text-align: center; }
+        .mini-stat .msv { color: #fff; font-size: 17px; font-weight: 800; }
+        .mini-stat .msk { color: rgba(255,255,255,0.38); font-size: 10px; margin-top: 2px; }
+        .cta-row { display: flex; gap: 9px; }
+        .btn-arrived {
+            flex: 1; padding: 16px 10px;
+            background: linear-gradient(135deg, #00C896, #00A87A);
+            border: none; border-radius: 16px; color: #fff; font-size: 14px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 6px 18px rgba(0,200,150,0.4);
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            pointer-events: auto; -webkit-tap-highlight-color: transparent;
+        }
+        .btn-arrived:active { transform: scale(0.97); }
+        .btn-help {
+            padding: 16px 14px; background: rgba(255,59,92,0.12);
+            border: 1.5px solid rgba(255,59,92,0.35); border-radius: 16px;
+            color: #FF6B8A; font-size: 13px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            white-space: nowrap; pointer-events: auto; -webkit-tap-highlight-color: transparent;
         }
 
-        #arrived-btn:active { transform: translateX(-50%) scale(0.96); }
+        /* ── Turn Arrow Overlay ────────────────── */
+        #turn-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            display: none; flex-direction: column; align-items: center; gap: 12px;
+            z-index: 25; pointer-events: none;
+        }
+        #turn-overlay.visible { display: flex; animation: turnPulse 1.2s ease-in-out infinite; }
+        #turn-arrow-icon { font-size: 120px; line-height: 1; filter: drop-shadow(0 0 30px rgba(0,200,150,0.8)); }
+        #turn-arrow-text {
+            font-size: 22px; font-weight: 800; color: #fff;
+            background: rgba(0,0,0,0.6); border: 2px solid var(--accent);
+            border-radius: 14px; padding: 8px 20px;
+            text-shadow: 0 0 10px rgba(0,200,150,0.8);
+        }
+        @keyframes turnPulse {
+            0%,100% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+            50% { opacity: 0.5; transform: translate(-50%,-50%) scale(1.12); }
+        }
+
+        /* (arrived-btn moved to bottom-panel .btn-arrived) */
 
         /* ════════════════════════════════════════════
            BAŞLANGIÇ / ARA EKRANI
@@ -296,36 +288,38 @@
         #continue-btn:active { opacity: 0.85; }
 
         /* ════════════════════════════════════════════
-           TAMAMLANDI EKRANI
+           TAMAMLANDI EKRANI (Screen 5)
         ════════════════════════════════════════════ */
         #done-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            padding: 24px;
-            z-index: 2000;
+            position: fixed; inset: 0; background: #080F1C;
+            display: none; flex-direction: column; align-items: center;
+            padding: 36px 24px 24px; text-align: center; z-index: 2000;
+            overflow-y: auto;
         }
-
-        .done-icon  { font-size: 4rem; }
-        .done-title { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
-        .done-sub   { font-size: 0.9rem; color: var(--muted); text-align: center; }
-
-        #home-btn {
-            margin-top: 16px;
-            padding: 16px 40px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-        }
+        .done-glow { position: absolute; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(0,200,150,0.14) 0%, transparent 70%); top: 18%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+        .check-ring { position: relative; z-index: 1; width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #00C896, #00A87A); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 40px rgba(0,200,150,0.45); margin-bottom: 16px; margin-top: 20px; color: #fff; font-size: 40px; }
+        .done-title { position: relative; z-index: 1; color: #fff; font-size: 24px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; }
+        .done-sub { position: relative; z-index: 1; color: rgba(255,255,255,0.45); font-size: 13px; line-height: 1.5; margin-bottom: 20px; }
+        .done-pill { position: relative; z-index: 1; width: 100%; max-width: 360px; display: flex; align-items: center; gap: 12px; background: rgba(0,200,150,0.06); border: 1px solid rgba(0,200,150,0.18); border-radius: 16px; padding: 13px 15px; margin-bottom: 12px; text-align: left; }
+        .dp-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(0,200,150,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
+        .dp-name { color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; flex: 1; }
+        .dp-tag { margin-left: auto; background: rgba(0,200,150,0.12); border: 1px solid rgba(0,200,150,0.2); border-radius: 8px; padding: 4px 9px; color: #00C896; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .unlock-label { position: relative; z-index: 1; width: 100%; max-width: 360px; text-align: left; color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .next-pill { position: relative; z-index: 1; width: 100%; max-width: 360px; display: flex; align-items: center; gap: 12px; background: rgba(0,200,150,0.09); border: 1.5px solid rgba(0,200,150,0.32); border-radius: 16px; padding: 14px 15px; margin-bottom: 20px; text-align: left; box-shadow: 0 0 20px rgba(0,200,150,0.1); }
+        .np-icon { width: 44px; height: 44px; border-radius: 13px; background: rgba(0,200,150,0.16); border: 1px solid rgba(0,200,150,0.28); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px; }
+        .np-info { flex: 1; }
+        .np-name { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+        .np-loc { color: rgba(255,255,255,0.4); font-size: 12px; }
+        .np-badge { margin-left: auto; background: rgba(0,200,150,0.15); border: 1px solid rgba(0,200,150,0.3); border-radius: 9px; padding: 5px 10px; color: #00C896; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .trip-stats { position: relative; z-index: 1; display: flex; gap: 8px; width: 100%; max-width: 360px; margin-bottom: 18px; }
+        .trip-box { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 13px; padding: 12px 8px; text-align: center; }
+        .trip-box .tv { color: #00C896; font-size: 17px; font-weight: 800; }
+        .trip-box .tk { color: rgba(255,255,255,0.35); font-size: 10px; margin-top: 3px; }
+        .done-actions { position: relative; z-index: 1; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+        .btn-done-primary { width: 100%; padding: 18px; background: linear-gradient(135deg, #00C896, #00A87A); border: none; border-radius: 18px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,200,150,0.35); -webkit-tap-highlight-color: transparent; }
+        .btn-done-primary:active { transform: scale(0.97); }
+        .btn-done-secondary { width: 100%; padding: 15px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .btn-done-secondary:active { opacity: 0.7; }
 
         /* ── Filigran ───────────────────────────── */
         .watermark {
@@ -347,7 +341,7 @@
         <div class="screen-sub"  id="ss-sub">Yükleniyor...</div>
 
         <div class="step-card">
-            <div class="step-card-label" id="ss-leg-label">Adım 1</div>
+            <div class="step-card-label" id="ss-leg-label">Bölüm 1</div>
             <div class="step-card-text"  id="ss-instruction">—</div>
         </div>
 
@@ -364,12 +358,20 @@
         <button id="continue-btn" onclick="onContinue()">Devam Et →</button>
     </div>
 
-    <!-- ═══ TAMAMLANDI EKRANI ════════════════════════════ -->
+    <!-- ═══ TAMAMLANDI EKRANI (Screen 5) ═══════════════════ -->
     <div id="done-screen">
-        <div class="done-icon">🎉</div>
-        <div class="done-title" id="done-dest">Hedefe Ulaştınız!</div>
-        <div class="done-sub"   id="done-name"></div>
-        <button id="home-btn" onclick="goHome()">Ana Sayfaya Dön</button>
+        <div class="done-glow"></div>
+        <div class="check-ring">✓</div>
+        <div class="done-title" id="done-title-text">Ulaştınız!</div>
+        <div class="done-sub" id="done-sub-text"></div>
+        <div class="done-pill" id="done-pill"></div>
+        <div class="unlock-label" id="unlock-label" style="display:none">Sıradaki Rota — Kilidi Açıldı</div>
+        <div class="next-pill" id="next-pill" style="display:none"></div>
+        <div class="trip-stats" id="trip-stats"></div>
+        <div class="done-actions">
+            <button class="btn-done-primary" id="btn-next-route" onclick="goNextRoute()">Sıradaki Rotaya Git →</button>
+            <button class="btn-done-secondary" onclick="goHome()">Rota Listesine Dön</button>
+        </div>
     </div>
 
     <!-- ═══ A-FRAME SAHNESİ ══════════════════════════════
@@ -397,20 +399,43 @@
 
     </a-scene>
 
-    <!-- ═══ AR OVERLAY UI ════════════════════════════════ -->
+    <!-- ═══ AR OVERLAY UI (Screen 4) ═══════════════════════ -->
     <div id="overlay">
-        <div id="info-bar">
-            <div class="bar-top">
-                <div id="instruction-text">İlerleyiniz</div>
-                <div class="distance-box">
-                    <div id="dist-num">--</div>
-                    <div class="dist-unit">metre</div>
+        <!-- Top HUD -->
+        <div id="top-hud">
+            <div class="back-btn" onclick="window.location.href='index.html'">←</div>
+            <div class="next-card">
+                <div class="nc-icon">↗</div>
+                <div>
+                    <div class="nc-label" id="nc-label">Sonraki dönüş</div>
+                    <div class="nc-action" id="nc-action">Düz devam</div>
                 </div>
             </div>
-            <div id="leg-dots"></div>
         </div>
 
-        <button id="arrived-btn" onclick="onArrived()">✅ Noktaya Vardım</button>
+        <!-- Turn Arrow -->
+        <div id="turn-overlay">
+            <div id="turn-arrow-icon">⬅️</div>
+            <div id="turn-arrow-text">SOLA DÖN</div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div id="bottom-panel">
+            <div class="prog-row">
+                <span class="prog-dest" id="prog-dest"></span>
+                <span class="prog-pct" id="prog-pct">0%</span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+            <div class="mini-stats">
+                <div class="mini-stat"><div class="msv" id="ms-dist">--</div><div class="msk">Kalan</div></div>
+                <div class="mini-stat"><div class="msv" id="ms-time">--</div><div class="msk">Süre</div></div>
+                <div class="mini-stat"><div class="msv" id="ms-leg">--</div><div class="msk">İlerleme</div></div>
+            </div>
+            <div class="cta-row">
+                <button class="btn-arrived" id="arrived-btn" onclick="onArrived()">✅ Ulaştım</button>
+                <button class="btn-help" onclick="alert('Yardım için hastane personeline başvurun veya 112 arayın.')">🆘 Yardım</button>
+            </div>
+        </div>
     </div>
 
     <div class="watermark">by Arda24</div>
@@ -446,14 +471,23 @@
     const infoScreen    = document.getElementById('info-screen');
     const doneScreen    = document.getElementById('done-screen');
     const beginBtn      = document.getElementById('begin-btn');
-    const infoBar       = document.getElementById('info-bar');
+    const topHud        = document.getElementById('top-hud');
+    const bottomPanel   = document.getElementById('bottom-panel');
     const arrivedBtn    = document.getElementById('arrived-btn');
-    const instructionEl = document.getElementById('instruction-text');
-    const distNumEl     = document.getElementById('dist-num');
-    const legDotsEl     = document.getElementById('leg-dots');
+    const turnOverlay   = document.getElementById('turn-overlay');
     const arrowsEl      = document.getElementById('arrows');
     const sceneEl       = document.querySelector('a-scene');
     const camEl         = document.getElementById('cam');
+
+    /* Toplam rota mesafesi (metre) */
+    let totalRouteDist = 0;
+    legs.forEach(l => { if (l.path) totalRouteDist += l.path.length; });
+
+    /* Aktif rotalar (sıradaki rota bilgisi için) */
+    const allActiveRoutes = NAV_ROUTES.filter(r => r.isAvailable).sort((a,b) => a.order - b.order);
+    const currentRouteIdx = allActiveRoutes.findIndex(r => r.id === route.id);
+    const nextRoute = (currentRouteIdx >= 0 && currentRouteIdx < allActiveRoutes.length - 1) ? allActiveRoutes[currentRouteIdx + 1] : null;
+    let arStartTime = null;
 
     /* ──────────────────────────────────────────────────────
        BAŞLANGIÇ EKRANINI DOLDUR
@@ -467,15 +501,15 @@
 
         document.getElementById('ss-icon').textContent  = route.icon;
         document.getElementById('ss-title').textContent = route.name;
-        document.getElementById('ss-sub').textContent   =
-            `Adım ${legIdx + 1} / ${legs.length}`;
+        document.getElementById('ss-sub').textContent =
+            `Bölüm ${legIdx + 1} / ${legs.length}`;
 
         if (leg.type === 'info') {
             // Info bacakları doğrudan bilgi ekranına yönlendir
             document.getElementById('ss-leg-label').textContent   = `ℹ️ Bilgi`;
             document.getElementById('ss-instruction').textContent = leg.title;
         } else {
-            document.getElementById('ss-leg-label').textContent   = `Adım ${legIdx + 1}`;
+            document.getElementById('ss-leg-label').textContent   = `Bölüm ${legIdx + 1}`;
             document.getElementById('ss-instruction').textContent = leg.instruction;
         }
 
@@ -486,15 +520,18 @@
 
     fillStartScreen();
 
-    /* ── Bacak ilerleme noktalarını çiz ─────────────────── */
-    function buildDots() {
-        legDotsEl.innerHTML = '';
-        legs.forEach((_, i) => {
-            const d = document.createElement('div');
-            d.className = 'leg-dot'
-                + (i < legIdx ? ' done' : i === legIdx ? ' current' : '');
-            legDotsEl.appendChild(d);
-        });
+    /* ── HUD bilgilerini güncelle ─────────────────── */
+    function updateHudInfo() {
+        document.getElementById('prog-dest').textContent = route.name;
+        document.getElementById('ms-leg').textContent = `Bölüm ${legIdx+1}/${legs.length}`;
+        const nextLeg = legs[legIdx + 1];
+        if (nextLeg && nextLeg.instruction) {
+            document.getElementById('nc-action').textContent = nextLeg.instruction.replace(/[\u2B05\u27A1\u2B06\uFE0F\u2196\u2197\u2198\u2199⬆️⬅️➡️]+/g, '').trim().substring(0, 25);
+            document.getElementById('nc-label').textContent = 'Sonraki dönüş';
+        } else {
+            document.getElementById('nc-action').textContent = 'Son bölüm';
+            document.getElementById('nc-label').textContent = 'Hedefe yaklaşıyorsunuz';
+        }
     }
 
     /* ──────────────────────────────────────────────────────
@@ -586,24 +623,18 @@
     /* ── A-Frame: AR açıldı ──────────────────────────────── */
     sceneEl.addEventListener('enter-vr', () => {
         arActive = true;
+        arStartTime = Date.now();
         document.body.style.background = 'transparent';
 
         startScreen.style.display = 'none';
         infoScreen.style.display  = 'none';
 
-        infoBar.style.display    = 'block';
-        arrivedBtn.style.display = 'block';
-        buildDots();
+        topHud.style.display      = 'flex';
+        bottomPanel.style.display = 'block';
+        updateHudInfo();
 
         const leg = legs[legIdx];
-        instructionEl.textContent = leg.instruction || '';
 
-        /*
-         * DONMA SORUNUNUN ÇÖZÜMÜ:
-         * A-Frame'in WebXR referans alanını kurması için 2 sn bekle.
-         * Bu gecikme olmadan kamera pozisyonu (0,0,0) gelir ve
-         * oklar kameranın içinde kalır → görünmez.
-         */
         setTimeout(drawArrows, 2000);
     });
 
@@ -612,8 +643,9 @@
         arActive = false;
         document.body.style.background = '';
         cancelAnimationFrame(tickRafId);
-        infoBar.style.display    = 'none';
-        arrivedBtn.style.display = 'none';
+        topHud.style.display      = 'none';
+        bottomPanel.style.display = 'none';
+        turnOverlay.classList.remove('visible');
     });
 
     /* ──────────────────────────────────────────────────────
@@ -711,9 +743,6 @@
 
         const cam      = camEl.object3D;
         const children = arrowsEl.children;
-
-        /* Her ok noktası için 3 element (ring + diamond + glow) var.
-           Son diamond'ı bul: sondan 2. (glow son, diamond ondan önce) */
         const lastDiamond = children[children.length - 2];
 
         if (!lastDiamond) { tickRafId = requestAnimationFrame(tick); return; }
@@ -725,15 +754,60 @@
         lastDiamond.object3D.getWorldPosition(targetPos);
 
         const dist = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
+        const distRounded = Math.max(0, dist);
 
-        distNumEl.textContent = dist < 0.5 ? '0' : dist.toFixed(1);
+        /* Kalan mesafe gösterimi */
+        document.getElementById('ms-dist').textContent = distRounded < 0.5 ? '0m' : distRounded.toFixed(0) + 'm';
 
-        if (dist < 0.5) {
-            instructionEl.textContent = '📍 Noktaya Ulaştınız!';
-            distNumEl.textContent     = '0';
+        /* Tahmini süre */
+        const estSec = Math.ceil(distRounded * 2);
+        document.getElementById('ms-time').textContent = estSec >= 60 ? Math.ceil(estSec/60) + 'dk' : estSec + 'sn';
+
+        /* İlerleme yüzdesi */
+        let coveredDist = 0;
+        for (let i = 0; i < legIdx; i++) { if (legs[i].path) coveredDist += legs[i].path.length; }
+        const currentLeg = legs[legIdx];
+        if (currentLeg && currentLeg.path) {
+            coveredDist += Math.max(0, currentLeg.path.length - distRounded);
+        }
+        const pct = totalRouteDist > 0 ? Math.min(100, Math.round((coveredDist / totalRouteDist) * 100)) : 0;
+        document.getElementById('prog-pct').textContent = pct + '%';
+        document.getElementById('prog-fill').style.width = pct + '%';
+
+        /* Dönüş Ok Tespiti: 1.5-2m kala büyük yön oku göster */
+        const nextLeg = legs[legIdx + 1];
+        if (nextLeg && distRounded <= 2 && distRounded > 0.3) {
+            const instr = (nextLeg.instruction || '').toLowerCase();
+            if (instr.includes('sola')) {
+                showTurnArrow('⬅️', 'SOLA DÖN');
+            } else if (instr.includes('sağa')) {
+                showTurnArrow('➡️', 'SAĞA DÖN');
+            } else {
+                hideTurnArrow();
+            }
+        } else {
+            hideTurnArrow();
+        }
+
+        /* Hedefe varış tespiti (son bacak, 0.5m altı) */
+        if (dist < 0.5 && legIdx === legs.length - 1) {
+            cancelAnimationFrame(tickRafId);
+            sceneEl.exitVR();
+            showDone();
+            return;
         }
 
         tickRafId = requestAnimationFrame(tick);
+    }
+
+    /* Dönüş oku göster/gizle */
+    function showTurnArrow(icon, text) {
+        document.getElementById('turn-arrow-icon').textContent = icon;
+        document.getElementById('turn-arrow-text').textContent = text;
+        turnOverlay.classList.add('visible');
+    }
+    function hideTurnArrow() {
+        turnOverlay.classList.remove('visible');
     }
 
     /* ──────────────────────────────────────────────────────
@@ -742,16 +816,17 @@
     window.onArrived = function () {
         cancelAnimationFrame(tickRafId);
         sceneEl.exitVR();
+        hideTurnArrow();
 
         legIdx++;
 
         if (legIdx < legs.length) {
             fillStartScreen();
             enableBeginBtn();
+            updateHudInfo();
 
             const nextLeg = legs[legIdx];
             if (nextLeg.type === 'info') {
-                // Doğrudan bilgi ekranını aç
                 setTimeout(() => showInfoScreen(nextLeg), 300);
             } else {
                 startScreen.style.display = 'flex';
@@ -761,15 +836,52 @@
         }
     };
 
-    /* ── Tamamlandı Ekranı ─────────────────────────────── */
+    /* ── Tamamlandı Ekranı (Screen 5) ─────────────────── */
     function showDone() {
+        const elapsed = arStartTime ? Math.round((Date.now() - arStartTime) / 1000) : 0;
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+
+        document.getElementById('done-title-text').textContent = 'Ulaştınız!';
+        document.getElementById('done-sub-text').innerHTML = `${route.name} tamamlandı.<br>${nextRoute ? 'Sıradaki rotanız kilidi açıldı.' : 'Tüm rotalar tamamlandı!'}`;
+
+        document.getElementById('done-pill').innerHTML = `
+            <div class="dp-icon">✓</div>
+            <div class="dp-name">${route.name}</div>
+            <div class="dp-tag">Tamamlandı</div>
+        `;
+
+        if (nextRoute) {
+            document.getElementById('unlock-label').style.display = 'block';
+            const np = document.getElementById('next-pill');
+            np.style.display = 'flex';
+            np.innerHTML = `
+                <div class="np-icon">${nextRoute.icon}</div>
+                <div class="np-info">
+                    <div class="np-name">${nextRoute.name}</div>
+                    <div class="np-loc">${nextRoute.desc}</div>
+                </div>
+                <div class="np-badge">Rota ${nextRoute.order}</div>
+            `;
+        } else {
+            document.getElementById('btn-next-route').textContent = 'Rota Listesine Dön';
+        }
+
+        document.getElementById('trip-stats').innerHTML = `
+            <div class="trip-box"><div class="tv">${totalRouteDist}m</div><div class="tk">Yol</div></div>
+            <div class="trip-box"><div class="tv">${mins}dk ${secs}sn</div><div class="tk">Süre</div></div>
+            <div class="trip-box"><div class="tv">${currentRouteIdx + 1}/${allActiveRoutes.length}</div><div class="tk">Tamamlanan</div></div>
+        `;
+
         doneScreen.style.display = 'flex';
-        document.getElementById('done-dest').textContent = `${route.icon} Hedefe Ulaştınız!`;
-        document.getElementById('done-name').textContent = route.name;
     }
 
-    /* Ana sayfaya dön ve tamamlandı bilgisini ilet */
+    /* Ana sayfaya dön */
     window.goHome = function () {
+        window.location.href = `index.html?done=${route.id}`;
+    };
+
+    window.goNextRoute = function () {
         window.location.href = `index.html?done=${route.id}`;
     };
 
