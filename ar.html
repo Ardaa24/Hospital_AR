@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>AR Navigasyon</title>
-    
+    <title>AR Navigasyon — Tarsus Devlet Hastanesi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="config.js"></script>
 
@@ -40,7 +42,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
             overflow: hidden;
@@ -223,35 +225,87 @@
             to   { transform: translateX(-4px); }
         }
 
-        /* ══ DONE SCREEN ══ */
+        /* ══ DONE SCREEN — Enterprise ══ */
         #done-screen {
             position: fixed; inset: 0;
-            background-color: var(--card-bg);
+            background: #F7F8FC;
             display: none; flex-direction: column;
-            padding: 48px 20px 36px; z-index: 200; overflow-y: auto;
+            padding: 0; z-index: 200; overflow-y: auto;
         }
-        .done-icon-wrap {
-            width: 100px; height: 100px; border-radius: 50px;
-            background: linear-gradient(135deg, #E8F8EE, #D1F2DE);
-            color: var(--success);
+        .done-header {
+            background: #FFFFFF;
+            border-bottom: 1px solid #E5E8ED;
+            padding: 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .done-header-badge {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #E8F7EF, #C6EFDA);
             display: flex; align-items: center; justify-content: center;
-            font-size: 50px; margin: 20px auto 24px;
-            box-shadow: 0 8px 24px rgba(52,199,89,0.2);
+            font-size: 22px; flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(24,165,88,0.2);
         }
-        .done-title { text-align: center; font-size: 30px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .done-sub { text-align: center; font-size: 17px; color: var(--text-secondary); margin-bottom: 32px; font-weight: 500; }
-        
-        .next-route-card {
-            background-color: var(--bg-body); border-radius: 20px; padding: 20px;
+        .done-header-info { flex: 1; }
+        .done-header-title {
+            font-size: 16px; font-weight: 700; color: #0F1923;
+            letter-spacing: -0.2px; margin-bottom: 2px;
+        }
+        .done-header-sub {
+            font-size: 13px; color: #6B7280; font-weight: 500;
+        }
+        .done-body { padding: 20px; flex: 1; }
+        .done-route-name {
+            font-size: 22px; font-weight: 800; color: #0F1923;
+            letter-spacing: -0.4px; margin-bottom: 6px;
+        }
+        .done-route-loc {
+            font-size: 14px; color: #6B7280; font-weight: 500;
             margin-bottom: 24px;
         }
-        .nrc-label { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
-        .nrc-body { display: flex; align-items: center; gap: 16px; }
-        .nrc-icon { font-size: 32px; background-color: var(--card-bg); width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-        .nrc-info { flex: 1; }
-        .nrc-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .nrc-desc { font-size: 14px; color: var(--text-secondary); }
-        .done-actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+        .done-stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: 20px;
+        }
+        .done-stat-box {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            border: 1.5px solid #E5E8ED;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .done-stat-val {
+            font-size: 26px; font-weight: 800;
+            color: #18A558;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+        .done-stat-label {
+            font-size: 12px; color: #6B7280; font-weight: 600;
+        }
+        .done-info-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 18px;
+            border: 1.5px solid #E5E8ED;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .done-info-label {
+            font-size: 11px; font-weight: 700; color: #1A6FD4;
+            text-transform: uppercase; letter-spacing: 0.7px;
+            margin-bottom: 8px;
+        }
+        .done-info-text {
+            font-size: 14px; color: #0F1923; font-weight: 500; line-height: 1.6;
+        }
+        .done-actions {
+            padding: 14px 20px 32px;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid #E5E8ED;
+            display: flex; flex-direction: column; gap: 10px;
+        }
 
         /* ══ SOS MODAL ══
            FIX: z-index 9999 → her zaman fullscreen-card'ların (z:200) üstünde
@@ -330,24 +384,37 @@
 
     <!-- ══ TAMAMLANDI EKRANI ══ -->
     <div id="done-screen">
-        <div class="done-icon-wrap">✓</div>
-        <div class="done-title">Hedefe Ulaştınız! 🎉</div>
-        <div class="done-sub" id="done-sub-text">Rota tamamlandı.</div>
-        
-        <div class="next-route-card" id="next-route-card" style="display:none">
-            <div class="nrc-label">🔓 Sıradaki Rota Açıldı</div>
-            <div class="nrc-body">
-                <div class="nrc-icon" id="nr-icon"></div>
-                <div class="nrc-info">
-                    <div class="nrc-name" id="nr-name"></div>
-                    <div class="nrc-desc" id="nr-desc"></div>
+        <div class="done-header">
+            <div class="done-header-badge">✓</div>
+            <div class="done-header-info">
+                <div class="done-header-title">Hedefinize Ulaştınız</div>
+                <div class="done-header-sub" id="done-header-sub">Navigasyon tamamlandı</div>
+            </div>
+        </div>
+
+        <div class="done-body">
+            <div class="done-route-name" id="done-route-name">—</div>
+            <div class="done-route-loc" id="done-route-loc">—</div>
+
+            <div class="done-stats-grid">
+                <div class="done-stat-box">
+                    <div class="done-stat-val" id="done-stat-dist">—</div>
+                    <div class="done-stat-label">Kat Edilen Mesafe</div>
                 </div>
+                <div class="done-stat-box">
+                    <div class="done-stat-val" id="done-stat-time">—</div>
+                    <div class="done-stat-label">Geçen Süre</div>
+                </div>
+            </div>
+
+            <div class="done-info-card" id="done-info-card" style="display:none">
+                <div class="done-info-label">Varış Bilgisi</div>
+                <div class="done-info-text" id="done-info-text"></div>
             </div>
         </div>
 
         <div class="done-actions">
-            <button class="btn-large btn-primary" id="btn-next-route" onclick="goNextRoute()">Sıradaki Rotaya Git →</button>
-            <button class="btn-large btn-secondary" onclick="goHome()">Rota Listesine Dön</button>
+            <button class="btn-large btn-primary" onclick="goHome()">Ana Menüye Dön</button>
         </div>
     </div>
 
@@ -441,11 +508,8 @@
     let totalRouteDist = 0;
     legs.forEach(l => { if (l.path) totalRouteDist += l.path.length; });
 
-    /* Sıradaki rota */
-    const allActiveRoutes   = NAV_ROUTES.filter(r => r.isAvailable).sort((a,b) => a.order - b.order);
-    const currentRouteIdx   = allActiveRoutes.findIndex(r => r.id === route.id);
-    const nextRoute         = (currentRouteIdx >= 0 && currentRouteIdx < allActiveRoutes.length - 1)
-                              ? allActiveRoutes[currentRouteIdx + 1] : null;
+
+
 
     /* ══════════════════════════════════════
        EKRAN DOLDURMA
@@ -799,23 +863,38 @@
     };
 
     function showDone() {
-        document.getElementById('done-sub-text').innerHTML = `<b>${route.name}</b> başarıyla tamamlandı.`;
-        
-        if (nextRoute) {
-            document.getElementById('next-route-card').style.display = 'block';
-            document.getElementById('nr-icon').textContent = nextRoute.icon;
-            document.getElementById('nr-name').textContent = nextRoute.name;
-            document.getElementById('nr-desc').textContent = nextRoute.desc;
+        /* Rota adı ve konum */
+        document.getElementById('done-route-name').textContent = route.name;
+        document.getElementById('done-route-loc').textContent  = route.desc || '';
+        document.getElementById('done-header-sub').textContent = route.block
+            ? `${route.block}${route.floor ? ', ' + route.floor : ''}`
+            : 'Navigasyon tamamlandı';
+
+        /* İstatistikler */
+        let totalDist = 0;
+        legs.forEach(l => { if (l.path) totalDist += l.path.length; });
+        document.getElementById('done-stat-dist').textContent = totalDist + 'm';
+
+        if (arStartTime) {
+            const elapsed = Math.round((Date.now() - arStartTime) / 1000);
+            document.getElementById('done-stat-time').textContent =
+                elapsed >= 60 ? Math.ceil(elapsed / 60) + ' dk' : elapsed + ' sn';
         } else {
-            document.getElementById('btn-next-route').style.display = 'none';
+            document.getElementById('done-stat-time').textContent = '—';
+        }
+
+        /* Varış bilgisi (eğer varsa) */
+        if (route.detail) {
+            const lines = route.detail.split('.').filter(s => s.trim().length > 0);
+            if (lines.length > 0) {
+                document.getElementById('done-info-card').style.display = 'block';
+                /* İlk iki cümleyi göster */
+                document.getElementById('done-info-text').textContent = lines.slice(0, 2).join('. ').trim() + '.';
+            }
         }
 
         doneScreen.style.display = 'flex';
     }
-
-    window.goNextRoute = function () {
-        window.location.href = `index.html?done=${route.id}&autoStartNext=true`;
-    };
 
     window.goHome = function () {
         window.location.href = `index.html?done=${route.id}`;
