@@ -3,488 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="theme-color" content="#1A6FD4">
     <title>Tarsus Devlet Hastanesi — AR Navigasyon</title>
-    <meta name="description" content="Tarsus Devlet Hastanesi artırılmış gerçeklik ile erişilebilir yönlendirme sistemi">
+    <meta name="description" content="Tarsus Devlet Hastanesi artırılmış gerçeklik ile engelsiz yönlendirme sistemi">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- A-Frame: AR motoru -->
+
+    <!-- A-Frame AR Motoru -->
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+
+    <!-- Uygulama Verisi -->
     <script src="config.js"></script>
 
-    <style>
-        /* ─── Temel ─── */
-        :root {
-            --primary:      #1A6FD4;
-            --primary-d:    #1354A8;
-            --primary-l:    #EEF4FD;
-            --success:      #18A558;
-            --success-l:    #E8F7EF;
-            --danger:       #DC2626;
-            --danger-l:     #FEE2E2;
-            --bg:           #F7F8FC;
-            --card:         #FFFFFF;
-            --ink:          #0F1923;
-            --muted:        #6B7280;
-            --border:       #E5E8ED;
-            --radius:       20px;
-        }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body {
-            height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--ink);
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
-        button {
-            border: none; outline: none; cursor: pointer;
-            font-family: inherit;
-            -webkit-tap-highlight-color: transparent;
-        }
-        ::-webkit-scrollbar { width: 0; }
-
-        /* ─── App ekranları ─── */
-        .screen {
-            display: none;
-            flex-direction: column;
-            min-height: 100svh;
-        }
-        .screen.active { display: flex; }
-
-        /* ─── Butonlar ─── */
-        .btn {
-            width: 100%; min-height: 58px; border-radius: 14px;
-            font-size: 17px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center; gap: 9px;
-            transition: opacity .15s, transform .12s;
-            letter-spacing: -.1px;
-        }
-        .btn:active { transform: scale(.98); opacity: .92; }
-        .btn-primary {
-            background: linear-gradient(135deg, #1A6FD4 0%, #1354A8 100%);
-            color: #fff;
-            box-shadow: 0 4px 18px rgba(26,111,212,.32);
-        }
-        .btn-primary:active { box-shadow: 0 2px 8px rgba(26,111,212,.2); }
-        .btn-ghost {
-            background: var(--bg);
-            color: var(--muted);
-            border: 1.5px solid var(--border);
-        }
-
-        /* ══════════════════════════════════════════════
-           SCREEN 1 — KARŞILAMA
-        ══════════════════════════════════════════════ */
-        #s-welcome {
-            background: #fff;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 52px 28px 44px;
-            gap: 0;
-        }
-
-        /* ══════════════════════════════════════════════
-           SCREEN 2 — ROTA LİSTESİ
-        ══════════════════════════════════════════════ */
-        .page-header {
-            position: sticky; top: 0; z-index: 20;
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-        }
-        .route-card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 13px 15px 13px 20px;
-            margin-bottom: 8px;
-            display: flex; align-items: center; gap: 13px;
-            min-height: 74px;
-            border: 1.5px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-            cursor: pointer;
-            position: relative; overflow: hidden;
-            transition: box-shadow .18s, transform .1s;
-        }
-        .route-card::before {
-            content: '';
-            position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-            border-radius: 16px 0 0 16px;
-            background: var(--border);
-        }
-        .route-card.ar-route { border-color: rgba(26,111,212,.16); }
-        .route-card.ar-route::before { background: var(--primary); }
-        .route-card:active { transform: scale(.99); }
-        .rc-icon {
-            width: 46px; height: 46px; border-radius: 12px;
-            background: var(--bg);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; flex-shrink: 0;
-        }
-        .ar-route .rc-icon { background: var(--primary-l); }
-
-        /* ══════════════════════════════════════════════
-           SCREEN 3 — ROTA DETAY (görseldeki gibi)
-        ══════════════════════════════════════════════ */
-        .detail-section {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 18px;
-            margin-bottom: 13px;
-            border: 1.5px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        }
-        .section-label {
-            font-size: 11px; font-weight: 700; color: var(--primary);
-            text-transform: uppercase; letter-spacing: .7px;
-            margin-bottom: 12px;
-        }
-        .info-row {
-            display: flex; align-items: flex-start; gap: 11px;
-            padding: 9px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .info-row:first-of-type { padding-top: 0; }
-        .info-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .tag {
-            display: inline-flex; align-items: center; gap: 5px;
-            border-radius: 9px; padding: 5px 11px;
-            font-size: 13px; font-weight: 600;
-        }
-        .tag-green { background: var(--success-l); color: #0E8444; border: 1px solid rgba(24,165,88,.2); }
-        .tag-blue  { background: var(--primary-l); color: var(--primary); border: 1px solid rgba(26,111,212,.2); }
-        .tag-gray  { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
-
-        /* Sticky bottom bar */
-        .bottom-bar {
-            position: sticky; bottom: 0;
-            background: rgba(255,255,255,.97);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border);
-            padding: 13px 16px 30px;
-            z-index: 20;
-        }
-
-        /* ══════════════════════════════════════════════
-           AR EKRANI — HUD + Info + Done
-        ══════════════════════════════════════════════ */
-        a-scene {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            display: none; /* başlangıçta gizli, enterAR ile açılır */
-        }
-        a-scene.ar-active { display: block; }
-
-        /* AR overlay: pointer-events: none, içindeki interactive elemanlar auto */
-        #ar-overlay {
-            position: fixed; inset: 0;
-            z-index: 100; pointer-events: none;
-            display: none;
-        }
-        #ar-overlay.ar-active { display: block; }
-        .ar-interactive { pointer-events: auto; }
-
-        /* Top HUD */
-        #ar-top-hud {
-            position: absolute; top: 0; left: 0; right: 0;
-            padding: 52px 14px 14px;
-            display: flex; align-items: flex-start; gap: 10px;
-        }
-        .ar-back-btn {
-            width: 48px; height: 48px; border-radius: 14px;
-            background: rgba(255,255,255,.92);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 4px 14px rgba(0,0,0,.12);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px; color: var(--primary); font-weight: 700;
-            flex-shrink: 0;
-            pointer-events: auto;
-        }
-        .ar-next-pill {
-            flex: 1;
-            background: rgba(255,255,255,.92);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border-radius: 16px; padding: 11px 14px;
-            display: flex; align-items: center; gap: 11px;
-            box-shadow: 0 4px 14px rgba(0,0,0,.12);
-        }
-        .anp-icon { font-size: 20px; color: var(--primary); }
-        .anp-label { font-size: 11px; color: #6B7280; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 1px; }
-        .anp-action { font-size: 15px; font-weight: 700; color: var(--ink); }
-
-        /* Turn overlay */
-        #ar-turn {
-            position: absolute; top: 0; left: 0; right: 0;
-            height: 55vh;
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center; gap: 14px;
-            background: linear-gradient(180deg, rgba(0,0,0,.72) 0%, transparent 100%);
-            pointer-events: none;
-        }
-        #ar-turn.visible { display: flex; }
-        .turn-icon { font-size: 56px; filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
-        .turn-label {
-            background: var(--danger); color: #fff;
-            font-size: 30px; font-weight: 900; letter-spacing: 3px;
-            padding: 14px 36px; border-radius: 18px;
-            box-shadow: 0 8px 24px rgba(220,38,38,.45);
-        }
-        .turn-dist {
-            background: rgba(255,255,255,.18); backdrop-filter: blur(8px);
-            color: #fff; font-size: 19px; font-weight: 700;
-            padding: 9px 22px; border-radius: 12px;
-        }
-        @keyframes bounceL { from { transform: translateX(-16px); } to { transform: translateX(4px); } }
-        @keyframes bounceR { from { transform: translateX(16px); } to { transform: translateX(-4px); } }
-
-        /* Bottom panel */
-        #ar-bottom {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: rgba(255,255,255,.94);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: 28px 28px 0 0;
-            padding: 18px 14px 30px;
-            box-shadow: 0 -4px 24px rgba(0,0,0,.1);
-            display: flex; flex-direction: column;
-            pointer-events: auto;
-        }
-        .abp-dest { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 14px; }
-        .abp-stats { display: flex; gap: 10px; margin-bottom: 14px; }
-        .abp-stat { flex: 1; background: var(--bg); border-radius: 13px; padding: 13px 10px; text-align: center; }
-        .abp-stat-val { font-size: 21px; font-weight: 800; color: var(--primary); margin-bottom: 2px; }
-        .abp-stat-key { font-size: 12px; color: var(--muted); font-weight: 600; }
-        .abp-actions { display: flex; gap: 10px; }
-        .sos-btn {
-            width: 62px; height: 62px; border-radius: 15px;
-            background: var(--danger-l); color: var(--danger);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 21px; flex-shrink: 0;
-            transition: transform .1s;
-            pointer-events: auto;
-        }
-        .sos-btn:active { transform: scale(.95); }
-        .sos-btn span { font-size: 9px; margin-top: 2px; font-weight: 700; }
-
-        /* AR Bilgi ekranı (asansör vb.) */
-        #ar-info-screen {
-            position: fixed; inset: 0;
-            background: var(--bg);
-            z-index: 200;
-            display: none; flex-direction: column;
-            padding: 48px 20px 36px;
-            overflow-y: auto;
-        }
-        #ar-info-screen.visible { display: flex; }
-        .ais-header { text-align: center; margin-bottom: 28px; }
-        .ais-icon { font-size: 60px; margin-bottom: 14px; }
-        .ais-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; letter-spacing: -.4px; }
-        .ais-card {
-            background: var(--card); border-radius: var(--radius);
-            padding: 22px; margin-bottom: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,.06);
-        }
-        .ais-lines { list-style: none; display: flex; flex-direction: column; gap: 14px; }
-        .ais-line { display: flex; align-items: flex-start; gap: 12px; font-size: 16px; font-weight: 500; line-height: 1.45; }
-        .ais-num {
-            flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
-            background: var(--primary); color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; margin-top: 1px;
-        }
-
-        /* Done screen */
-        #ar-done {
-            position: fixed; inset: 0;
-            background: var(--bg);
-            z-index: 200;
-            display: none; flex-direction: column;
-            overflow-y: auto;
-        }
-        #ar-done.visible { display: flex; }
-        .done-head {
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            padding: 18px 18px;
-            display: flex; align-items: center; gap: 12px;
-        }
-        .done-badge {
-            width: 44px; height: 44px; border-radius: 12px;
-            background: linear-gradient(135deg, #E8F7EF, #C6EFDA);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(24,165,88,.2);
-        }
-        .done-body { padding: 20px; flex: 1; }
-        .done-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
-        .done-stat-box {
-            background: var(--card); border-radius: 16px; padding: 18px;
-            text-align: center; border: 1.5px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        }
-        .done-stat-val { font-size: 26px; font-weight: 800; color: var(--success); letter-spacing: -.5px; margin-bottom: 4px; }
-        .done-stat-lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
-        .done-info-box {
-            background: var(--card); border-radius: 16px; padding: 16px;
-            border: 1.5px solid var(--border); margin-bottom: 18px;
-        }
-        .done-foot {
-            padding: 13px 18px 32px;
-            background: rgba(255,255,255,.97);
-            backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border);
-        }
-
-        /* SOS modal */
-        #sos-modal {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.55);
-            display: none; align-items: center; justify-content: center;
-            padding: 24px; z-index: 9999;
-            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-        }
-        #sos-modal.open { display: flex; }
-        .sos-card {
-            background: var(--card); width: 100%; max-width: 360px;
-            border-radius: 24px; padding: 30px 22px 22px; text-align: center;
-            box-shadow: 0 16px 40px rgba(0,0,0,.25);
-            animation: sosIn .28s cubic-bezier(.34,1.56,.64,1);
-        }
-        @keyframes sosIn { from { transform: translateY(24px) scale(.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-        @keyframes sosPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-
-        /* Toast */
-        #toast {
-            position: fixed; bottom: 90px; left: 50%;
-            transform: translateX(-50%) translateY(12px);
-            background: #1C1C1E; color: #fff;
-            padding: 11px 20px; border-radius: 24px;
-            font-size: 14px; font-weight: 600;
-            opacity: 0; pointer-events: none;
-            transition: all .3s cubic-bezier(.4,0,.2,1);
-            z-index: 9998; white-space: nowrap;
-            box-shadow: 0 4px 16px rgba(0,0,0,.25);
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    </style>
+    <!-- Stiller (ayrı katmanlar) -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/screens.css">
+    <link rel="stylesheet" href="css/ar.css">
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════
      SCREEN 1 — KARŞILAMA
-══════════════════════════════════════════════ -->
-<div id="s-welcome" class="screen active">
-    <div style="margin-bottom:32px;">
-        <img src="Assets/logo.png" alt="T.C. Sağlık Bakanlığı"
-             style="width:120px;height:120px;display:block;margin:0 auto;
-                    object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.1));">
+════════════════════════════════════════════════════ -->
+<main id="s-welcome" class="screen active" role="main">
+    <div class="welcome-logo">
+        <img src="Assets/logo.png"
+             alt="T.C. Sağlık Bakanlığı — Tarsus Devlet Hastanesi">
     </div>
 
-    <h1 style="font-size:28px;font-weight:800;color:#000;line-height:1.2;
-               letter-spacing:-.6px;margin-bottom:14px;">
-        AR Destekli Hastane<br>Navigasyon Sistemi
-    </h1>
-    <p style="font-size:16px;color:#8E8E93;line-height:1.5;font-weight:500;
-              margin-bottom:40px;max-width:280px;">
+    <h1 class="welcome-title">AR Destekli Hastane<br>Navigasyon Sistemi</h1>
+
+    <p class="welcome-desc">
         Erişilebilir ve kullanıcı odaklı<br>yönlendirme uygulaması
     </p>
 
-    <button id="btn-welcome" class="btn btn-primary" style="margin-bottom:16px;">
+    <button id="btn-welcome"
+            class="btn btn-primary welcome-cta"
+            aria-label="Navigasyonu Başlat — Rota Listesine Git">
         Navigasyonu Başlat
     </button>
 
-    <div style="display:inline-flex;align-items:center;gap:8px;background:#1C1C1E;
-                color:#fff;border-radius:22px;padding:12px 20px;font-size:14px;
-                font-weight:600;margin-bottom:20px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="#34C759">
+    <div class="welcome-location" aria-label="Konum: Tarsus Devlet Hastanesi">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#34C759" aria-hidden="true">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
         Tarsus Devlet Hastanesi
     </div>
 
-    <p style="font-size:12px;color:#C7C7CC;line-height:1.6;max-width:300px;text-align:center;">
-        Hareket kısıtlılığı bulunan bireylerin sağlık hizmetlerine<br>erişimini kolaylaştırmak amacıyla geliştirilmiştir.
+    <p class="welcome-disclaimer">
+        Hareket kısıtlılığı bulunan bireylerin sağlık<br>
+        hizmetlerine erişimini kolaylaştırmak amacıyla<br>
+        geliştirilmiştir.
     </p>
-</div>
+</main>
 
-<!-- ══════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════
      SCREEN 2 — ROTA LİSTESİ
-══════════════════════════════════════════════ -->
-<div id="s-routes" class="screen">
-    <div class="page-header">
-        <div style="display:flex;align-items:center;gap:12px;padding:14px 18px 10px;">
-            <img src="Assets/logo.png" alt="" width="36" height="36"
-                 style="object-fit:contain;flex-shrink:0;">
+════════════════════════════════════════════════════ -->
+<div id="s-routes" class="screen" role="main" aria-label="Rota Listesi">
+
+    <header class="page-header" role="banner">
+        <div class="list-header-inner">
+            <img src="Assets/logo.png"
+                 class="list-header-logo"
+                 alt="T.C. Sağlık Bakanlığı">
             <div>
-                <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.2px;">
-                    Tarsus Devlet Hastanesi
-                </div>
-                <div style="font-size:12px;color:var(--muted);font-weight:500;margin-top:1px;">
-                    AR Navigasyon Sistemi
-                </div>
+                <div class="list-header-title">Tarsus Devlet Hastanesi</div>
+                <div class="list-header-sub">AR Navigasyon Sistemi</div>
             </div>
         </div>
-        <div style="padding:0 16px 12px;">
-            <div id="search-wrap"
-                 style="display:flex;align-items:center;gap:10px;background:var(--bg);
-                        border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;
-                        transition:border-color .2s;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="#6B7280" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input id="search-input" type="text" placeholder="Klinik veya birim ara..."
-                       autocomplete="off" autocorrect="off" spellcheck="false"
-                       style="flex:1;border:none;background:transparent;font-family:inherit;
-                              font-size:15px;color:var(--ink);outline:none;"
-                       aria-label="Klinik ara">
-            </div>
+
+        <div class="search-wrap" role="search">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="#6B7280" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="search-input"
+                   class="search-input"
+                   type="search"
+                   placeholder="Klinik veya birim ara..."
+                   autocomplete="off"
+                   autocorrect="off"
+                   spellcheck="false"
+                   aria-label="Klinik veya birim ara">
         </div>
-    </div>
-    <div id="route-list" style="padding:10px 16px 40px;overflow-y:auto;flex:1;"></div>
+    </header>
+
+    <div id="route-list" role="list" aria-label="Birimlerin listesi"></div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     SCREEN 3 — ROTA DETAY (görseldeki gibi)
-══════════════════════════════════════════════ -->
-<div id="s-detail" class="screen">
-    <!-- Header -->
-    <div class="page-header" style="padding:13px 18px;display:flex;align-items:center;gap:12px;">
+<!-- ════════════════════════════════════════════════════
+     SCREEN 3 — ROTA DETAY
+════════════════════════════════════════════════════ -->
+<div id="s-detail" class="screen" role="main" aria-label="Birim Detayı">
+
+    <header class="page-header detail-header-row" role="banner">
         <button id="btn-detail-back"
-            style="width:40px;height:40px;border-radius:10px;background:var(--bg);
-                   display:flex;align-items:center;justify-content:center;
-                   color:var(--primary);font-size:20px;font-weight:700;
-                   border:1.5px solid var(--border);flex-shrink:0;transition:background .15s;">←</button>
-        <span style="font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.2px;">Birim Bilgisi</span>
-    </div>
+                class="detail-back-btn"
+                aria-label="Geri — Rota Listesine Dön">
+            ←
+        </button>
+        <h2 class="detail-header-title">Birim Bilgisi</h2>
+    </header>
 
-    <div id="detail-body" style="padding:16px 16px 0;overflow-y:auto;flex:1;"></div>
+    <div id="detail-body"></div>
 
-    <div class="bottom-bar" id="detail-foot"></div>
+    <div class="bottom-bar" id="detail-foot" role="complementary"></div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     AR — A-Frame Sahnesi
-══════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════
+     AR — A-FRAME SAHNESİ
+════════════════════════════════════════════════════ -->
 <a-scene id="ar-scene"
          xr-mode-ui="enabled: false"
          webxr="optionalFeatures: dom-overlay; overlayElement: #ar-overlay"
          device-orientation-permission-ui="enabled: false"
          renderer="antialias: true; alpha: true"
-         background="transparent: true">
-    <a-entity id="ar-cam" camera position="0 1.6 0" look-controls="pointerLockEnabled: false"></a-entity>
+         background="transparent: true"
+         aria-hidden="true">
+    <a-entity id="ar-cam"
+              camera
+              position="0 1.6 0"
+              look-controls="pointerLockEnabled: false">
+    </a-entity>
     <a-entity id="ar-arrows"></a-entity>
 </a-scene>
 
-<!-- ══════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════
      AR — HUD OVERLAY
-══════════════════════════════════════════════ -->
-<div id="ar-overlay">
-    <!-- Top HUD -->
+════════════════════════════════════════════════════ -->
+<div id="ar-overlay" aria-hidden="true">
+
+    <!-- Üst HUD -->
     <div id="ar-top-hud">
-        <button class="ar-back-btn ar-interactive" onclick="exitARToRoutes()">←</button>
-        <div class="ar-next-pill">
-            <div class="anp-icon" id="ar-nc-icon">↗</div>
+        <button class="ar-back-btn ar-interactive"
+                onclick="exitARToRoutes()"
+                aria-label="AR'dan çık, rota listesine dön">
+            ←
+        </button>
+        <div class="ar-next-pill" role="status" aria-live="polite">
+            <span class="anp-icon" id="ar-nc-icon" aria-hidden="true">↗</span>
             <div>
                 <div class="anp-label" id="ar-nc-label">Sonraki Dönüş</div>
                 <div class="anp-action" id="ar-nc-action">Düz Devam</div>
@@ -492,78 +156,82 @@
         </div>
     </div>
 
-    <!-- Dönüş overlay -->
-    <div id="ar-turn">
-        <div class="turn-icon" id="ar-turn-icon">⬅️</div>
+    <!-- Dönüş Uyarısı -->
+    <div id="ar-turn" role="alert" aria-live="assertive">
+        <div class="turn-icon" id="ar-turn-icon" aria-hidden="true">⬅️</div>
         <div class="turn-label" id="ar-turn-text">SOLA DÖN</div>
         <div class="turn-dist" id="ar-turn-dist"></div>
     </div>
 
-    <!-- Bottom panel -->
-    <div id="ar-bottom">
-        <div class="abp-dest" id="ar-dest"></div>
-        <div class="abp-stats">
+    <!-- Alt Panel -->
+    <div id="ar-bottom" role="status">
+        <div class="abp-dest" id="ar-dest" aria-label="Hedefiniz"></div>
+        <div class="abp-stats" aria-label="Navigasyon istatistikleri">
             <div class="abp-stat">
-                <div class="abp-stat-val" id="ar-dist">--</div>
+                <div class="abp-stat-val" id="ar-dist" aria-label="Kalan mesafe">--</div>
                 <div class="abp-stat-key">Kalan Mesafe</div>
             </div>
             <div class="abp-stat">
-                <div class="abp-stat-val" id="ar-time">--</div>
+                <div class="abp-stat-val" id="ar-time" aria-label="Tahmini süre">--</div>
                 <div class="abp-stat-key">Tahmini Süre</div>
             </div>
         </div>
-        <div class="abp-actions">
-            <button class="sos-btn ar-interactive" onclick="openSOS(event)">
-                🆘<span>YARDIM</span>
-            </button>
-            <button class="btn btn-primary ar-interactive" style="flex:1;min-height:62px;"
-                    id="ar-arrived-btn" onclick="onArrived()">✅ Ulaştım</button>
-        </div>
+        <!-- NOT: SOS butonu kaldırıldı. Tam genişlik "Ulaştım" butonu. -->
+        <button id="ar-arrived-btn"
+                class="ar-interactive"
+                onclick="onArrived()"
+                aria-label="Hedefe ulaştım">
+            ✅ Ulaştım
+        </button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     AR — BİLGİ EKRANI (Asansör vb.)
-══════════════════════════════════════════════ -->
-<div id="ar-info-screen">
+<!-- ════════════════════════════════════════════════════
+     AR — BİLGİ EKRANI (Asansör vb. ara adım)
+════════════════════════════════════════════════════ -->
+<div id="ar-info-screen" role="dialog" aria-modal="true" aria-label="Ara adım bilgisi">
+
     <div class="ais-header">
-        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
-            <img src="Assets/logo.png" alt="" style="width:38px;height:38px;object-fit:contain;">
-            <div style="width:1px;height:30px;background:var(--border);"></div>
-            <div class="ais-icon" id="ais-icon" style="font-size:38px;margin:0;">🛗</div>
+        <div class="ais-logo-row">
+            <img src="Assets/logo.png" alt="T.C. Sağlık Bakanlığı" width="38" height="38">
+            <div class="ais-logo-divider" aria-hidden="true"></div>
+            <span class="ais-step-icon" id="ais-step-icon" aria-hidden="true">🛗</span>
         </div>
-        <div class="ais-title" id="ais-title">Bilgi</div>
+        <h2 class="ais-title" id="ais-title">Bilgi</h2>
     </div>
+
     <div class="ais-card">
-        <div style="font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;
-                    letter-spacing:.6px;margin-bottom:12px;">Yapmanız Gerekenler</div>
-        <ul class="ais-lines" id="ais-lines"></ul>
+        <div class="ais-card-label">Yapmanız Gerekenler</div>
+        <ul class="ais-lines" id="ais-lines" aria-label="Adım listesi"></ul>
     </div>
-    <div style="margin-top:28px;">
-        <button class="btn btn-primary ar-interactive" onclick="onInfoContinue()">
+
+    <div class="ais-continue-btn">
+        <button class="btn btn-primary ar-interactive"
+                onclick="onInfoContinue()"
+                aria-label="Devam et, AR navigasyonu başlat">
             Devam Et — AR Başlat
         </button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════
      AR — TAMAMLANDI EKRANI
-══════════════════════════════════════════════ -->
-<div id="ar-done">
+════════════════════════════════════════════════════ -->
+<div id="ar-done" role="main" aria-label="Navigasyon tamamlandı">
+
     <div class="done-head">
-        <div class="done-badge">✓</div>
+        <div class="done-badge" aria-hidden="true">✓</div>
         <div>
-            <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:2px;">Hedefinize Ulaştınız</div>
-            <div style="font-size:13px;color:var(--muted);font-weight:500;" id="done-sub">Navigasyon tamamlandı</div>
+            <div class="done-head-title">Hedefinize Ulaştınız</div>
+            <div class="done-head-sub" id="done-head-sub">Navigasyon tamamlandı</div>
         </div>
     </div>
-    <div class="done-body">
-        <div style="font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:6px;"
-             id="done-route-name">—</div>
-        <div style="font-size:14px;color:var(--muted);font-weight:500;margin-bottom:22px;"
-             id="done-route-loc">—</div>
 
-        <div class="done-stat-grid">
+    <div class="done-body">
+        <h2 class="done-route-name" id="done-route-name">—</h2>
+        <p class="done-route-loc" id="done-route-loc">—</p>
+
+        <div class="done-stat-grid" aria-label="Tamamlama istatistikleri">
             <div class="done-stat-box">
                 <div class="done-stat-val" id="done-dist">—</div>
                 <div class="done-stat-lbl">Kat Edilen Mesafe</div>
@@ -574,606 +242,41 @@
             </div>
         </div>
 
-        <div class="done-info-box" id="done-info-box" style="display:none;">
-            <div style="font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;
-                        letter-spacing:.6px;margin-bottom:8px;">Varış Bilgisi</div>
-            <div style="font-size:14px;color:var(--ink);font-weight:500;line-height:1.6;"
-                 id="done-info-text"></div>
+        <div class="done-info-box" id="done-info-box">
+            <div class="done-info-label">Varış Bilgisi</div>
+            <p class="done-info-text" id="done-info-text"></p>
         </div>
     </div>
+
     <div class="done-foot">
-        <button class="btn btn-primary" onclick="returnToRoutes()">Ana Menüye Dön</button>
+        <button class="btn btn-primary"
+                onclick="returnToRoutes()"
+                aria-label="Ana menüye dön">
+            Ana Menüye Dön
+        </button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     SOS MODAL
-══════════════════════════════════════════════ -->
-<div id="sos-modal">
-    <div class="sos-card">
-        <span style="font-size:54px;margin-bottom:14px;display:block;animation:sosPulse 1s ease-in-out infinite;">🚨</span>
-        <div style="font-size:22px;font-weight:800;margin-bottom:10px;">Yardım Çağrısı</div>
-        <div style="font-size:15px;color:var(--muted);margin-bottom:22px;font-weight:500;line-height:1.4;">
-            Konumunuz acil müdahale için danışmaya gönderilecek. Emin misiniz?
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;" id="sos-btns">
-            <button class="btn" style="background:var(--danger);color:#fff;min-height:54px;" onclick="sendSOS()">
-                🆘 Evet, Yardım İste
-            </button>
-            <button class="btn btn-ghost" style="min-height:50px;" onclick="closeSOS()">İptal</button>
-        </div>
-        <div id="sos-result" style="display:none;padding:14px 0;font-size:16px;font-weight:700;color:var(--success);">
-            ✅ Konumunuz danışmaya iletildi.
-        </div>
-    </div>
-</div>
+<!-- Toast Bildirimi -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<!-- Toast -->
-<div id="toast"></div>
+<!-- ════════════════════════════════════════════════════
+     JS MODÜLLER (Yükleme sırası önemli)
+     1. router.js  — global state + ekran geçişi
+     2. list.js    — rota listesi render
+     3. detail.js  — detay ekranı render
+     4. ar.js      — AR motoru
+════════════════════════════════════════════════════ -->
+<script src="js/router.js"></script>
+<script src="js/list.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/ar.js"></script>
 
 <script>
-/* ════════════════════════════════════════════════════
-   DURUM
-════════════════════════════════════════════════════ */
-let activeRoute = null;   // seçili rota
-let arLegs      = [];     // aktif rota legs
-let legIdx      = 0;
-let arActive    = false;
-let tickRafId   = null;
-let arStartTime = null;
-let totalRouteDist = 0;
-
-/* DOM kısayolları */
-const sceneEl     = document.getElementById('ar-scene');
-const arOverlay   = document.getElementById('ar-overlay');
-const arInfoScr   = document.getElementById('ar-info-screen');
-const arDoneScr   = document.getElementById('ar-done');
-const arrowsEl    = document.getElementById('ar-arrows');
-const camEl       = document.getElementById('ar-cam');
-const arrivedBtn  = document.getElementById('ar-arrived-btn');
-const turnOverlay = document.getElementById('ar-turn');
-
-/* ════════════════════════════════════════════════════
-   EKRAN YÖNETİMİ
-════════════════════════════════════════════════════ */
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const el = document.getElementById(id);
-    if (el) { el.classList.add('active'); window.scrollTo(0, 0); }
-}
-
-let toastTimer = null;
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
-}
-
-/* ════════════════════════════════════════════════════
-   ROTA LİSTESİ
-════════════════════════════════════════════════════ */
-function renderList(filter = '') {
-    const listEl = document.getElementById('route-list');
-    listEl.innerHTML = '';
-    const q = filter.toLowerCase().trim();
-    let total = 0;
-
-    ROUTE_CATEGORIES.forEach(cat => {
-        const routes = NAV_ROUTES.filter(r => {
-            if (r.category !== cat) return false;
-            if (!q) return true;
-            return r.name.toLowerCase().includes(q)
-                || (r.shortName || '').toLowerCase().includes(q)
-                || cat.toLowerCase().includes(q)
-                || (r.block || '').toLowerCase().includes(q);
-        });
-        if (!routes.length) return;
-        total += routes.length;
-
-        const lbl = document.createElement('div');
-        lbl.style.cssText = `font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
-                              letter-spacing:.8px;margin:${total === routes.length ? '8' : '20'}px 4px 10px;`;
-        lbl.textContent = cat;
-        listEl.appendChild(lbl);
-
-        routes.forEach(route => {
-            const card = document.createElement('div');
-            card.className = 'route-card' + (route.isAvailable ? ' ar-route' : '');
-
-            const iconBg = route.isAvailable ? 'var(--primary-l)' : 'var(--bg)';
-            const badge  = route.isAvailable
-                ? `<span style="font-size:11px;font-weight:700;background:var(--primary);color:#fff;padding:4px 10px;border-radius:8px;">▶ AR</span>`
-                : `<span style="font-size:11px;font-weight:700;background:#F0F2F5;color:var(--muted);padding:4px 10px;border-radius:8px;">Bilgi</span>`;
-
-            card.innerHTML = `
-                <div class="rc-icon" style="background:${iconBg};">${route.icon}</div>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:3px;
-                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;">
-                        ${route.name}
-                    </div>
-                    <div style="font-size:13px;color:var(--muted);font-weight:500;
-                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${route.desc}
-                    </div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
-                    ${badge}
-                    <span style="color:var(--muted);font-size:14px;opacity:.4;">›</span>
-                </div>`;
-
-            card.addEventListener('click', () => openDetail(route));
-            listEl.appendChild(card);
-        });
-    });
-
-    if (!total) {
-        listEl.innerHTML = `<div style="text-align:center;padding:56px 20px;color:var(--muted);">
-            <div style="font-size:40px;margin-bottom:12px;">🔍</div>
-            <div style="font-size:15px;font-weight:500;">"${filter}" için sonuç bulunamadı.</div>
-        </div>`;
-    }
-}
-
-/* ════════════════════════════════════════════════════
-   ROTA DETAY — görseldeki tasarım
-════════════════════════════════════════════════════ */
-function openDetail(route) {
-    activeRoute = route;
-
-    /* İstatistik hesapla */
-    let totalDist = 0, turns = 0;
-    let hasElev = route.hasElevator || false;
-    const TURN_W = ['sola','sağa','sol ','sağ '];
-    (route.legs || []).forEach(leg => {
-        if (leg.type === 'ar') {
-            if (leg.path) totalDist += leg.path.length;
-            const ins = (leg.instruction || '').toLowerCase();
-            if (TURN_W.some(w => ins.includes(w))) turns++;
-        }
-        if (leg.type === 'info') hasElev = true;
-    });
-    const estMin = Math.max(1, Math.ceil(totalDist * 1.5 / 60));
-
-    /* Body */
-    const body = document.getElementById('detail-body');
-    body.innerHTML = `
-        <!-- Hero kart -->
-        <div class="detail-section" style="margin-bottom:13px;">
-            <div style="display:flex;align-items:flex-start;gap:15px;margin-bottom:${route.isAvailable ? '16px' : '0'};">
-                <div style="width:58px;height:58px;border-radius:15px;background:${route.isAvailable ? 'var(--primary-l)' : 'var(--bg)'};
-                            display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">
-                    ${route.icon}
-                </div>
-                <div style="flex:1;padding-top:5px;">
-                    <div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px;">
-                        ${route.name}
-                    </div>
-                    <div style="font-size:14px;color:var(--muted);font-weight:500;">
-                        ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
-                    </div>
-                </div>
-            </div>
-
-            ${route.isAvailable ? `
-            <!-- Stats -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-                <div style="background:var(--bg);border-radius:12px;padding:13px;text-align:center;">
-                    <div style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-.4px;margin-bottom:3px;">
-                        ${totalDist}m
-                    </div>
-                    <div style="font-size:12px;color:var(--muted);font-weight:600;">Tahmini Mesafe</div>
-                </div>
-                <div style="background:var(--bg);border-radius:12px;padding:13px;text-align:center;">
-                    <div style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-.4px;margin-bottom:3px;">
-                        ~${estMin}&nbsp;dk
-                    </div>
-                    <div style="font-size:12px;color:var(--muted);font-weight:600;">Yürüyüş Süresi</div>
-                </div>
-            </div>
-
-            <!-- Etiketler -->
-            <div style="display:flex;flex-wrap:wrap;gap:7px;">
-                ${route.accessible ? `<span class="tag tag-green">♿ Engelsiz Erişim</span>` : ''}
-                ${hasElev ? `<span class="tag tag-gray">🛗 Asansör</span>` : ''}
-                <span class="tag tag-blue">📡 AR Navigasyon</span>
-                ${turns > 0 ? `<span class="tag tag-gray">↩ ${turns} Dönüş</span>` : ''}
-            </div>` : `
-            <!-- Pasif etiket -->
-            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;">
-                ${route.accessible ? `<span class="tag tag-green">♿ Engelsiz Erişim</span>` : ''}
-                <span style="display:inline-flex;align-items:center;gap:5px;background:#FEF2F2;
-                    border:1px solid rgba(220,38,38,.2);border-radius:9px;padding:5px 11px;
-                    font-size:13px;font-weight:600;color:var(--danger);">📡 AR Yakında</span>
-            </div>`}
-        </div>
-
-        <!-- Konum bilgileri -->
-        <div class="detail-section">
-            <div class="section-label">Konum Bilgileri</div>
-            ${infoRow('🏢','Blok / Alan', route.block)}
-            ${infoRow('🪜','Kat', route.floor)}
-            ${infoRow('🚪','Oda / Bölüm', route.room)}
-            ${infoRow('🕐','Çalışma Saatleri', route.hours)}
-            ${infoRow('📞','İletişim', route.phone)}
-        </div>
-
-        <!-- Birim hakkında -->
-        ${route.detail ? `
-        <div class="detail-section" style="margin-bottom:20px;">
-            <div class="section-label">Birim Hakkında</div>
-            <div style="font-size:15px;color:var(--ink);line-height:1.65;">${route.detail}</div>
-        </div>` : '<div style="height:8px;"></div>'}
-    `;
-
-    /* Footer butonu */
-    const foot = document.getElementById('detail-foot');
-    if (route.isAvailable) {
-        foot.innerHTML = `
-            <button class="btn btn-primary" id="btn-start-ar-detail"
-                    style="gap:10px;">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                AR Navigasyonu Başlat
-            </button>`;
-        document.getElementById('btn-start-ar-detail').addEventListener('click', () => {
-            startAR(route);
-        });
-    } else {
-        foot.innerHTML = `
-            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:13px;
-                        padding:15px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:6px;">📡</div>
-                <div style="font-size:14px;color:var(--muted);font-weight:500;line-height:1.5;">
-                    Bu birim için AR navigasyon<br>henüz aktif değildir.
-                </div>
-            </div>`;
-    }
-
-    showScreen('s-detail');
-}
-
-function infoRow(icon, label, val) {
-    if (!val) return '';
-    return `<div class="info-row">
-        <span style="font-size:17px;flex-shrink:0;margin-top:2px;">${icon}</span>
-        <div>
-            <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px;">${label}</div>
-            <div style="font-size:14px;color:var(--ink);font-weight:600;">${val}</div>
-        </div>
-    </div>`;
-}
-
-/* ════════════════════════════════════════════════════
-   AR BAŞLATMA (doğrudan, ara ekran yok)
-════════════════════════════════════════════════════ */
-function startAR(route) {
-    activeRoute   = route;
-    arLegs        = route.legs || [];
-    legIdx        = 0;
-    arActive      = false;
-    arStartTime   = null;
-    totalRouteDist = 0;
-    arLegs.forEach(l => { if (l.path) totalRouteDist += l.path.length; });
-
-    arrivedBtn.textContent = arLegs.length > 1 ? '✅ Sonraki Bölüm' : '🎉 Hedefe Vardım';
-
-    /* İlk bacak info ise önce bilgi ekranını göster */
-    const firstLeg = arLegs[0];
-    if (firstLeg && firstLeg.type === 'info') {
-        showInfoScreen(firstLeg);
-    } else {
-        /* Direkt AR'ye gir */
-        enterAR();
-    }
-}
-
-function enterAR() {
-    /* A-Frame sahnesini göster ve AR moduna gir */
-    sceneEl.classList.add('ar-active');
-    sceneEl.enterAR();
-}
-
-/* A-Frame olayları */
-sceneEl.addEventListener('enter-vr', () => {
-    arActive    = true;
-    arStartTime = arStartTime || Date.now();
-    document.body.style.background = 'transparent';
-    arInfoScr.classList.remove('visible');
-
-    /* Overlay'i göster */
-    arOverlay.classList.add('ar-active');
-    document.getElementById('ar-top-hud').style.display = 'flex';
-    document.getElementById('ar-bottom').style.display  = 'flex';
-
-    updateHUD();
-    document.getElementById('ar-dest').textContent = activeRoute.name;
-    arrivedBtn.textContent = (legIdx === arLegs.length - 1) ? '🎉 Hedefe Vardım' : '✅ Sonraki Bölüm';
-
-    setTimeout(drawArrows, 1500);
-});
-
-sceneEl.addEventListener('exit-vr', () => {
-    arActive = false;
-    document.body.style.background = '';
-    cancelAnimationFrame(tickRafId);
-    document.getElementById('ar-top-hud').style.display = 'none';
-    document.getElementById('ar-bottom').style.display  = 'none';
-    turnOverlay.classList.remove('visible');
-    arrowsEl.innerHTML = '';
-    sceneEl.classList.remove('ar-active');
-    arOverlay.classList.remove('ar-active');
-});
-
-/* ── HUD güncelle ── */
-function updateHUD() {
-    const next = arLegs[legIdx + 1];
-    if (next && next.type === 'info') {
-        document.getElementById('ar-nc-action').textContent = next.title || 'Bilgi Ekranı';
-        document.getElementById('ar-nc-label').textContent  = 'Sonraki Adım';
-        document.getElementById('ar-nc-icon').textContent   = next.icon || 'ℹ️';
-    } else if (next && next.instruction) {
-        document.getElementById('ar-nc-action').textContent =
-            next.instruction.replace(/[⬆️⬅️➡️↗↙↖↘]+/g, '').trim().substring(0, 28);
-        document.getElementById('ar-nc-label').textContent  = 'Sonraki Dönüş';
-        document.getElementById('ar-nc-icon').textContent   = '↗';
-    } else {
-        document.getElementById('ar-nc-action').textContent = 'Hedefe yaklaştınız';
-        document.getElementById('ar-nc-label').textContent  = 'Son Düzlük';
-        document.getElementById('ar-nc-icon').textContent   = '🏁';
-    }
-}
-
-/* ── Ok çizimi ── */
-function parsePos(pt) {
-    if (!pt || !pt.pos) return { x: 0, y: 0, z: 0 };
-    const p = pt.pos.split(' ').map(Number);
-    return { x: p[0]||0, y: p[1]||0, z: p[2]||0 };
-}
-
-function drawArrows() {
-    arrowsEl.innerHTML = '';
-    const leg = arLegs[legIdx];
-    if (!leg || !leg.path || leg.path.length < 2) {
-        tickRafId = requestAnimationFrame(tick);
-        return;
-    }
-    const path = leg.path;
-    for (let i = 1; i < path.length; i++) {
-        const prev = parsePos(path[i-1]);
-        const curr = parsePos(path[i]);
-        const dx = curr.x - prev.x, dz = curr.z - prev.z;
-        const segLen = Math.hypot(dx, dz);
-        if (segLen < 0.001) continue;
-        const angleRad = Math.atan2(dx, dz);
-        const angleDeg = THREE.MathUtils.radToDeg(angleRad);
-        const steps = Math.max(1, Math.round(segLen / 0.7));
-        for (let j = 0; j < steps; j++) {
-            const t = (j + 0.5) / steps;
-            const px = prev.x + dx * t, pz = prev.z + dz * t;
-
-            const shaft = document.createElement('a-cylinder');
-            shaft.setAttribute('radius','0.06'); shaft.setAttribute('height','0.32');
-            shaft.setAttribute('position',`${px} 0.04 ${pz}`);
-            shaft.setAttribute('rotation',`90 ${angleDeg} 0`);
-            shaft.setAttribute('material','color:#1A6FD4;transparent:true;opacity:.88;roughness:.3;metalness:.1');
-            shaft.setAttribute('animation__float',`property:position;to:${px} 0.14 ${pz};from:${px} 0.04 ${pz};dir:alternate;loop:true;dur:1000;easing:easeInOutSine;delay:${j*120}`);
-
-            const hx = px + Math.sin(angleRad)*.28, hz = pz + Math.cos(angleRad)*.28;
-            const head = document.createElement('a-cone');
-            head.setAttribute('radius-bottom','0.14'); head.setAttribute('radius-top','0');
-            head.setAttribute('height','0.22');
-            head.setAttribute('position',`${hx} 0.04 ${hz}`);
-            head.setAttribute('rotation',`90 ${angleDeg} 0`);
-            head.setAttribute('material','color:#1A6FD4;transparent:true;opacity:.95;roughness:.2;metalness:.15');
-            head.setAttribute('animation__float',`property:position;to:${hx} 0.14 ${hz};from:${hx} 0.04 ${hz};dir:alternate;loop:true;dur:1000;easing:easeInOutSine;delay:${j*120}`);
-
-            const ring = document.createElement('a-ring');
-            ring.setAttribute('radius-inner','0.16'); ring.setAttribute('radius-outer','0.22');
-            ring.setAttribute('rotation','-90 0 0'); ring.setAttribute('position',`${px} 0.005 ${pz}`);
-            ring.setAttribute('material','color:#1A6FD4;transparent:true;opacity:.35;side:double');
-            ring.setAttribute('animation__scale',`property:scale;from:1 1 1;to:1.4 1.4 1.4;dir:alternate;loop:true;dur:900;easing:easeInOutSine;delay:${j*120}`);
-            ring.setAttribute('animation__op',`property:material.opacity;from:.35;to:0;dir:alternate;loop:true;dur:900;easing:easeInOutSine;delay:${j*120}`);
-
-            arrowsEl.appendChild(ring);
-            arrowsEl.appendChild(shaft);
-            arrowsEl.appendChild(head);
-        }
-    }
-    tickRafId = requestAnimationFrame(tick);
-}
-
-/* ── Tick (konum takip) ── */
-function getProgress(camPos, pathPoints) {
-    let closest = Infinity, covered = 0, running = 0;
-    for (let i = 1; i < pathPoints.length; i++) {
-        const a = pathPoints[i-1], b = pathPoints[i];
-        const segLen = Math.hypot(b.x-a.x, b.z-a.z);
-        const t = Math.max(0, Math.min(1,
-            ((camPos.x-a.x)*(b.x-a.x) + (camPos.z-a.z)*(b.z-a.z)) / (segLen*segLen + 1e-10)));
-        const d = Math.hypot(camPos.x - (a.x+t*(b.x-a.x)), camPos.z - (a.z+t*(b.z-a.z)));
-        if (d < closest) { closest = d; covered = running + t * segLen; }
-        running += segLen;
-    }
-    return covered;
-}
-
-function tick() {
-    if (!arActive) return;
-    const cam = camEl.object3D;
-    const heads = Array.from(arrowsEl.children).filter(el => el.tagName && el.tagName.toLowerCase() === 'a-cone');
-    const lastHead = heads[heads.length - 1];
-    if (!lastHead) { tickRafId = requestAnimationFrame(tick); return; }
-
-    lastHead.object3D.updateMatrixWorld(true);
-    const camPos = new THREE.Vector3(), targetPos = new THREE.Vector3();
-    cam.getWorldPosition(camPos);
-    lastHead.object3D.getWorldPosition(targetPos);
-    const dist = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
-    const grace = arStartTime ? (Date.now() - arStartTime) < 2000 : true;
-
-    /* Kalan mesafe */
-    let covered = 0;
-    for (let i = 0; i < legIdx; i++) { if (arLegs[i].path) covered += arLegs[i].path.length; }
-    const curLeg = arLegs[legIdx];
-    if (curLeg && curLeg.path) covered += getProgress(camPos, curLeg.path.map(parsePos));
-    const remain = Math.max(0, totalRouteDist - covered);
-    document.getElementById('ar-dist').textContent = remain < 1 ? '<1m' : Math.round(remain) + 'm';
-    document.getElementById('ar-nc-label').textContent = `${Math.round(remain)}m kaldı`;
-    const estSec = Math.ceil(remain * 1.5);
-    document.getElementById('ar-time').textContent = estSec >= 60 ? Math.ceil(estSec/60)+'dk' : estSec+'sn';
-
-    /* Dönüş uyarısı */
-    const nextLeg = arLegs[legIdx + 1];
-    if (nextLeg && dist <= 2.0 && dist > 0.4) {
-        const ins = (nextLeg.instruction || nextLeg.title || '').toLowerCase();
-        if (ins.includes('sola'))      showTurn('⬅️','SOLA DÖN', dist);
-        else if (ins.includes('sağa')) showTurn('➡️','SAĞA DÖN', dist);
-        else hideTurn();
-    } else hideTurn();
-
-    /* Otomatik varış (son bacak) */
-    if (dist < 1.5 && !grace && legIdx === arLegs.length - 1) {
-        cancelAnimationFrame(tickRafId);
-        sceneEl.exitVR();
-        showDone();
-        return;
-    }
-    tickRafId = requestAnimationFrame(tick);
-}
-
-function showTurn(icon, text, dist) {
-    const ic = document.getElementById('ar-turn-icon');
-    ic.textContent = icon;
-    ic.style.animation = `${icon.includes('⬅') ? 'bounceL' : 'bounceR'} .6s ease-in-out infinite alternate`;
-    document.getElementById('ar-turn-text').textContent = text;
-    document.getElementById('ar-turn-dist').textContent = dist ? `${Math.round(dist)}m sonra` : '';
-    turnOverlay.classList.add('visible');
-}
-function hideTurn() { turnOverlay.classList.remove('visible'); }
-
-/* ── Bilgi ekranı ── */
-function showInfoScreen(leg) {
-    document.getElementById('ais-icon').textContent  = leg.icon || 'ℹ️';
-    document.getElementById('ais-title').textContent = leg.title || 'Bilgi';
-    const ul = document.getElementById('ais-lines');
-    ul.innerHTML = '';
-    (leg.lines || [leg.instruction || '']).forEach((txt, i) => {
-        const li = document.createElement('li');
-        li.className = 'ais-line';
-        li.innerHTML = `<span class="ais-num">${i+1}</span><span>${txt}</span>`;
-        ul.appendChild(li);
-    });
-    arInfoScr.classList.add('visible');
-}
-
-window.onInfoContinue = function () {
-    arInfoScr.classList.remove('visible');
-    legIdx++;
-    if (legIdx < arLegs.length) {
-        const next = arLegs[legIdx];
-        if (next.type === 'info') {
-            setTimeout(() => showInfoScreen(next), 200);
-        } else {
-            enterAR();
-        }
-    } else {
-        showDone();
-    }
-};
-
-/* ── Ulaştım ── */
-window.onArrived = function () {
-    cancelAnimationFrame(tickRafId);
-    sceneEl.exitVR();
-    hideTurn();
-
-    legIdx++;
-    arStartTime = null;
-
-    if (legIdx < arLegs.length) {
-        const next = arLegs[legIdx];
-        if (next.type === 'info') {
-            setTimeout(() => showInfoScreen(next), 300);
-        } else {
-            setTimeout(() => enterAR(), 200);
-        }
-        arrivedBtn.textContent = (legIdx === arLegs.length - 1) ? '🎉 Hedefe Vardım' : '✅ Sonraki Bölüm';
-    } else {
-        showDone();
-    }
-};
-
-/* ── Tamamlandı ── */
-function showDone() {
-    const r = activeRoute;
-    document.getElementById('done-route-name').textContent = r.name;
-    document.getElementById('done-route-loc').textContent  = r.desc || '';
-    document.getElementById('done-sub').textContent =
-        r.block ? `${r.block}${r.floor ? ', ' + r.floor : ''}` : 'Navigasyon tamamlandı';
-
-    let d = 0; arLegs.forEach(l => { if (l.path) d += l.path.length; });
-    document.getElementById('done-dist').textContent = d + 'm';
-
-    if (arStartTime) {
-        const e = Math.round((Date.now() - arStartTime) / 1000);
-        document.getElementById('done-time').textContent = e >= 60 ? Math.ceil(e/60)+' dk' : e+' sn';
-    } else {
-        document.getElementById('done-time').textContent = '—';
-    }
-
-    if (r.detail) {
-        const sents = r.detail.split('.').filter(s => s.trim().length > 0);
-        if (sents.length > 0) {
-            document.getElementById('done-info-box').style.display  = 'block';
-            document.getElementById('done-info-text').textContent   = sents.slice(0,2).join('. ').trim() + '.';
-        }
-    }
-    arDoneScr.classList.add('visible');
-}
-
-window.returnToRoutes = function () {
-    arDoneScr.classList.remove('visible');
-    renderList();
-    showScreen('s-routes');
-};
-
-window.exitARToRoutes = function () {
-    cancelAnimationFrame(tickRafId);
-    sceneEl.exitVR();
-    arInfoScr.classList.remove('visible');
-    renderList();
-    showScreen('s-routes');
-};
-
-/* ── SOS ── */
-window.openSOS = function (e) {
-    if (e) e.stopPropagation();
-    document.getElementById('sos-btns').style.display   = 'flex';
-    document.getElementById('sos-result').style.display = 'none';
-    document.getElementById('sos-modal').classList.add('open');
-};
-window.closeSOS  = function () { document.getElementById('sos-modal').classList.remove('open'); };
-window.sendSOS   = function () {
-    document.getElementById('sos-btns').style.display   = 'none';
-    document.getElementById('sos-result').style.display = 'block';
-    document.getElementById('sos-result').textContent   = '⏳ Gönderiliyor...';
-    setTimeout(() => {
-        document.getElementById('sos-result').textContent = '✅ Konumunuz danışmaya iletildi.';
-        setTimeout(closeSOS, 2200);
-    }, 1200);
-};
-
-/* ════════════════════════════════════════════════════
-   BAŞLATMA
-════════════════════════════════════════════════════ */
+/* ── Uygulama Başlatma ── */
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* Karşılama → Liste */
+    /* Karşılama → Rota Listesi */
     document.getElementById('btn-welcome').addEventListener('click', () => {
         renderList();
         showScreen('s-routes');
@@ -1185,22 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* Arama */
-    const searchInput = document.getElementById('search-input');
-    const searchWrap  = document.getElementById('search-wrap');
-    searchInput.addEventListener('focus',  () => searchWrap.style.borderColor = 'var(--primary)');
-    searchInput.addEventListener('blur',   () => searchWrap.style.borderColor = 'var(--border)');
-    searchInput.addEventListener('input',  e  => renderList(e.target.value));
+    initSearch();
 
-    /* ar.html'den dönüş veya done param */
-    const p = new URLSearchParams(location.search);
-    const doneId = p.get('done');
-    if (doneId) {
-        history.replaceState(null, '', 'index.html');
-        renderList();
-        showScreen('s-routes');
-        const done = NAV_ROUTES.find(r => r.id === doneId);
-        if (done) setTimeout(() => showToast(`✓ ${done.shortName || done.name} tamamlandı`), 350);
-    }
+    /* ar.html'den veya done param ile dönüş kontrolü */
+    handleReturnParam();
 });
 </script>
 </body>

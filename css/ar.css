@@ -1,0 +1,403 @@
+/* ════════════════════════════════════════════════════
+   ar.css — AR HUD, Info Screen, Done Screen
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   NOT: SOS modal kaldırıldı.
+════════════════════════════════════════════════════ */
+
+/* ── A-Frame Sahnesi ── */
+a-scene {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+}
+a-scene.ar-active { display: block; }
+
+/* ── AR Overlay ── */
+#ar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    display: none;
+}
+#ar-overlay.ar-active { display: block; }
+.ar-interactive { pointer-events: auto; }
+
+/* ────────────────────────────────────────────────────
+   AR HUD — TOP BAR
+──────────────────────────────────────────────────── */
+#ar-top-hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 52px 14px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ar-back-btn {
+    /* Erişilebilirlik: 48×48 minimum dokunuş */
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--primary);
+    font-weight: 700;
+    flex-shrink: 0;
+    pointer-events: auto;
+    transition: opacity .15s;
+}
+.ar-back-btn:active { opacity: .75; }
+
+.ar-next-pill {
+    flex: 1;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+.anp-icon   { font-size: 22px; color: var(--primary); }
+.anp-label  { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 1px; }
+.anp-action { font-size: 16px; font-weight: 700; color: var(--ink); }
+
+/* ────────────────────────────────────────────────────
+   AR HUD — DÖNÜş UYARISI OVERLAY
+──────────────────────────────────────────────────── */
+#ar-turn {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 55vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: linear-gradient(180deg, rgba(0,0,0,.72) 0%, transparent 100%);
+    pointer-events: none;
+}
+#ar-turn.visible { display: flex; }
+
+.turn-icon {
+    font-size: 64px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.5));
+    line-height: 1;
+}
+.turn-label {
+    background: var(--danger);
+    color: #fff;
+    /* Erişilebilirlik: büyük font, yüksek kontrast */
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    padding: 16px 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(220,38,38,.45);
+}
+.turn-dist {
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes bounceL {
+    from { transform: translateX(-16px); }
+    to   { transform: translateX(4px);  }
+}
+@keyframes bounceR {
+    from { transform: translateX(16px); }
+    to   { transform: translateX(-4px); }
+}
+
+/* ────────────────────────────────────────────────────
+   AR HUD — BOTTOM PANEL
+──────────────────────────────────────────────────── */
+#ar-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px 28px 0 0;
+    padding: 20px 16px 36px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+}
+
+.abp-dest {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 14px;
+}
+
+.abp-stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.abp-stat {
+    flex: 1;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    text-align: center;
+}
+.abp-stat-val {
+    /* Erişilebilirlik: büyük okunabilir rakamlar */
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 3px;
+}
+.abp-stat-key {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* NOT: SOS butonu kaldırıldı. "Ulaştım" tam genişlik. */
+#ar-arrived-btn {
+    width: 100%;
+    min-height: var(--touch-min);
+    border-radius: var(--radius);
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--success) 0%, #0E8444 100%);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(24,165,88,.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity .15s, transform .12s;
+    pointer-events: auto;
+}
+#ar-arrived-btn:active {
+    transform: scale(.98);
+    opacity: .92;
+    box-shadow: 0 2px 8px rgba(24,165,88,.2);
+}
+
+/* ────────────────────────────────────────────────────
+   AR — BİLGİ EKRANI (Asansör vb. ara adım)
+──────────────────────────────────────────────────── */
+#ar-info-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    padding: 52px 20px 36px;
+    overflow-y: auto;
+}
+#ar-info-screen.visible { display: flex; }
+
+.ais-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+.ais-logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.ais-logo-row img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+}
+.ais-logo-divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border);
+}
+.ais-step-icon { font-size: 38px; line-height: 1; }
+.ais-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -.4px;
+}
+
+.ais-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    margin-bottom: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+}
+.ais-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 14px;
+}
+
+.ais-lines {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.ais-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    /* Erişilebilirlik: büyük satır yüksekliği */
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--ink);
+}
+.ais-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.ais-continue-btn {
+    margin-top: 28px;
+}
+
+/* ────────────────────────────────────────────────────
+   AR — TAMAMLANDI EKRANI (Done)
+──────────────────────────────────────────────────── */
+#ar-done {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+}
+#ar-done.visible { display: flex; }
+
+.done-head {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.done-badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #E8F7EF, #C6EFDA);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(24,165,88,.2);
+}
+.done-head-title  { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.done-head-sub    { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+.done-body { padding: 20px; flex: 1; }
+
+.done-route-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -.4px;
+    margin-bottom: 6px;
+}
+.done-route-loc {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 22px;
+}
+
+.done-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.done-stat-box {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.done-stat-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--success);
+    letter-spacing: -.5px;
+    margin-bottom: 4px;
+}
+.done-stat-lbl {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.done-info-box {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1.5px solid var(--border);
+    margin-bottom: 18px;
+}
+.done-info-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 8px;
+}
+.done-info-text {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.done-foot {
+    padding: 13px 18px 36px;
+    background: rgba(255,255,255,.97);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+}

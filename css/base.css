@@ -1,0 +1,202 @@
+/* ════════════════════════════════════════════════════
+   base.css — Design Tokens, Reset, Utility Classes
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ── */
+:root {
+    --primary:      #1A6FD4;
+    --primary-dark: #1354A8;
+    --primary-light:#EEF4FD;
+    --success:      #18A558;
+    --success-light:#E8F7EF;
+    --danger:       #DC2626;
+    --danger-light: #FEE2E2;
+    --bg:           #F7F8FC;
+    --card:         #FFFFFF;
+    --ink:          #0F1923;
+    --muted:        #6B7280;
+    --border:       #E5E8ED;
+
+    --radius-sm:    10px;
+    --radius:       16px;
+    --radius-lg:    20px;
+
+    /* Erişilebilirlik: minimum dokunuş hedefi */
+    --touch-min:    64px;
+    --card-min:     80px;
+
+    --shadow-sm:    0 1px 3px rgba(0,0,0,.06);
+    --shadow-md:    0 4px 16px rgba(0,0,0,.08);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,.12);
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    /* Sayfanın her zaman kaydırılabilir olması için */
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    min-height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+button {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+img { display: block; max-width: 100%; }
+ul, ol { list-style: none; }
+::-webkit-scrollbar { width: 0; }
+
+/* ── Screen System ── */
+.screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100svh;
+}
+.screen.active { display: flex; }
+
+/* ── Button Components ── */
+.btn {
+    width: 100%;
+    min-height: var(--touch-min);
+    border-radius: var(--radius);
+    font-size: 17px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: opacity .15s, transform .12s, box-shadow .15s;
+    letter-spacing: -.1px;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn:active {
+    transform: scale(.98);
+    opacity: .92;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(26,111,212,.32);
+}
+.btn-primary:active {
+    box-shadow: 0 2px 8px rgba(26,111,212,.2);
+}
+
+.btn-ghost {
+    background: var(--bg);
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+}
+.btn-ghost:hover { background: #ECEEF2; }
+
+/* ── Tag / Badge ── */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 9px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.tag-green { background: var(--success-light); color: #0E8444; border: 1px solid rgba(24,165,88,.2); }
+.tag-blue  { background: var(--primary-light); color: var(--primary); border: 1px solid rgba(26,111,212,.2); }
+.tag-gray  { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── Page Header ── */
+.page-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+/* ── Sticky Bottom Bar ── */
+.bottom-bar {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,255,255,.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    padding: 13px 16px 32px;
+    z-index: 20;
+}
+
+/* ── Section Card ── */
+.section-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 12px;
+}
+
+/* ── Info Row (inside section cards) ── */
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.info-row:first-of-type { padding-top: 0; }
+.info-row:last-child     { border-bottom: none; padding-bottom: 0; }
+.info-row-icon { font-size: 17px; flex-shrink: 0; margin-top: 2px; }
+.info-row-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.info-row-value { font-size: 14px; color: var(--ink); font-weight: 600; }
+
+/* ── Toast ── */
+#toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #1C1C1E;
+    color: #fff;
+    padding: 11px 20px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
+    z-index: 9998;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+#toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

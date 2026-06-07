@@ -1,0 +1,385 @@
+/* ════════════════════════════════════════════════════
+   screens.css — Welcome, Route List, Detail Screens
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────
+   SCREEN 1 — KARŞILAMA (Welcome)
+──────────────────────────────────────────────────── */
+#s-welcome {
+    background: var(--card);
+    align-items: center;
+    text-align: center;
+    /* FIX: justify-content kaldırıldı → scroll çalışıyor */
+    padding: 52px 28px 48px;
+    gap: 0;
+    overflow-y: auto;
+}
+
+.welcome-logo { margin-bottom: 32px; }
+.welcome-logo img {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,.1));
+}
+
+.welcome-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #000;
+    line-height: 1.2;
+    letter-spacing: -.6px;
+    margin-bottom: 14px;
+}
+
+.welcome-desc {
+    font-size: 16px;
+    color: #8E8E93;
+    line-height: 1.55;
+    font-weight: 500;
+    margin-bottom: 40px;
+    max-width: 280px;
+}
+
+.welcome-cta {
+    width: 100%;
+    margin-bottom: 16px;
+    /* Miras alınan .btn kuralları uygulanır */
+    border-radius: 16px;
+    font-size: 18px;
+    background: #0A7AFF;
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(10,122,255,.3);
+}
+.welcome-cta:active {
+    box-shadow: 0 2px 8px rgba(10,122,255,.15);
+}
+
+.welcome-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #1C1C1E;
+    color: #fff;
+    border-radius: 22px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+.welcome-location svg { flex-shrink: 0; }
+
+.welcome-disclaimer {
+    font-size: 12px;
+    color: #C7C7CC;
+    line-height: 1.6;
+    max-width: 300px;
+    text-align: center;
+}
+
+/* ────────────────────────────────────────────────────
+   SCREEN 2 — ROTA LİSTESİ (Route List)
+──────────────────────────────────────────────────── */
+
+/* Header Logo + Başlık */
+.list-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px 10px;
+}
+.list-header-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.list-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.2px;
+}
+.list-header-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1px;
+}
+
+/* Arama kutusu */
+.search-wrap {
+    margin: 0 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    transition: border-color .2s;
+}
+.search-wrap:focus-within { border-color: var(--primary); }
+.search-wrap svg { flex-shrink: 0; }
+.search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+}
+.search-input::placeholder { color: var(--muted); }
+
+/* Rota listesi kapsayıcı */
+#route-list {
+    padding: 10px 16px 48px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Kategori başlığı */
+.category-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin: 20px 4px 10px;
+}
+.category-label:first-child { margin-top: 8px; }
+
+/* Rota kartı */
+.route-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 15px 14px 20px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    /* Erişilebilirlik: minimum kart yüksekliği */
+    min-height: var(--card-min);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow .18s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Sol kenar vurgusu */
+.route-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: var(--radius) 0 0 var(--radius);
+    background: var(--border);
+}
+.route-card.ar-route { border-color: rgba(26,111,212,.16); }
+.route-card.ar-route::before { background: var(--primary); }
+.route-card:active { transform: scale(.99); }
+
+/* Rota ikonu */
+.rc-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.ar-route .rc-icon { background: var(--primary-light); }
+
+/* Rota bilgisi */
+.rc-info { flex: 1; min-width: 0; }
+.rc-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -.1px;
+}
+.rc-desc {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rota sağ taraf (badge + ok) */
+.rc-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.rc-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+.badge-ar      { background: var(--primary); color: #fff; }
+.badge-passive { background: #F0F2F5; color: var(--muted); }
+.rc-chevron    { color: var(--muted); font-size: 14px; opacity: .4; }
+
+/* Boş sonuç */
+.no-results {
+    text-align: center;
+    padding: 56px 20px;
+    color: var(--muted);
+}
+.no-results-icon { font-size: 40px; margin-bottom: 12px; }
+.no-results-text { font-size: 15px; font-weight: 500; }
+
+/* ────────────────────────────────────────────────────
+   SCREEN 3 — ROTA DETAY (Route Detail)
+──────────────────────────────────────────────────── */
+.detail-back-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 700;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.detail-back-btn:active { background: var(--border); }
+
+.detail-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+}
+.detail-header-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.2px;
+}
+
+#detail-body {
+    padding: 16px 16px 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Hero kart */
+.detail-hero {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-md);
+}
+.detail-hero-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 16px;
+}
+.detail-hero-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.detail-hero-icon.passive { background: var(--bg); }
+.detail-hero-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -.4px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+.detail-hero-loc {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* İstatistik grid */
+.detail-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.detail-stat {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    text-align: center;
+}
+.detail-stat-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -.3px;
+    margin-bottom: 3px;
+}
+.detail-stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Etiketler satırı */
+.detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 2px;
+}
+
+/* AR desteksiz bilgi */
+.ar-pending {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+}
+.ar-pending-icon { font-size: 28px; margin-bottom: 6px; }
+.ar-pending-text {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Birim hakkında */
+.detail-about-text {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.65;
+}

@@ -1,0 +1,192 @@
+/**
+ * detail.js — Rota Detay Ekranı
+ *
+ * Sorumluluk: Yalnızca Screen 3 (Route Detail) içeriği.
+ *   - İstatistik hesaplama (mesafe, süre, dönüş sayısı)
+ *   - Hero kart, stat grid, etiketler, konum bilgileri render
+ *   - AR butonuna tıklandığında startAR() çağrısı
+ *
+ * Bağımlılıklar: router.js (showScreen), ar.js (startAR)
+ * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+ */
+
+/* ── Sabitler ── */
+const TURN_KEYWORDS = ['sola', 'sağa', 'sol ', 'sağ '];
+
+/* ── Rota İstatistikleri Hesapla ── */
+function _calcStats(route) {
+    let totalDist = 0;
+    let turns     = 0;
+    let hasElev   = route.hasElevator || false;
+
+    (route.legs || []).forEach(leg => {
+        if (leg.type === 'ar') {
+            if (leg.path) totalDist += leg.path.length;
+            const ins = (leg.instruction || '').toLowerCase();
+            if (TURN_KEYWORDS.some(kw => ins.includes(kw))) turns++;
+        }
+        if (leg.type === 'info') hasElev = true;
+    });
+
+    const estMin = Math.max(1, Math.ceil(totalDist * 1.5 / 60));
+    return { totalDist, turns, hasElev, estMin };
+}
+
+/* ── Bilgi Satırı Fabrikası (DRY) ── */
+function _infoRow(icon, label, value) {
+    if (!value) return '';
+    return `
+        <div class="info-row">
+            <span class="info-row-icon" aria-hidden="true">${icon}</span>
+            <div>
+                <div class="info-row-label">${label}</div>
+                <div class="info-row-value">${value}</div>
+            </div>
+        </div>`;
+}
+
+/* ── AR Aktif Detay HTML ── */
+function _buildARContent(route, stats) {
+    return `
+        <!-- Hero Kart -->
+        <div class="detail-hero" role="region" aria-label="${route.name} detayları">
+            <div class="detail-hero-top">
+                <div class="detail-hero-icon" aria-hidden="true">${route.icon}</div>
+                <div>
+                    <div class="detail-hero-name">${route.name}</div>
+                    <div class="detail-hero-loc">
+                        ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- İstatistikler -->
+            <div class="detail-stats-grid" aria-label="Navigasyon bilgileri">
+                <div class="detail-stat">
+                    <div class="detail-stat-val" aria-label="${stats.totalDist} metre">${stats.totalDist}m</div>
+                    <div class="detail-stat-label">Tahmini Mesafe</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-val" aria-label="yaklaşık ${stats.estMin} dakika">~${stats.estMin}&nbsp;dk</div>
+                    <div class="detail-stat-label">Yürüyüş Süresi</div>
+                </div>
+            </div>
+
+            <!-- Etiketler -->
+            <div class="detail-tags">
+                <span class="tag tag-green" aria-label="Engelsiz erişim mevcut">♿ Engelsiz Erişim</span>
+                ${stats.hasElev ? `<span class="tag tag-gray">🛗 Asansör</span>` : ''}
+                <span class="tag tag-blue">📡 AR Navigasyon</span>
+                ${stats.turns > 0 ? `<span class="tag tag-gray" aria-label="${stats.turns} dönüş">↩ ${stats.turns} Dönüş</span>` : ''}
+            </div>
+        </div>
+
+        <!-- Konum Bilgileri -->
+        <div class="section-card" role="region" aria-label="Konum bilgileri">
+            <div class="section-label">Konum Bilgileri</div>
+            ${_infoRow('🏢', 'Blok / Alan', route.block)}
+            ${_infoRow('🪜', 'Kat', route.floor)}
+            ${_infoRow('🚪', 'Oda / Bölüm', route.room)}
+            ${_infoRow('🕐', 'Çalışma Saatleri', route.hours)}
+            ${_infoRow('📞', 'İletişim', route.phone)}
+        </div>
+
+        <!-- Birim Hakkında -->
+        ${route.detail ? `
+        <div class="section-card" role="region" aria-label="Birim hakkında">
+            <div class="section-label">Birim Hakkında</div>
+            <p class="detail-about-text">${route.detail}</p>
+        </div>` : ''}
+        <div style="height:8px;"></div>
+    `;
+}
+
+/* ── Pasif Klinik Detay HTML ── */
+function _buildPassiveContent(route) {
+    const hasElev = route.hasElevator ||
+        (route.legs || []).some(l => l.type === 'info');
+
+    return `
+        <!-- Hero Kart -->
+        <div class="detail-hero" role="region" aria-label="${route.name} detayları">
+            <div class="detail-hero-top">
+                <div class="detail-hero-icon passive" aria-hidden="true">${route.icon}</div>
+                <div>
+                    <div class="detail-hero-name">${route.name}</div>
+                    <div class="detail-hero-loc">
+                        ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
+                    </div>
+                </div>
+            </div>
+            <div class="detail-tags">
+                <span class="tag tag-green">♿ Engelsiz Erişim</span>
+                ${hasElev ? `<span class="tag tag-gray">🛗 Asansör</span>` : ''}
+                <span class="tag" style="background:#FEF2F2;color:var(--danger);border:1px solid rgba(220,38,38,.2);">
+                    📡 AR Yakında
+                </span>
+            </div>
+        </div>
+
+        <!-- Konum Bilgileri -->
+        <div class="section-card" role="region" aria-label="Konum bilgileri">
+            <div class="section-label">Konum Bilgileri</div>
+            ${_infoRow('🏢', 'Blok / Alan', route.block)}
+            ${_infoRow('🪜', 'Kat', route.floor)}
+            ${_infoRow('🚪', 'Oda / Bölüm', route.room)}
+            ${_infoRow('🕐', 'Çalışma Saatleri', route.hours)}
+            ${_infoRow('📞', 'İletişim', route.phone)}
+        </div>
+
+        <!-- Birim Hakkında -->
+        ${route.detail ? `
+        <div class="section-card" role="region" aria-label="Birim hakkında">
+            <div class="section-label">Birim Hakkında</div>
+            <p class="detail-about-text">${route.detail}</p>
+        </div>` : ''}
+        <div style="height:8px;"></div>
+    `;
+}
+
+/* ── AR Butonu Footer ── */
+function _buildARFooter() {
+    return `
+        <button class="btn btn-primary"
+                id="btn-start-ar"
+                aria-label="AR navigasyonu başlat">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            AR Navigasyonu Başlat
+        </button>`;
+}
+
+/* ── Pasif Klinik Footer ── */
+function _buildPassiveFooter() {
+    return `
+        <div class="ar-pending" role="status" aria-label="AR navigasyon henüz aktif değil">
+            <div class="ar-pending-icon" aria-hidden="true">📡</div>
+            <p class="ar-pending-text">
+                Bu birim için AR navigasyon<br>henüz aktif değildir.
+            </p>
+        </div>`;
+}
+
+/* ── Ana Fonksiyon ── */
+function openDetail(route) {
+    AppState.activeRoute = route;
+
+    const stats  = _calcStats(route);
+    const body   = document.getElementById('detail-body');
+    const footer = document.getElementById('detail-foot');
+
+    body.innerHTML   = route.isAvailable ? _buildARContent(route, stats)  : _buildPassiveContent(route);
+    footer.innerHTML = route.isAvailable ? _buildARFooter()                : _buildPassiveFooter();
+
+    if (route.isAvailable) {
+        document.getElementById('btn-start-ar').addEventListener('click', () => startAR(route));
+    }
+
+    showScreen('s-detail');
+}
