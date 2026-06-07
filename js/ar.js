@@ -30,7 +30,7 @@ const _dom = {
 
 /* ── Sabitler ── */
 const ARROW_SPACING_M    = 0.4;   // Ok arası mesafe (metre) - Daha sıkıştırıldı
-const ARRIVAL_THRESHOLD  = 1.5;   // Otomatik varış eşiği (metre)
+const ARRIVAL_THRESHOLD  = 0.5;   // Otomatik varış eşiği (metre) - 0.5m yapılarak son oka kadar gitme sağlandı
 const TURN_WARN_DISTANCE = 3.5;   // Dönüş uyarısı başlama mesafesi (metre) - Sabitlendi
 const GRACE_PERIOD_MS    = 2000;  // AR açıldıktan sonra varış sayılmaz
 const TURN_KEYWORDS_LEFT  = ['sola'];
@@ -165,33 +165,34 @@ function _parsePos(pt) {
 
 let _activeArrows = []; // Animasyon ve culling için ok listesi
 
-function _createChevron(px, pz, angleDeg, delayMs) {
+function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
     el.setAttribute('position', `${px} 0.05 ${pz}`);
-    el.setAttribute('rotation', `0 ${angleDeg} 0`);
+    // A-Frame kamerası -Z yönüne bakar, bu yüzden oku ileri (+Z) bakıyorsa çevirmek için +180 ekliyoruz
+    el.setAttribute('rotation', `0 ${angleDeg + 180} 0`);
     
-    // Sol kanat
+    // Sol kanat (daha uzun ve keskin açı)
     const left = document.createElement('a-box');
-    left.setAttribute('position', '-0.15 0 -0.15');
-    left.setAttribute('rotation', '0 45 0');
-    left.setAttribute('width', '0.4');
-    left.setAttribute('height', '0.02');
-    left.setAttribute('depth', '0.06');
+    left.setAttribute('position', '-0.12 0 0.15');
+    left.setAttribute('rotation', '0 35 0');
+    left.setAttribute('width', '0.45');
+    left.setAttribute('height', '0.015');
+    left.setAttribute('depth', '0.05');
     left.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
     
     // Sağ kanat
     const right = document.createElement('a-box');
-    right.setAttribute('position', '0.15 0 -0.15');
-    right.setAttribute('rotation', '0 -45 0');
-    right.setAttribute('width', '0.4');
-    right.setAttribute('height', '0.02');
-    right.setAttribute('depth', '0.06');
+    right.setAttribute('position', '0.12 0 0.15');
+    right.setAttribute('rotation', '0 -35 0');
+    right.setAttribute('width', '0.45');
+    right.setAttribute('height', '0.015');
+    right.setAttribute('depth', '0.05');
     right.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
     
     el.appendChild(left);
     el.appendChild(right);
     
-    return { el, baseY: 0.05, offset: delayMs };
+    return { el, baseY: 0.05, index: indexOffset };
 }
 
 function _drawArrows() {
@@ -219,12 +220,14 @@ function _drawArrows() {
         const angleDeg = THREE.MathUtils.radToDeg(angleRad);
         const steps    = Math.max(1, Math.round(segLen / ARROW_SPACING_M));
 
-        for (let j = 0; j < steps; j++) {
-            const t = (j + 0.5) / steps;
+        // Noktaları tam hedefe oturtmak için t=1'e kadar gidiyoruz. i>1 ise j=1'den başla ki üst üste binmesin.
+        const startJ = (i === 1) ? 0 : 1;
+        for (let j = startJ; j <= steps; j++) {
+            const t = j / steps;
             const px = prev.x + dx * t;
             const pz = prev.z + dz * t;
             
-            const chevron = _createChevron(px, pz, angleDeg, arrowIndex * 150);
+            const chevron = _createChevron(px, pz, angleDeg, arrowIndex);
             arrowsEl.appendChild(chevron.el);
             _activeArrows.push(chevron);
             arrowIndex++;
@@ -266,15 +269,26 @@ function _tick() {
     const camPos = new THREE.Vector3();
     cam.getWorldPosition(camPos);
 
-    /* Three.js Optimizasyonu: Animasyonları DOM'dan koparıp burada yapıyoruz */
+    /* Three.js Optimizasyonu: Wave (Dalga) animasyonları */
     const time = Date.now();
     for (let i = 0; i < _activeArrows.length; i++) {
         const arrow = _activeArrows[i];
         if (arrow.el.object3D) {
-            // İleri geri yavaş süzülme animasyonu
-            const floatZ = Math.sin((time + arrow.offset) * 0.003) * 0.08;
-            arrow.el.object3D.position.z += floatZ * 0.01; // micro adjustment
-            // Frustum Culling (Performans için sadece 10m yakındakiler görünür)
+            // Dalga efekti: ardışık oklar sırayla parlar ve süzülür
+            const wave = Math.sin((time * 0.005) - (arrow.index * 0.4)); 
+            
+            // Opaklık (0.3 ile 0.9 arası gidip gelir)
+            const op = 0.6 + (wave * 0.3);
+            if (arrow.el.object3D.children) {
+                arrow.el.object3D.children.forEach(c => {
+                    if (c.material) c.material.opacity = op;
+                });
+            }
+
+            // Yukarı aşağı hafif zıplama
+            arrow.el.object3D.position.y = arrow.baseY + (wave * 0.04);
+            
+            // Frustum Culling
             const dist = Math.hypot(camPos.x - arrow.el.object3D.position.x, camPos.z - arrow.el.object3D.position.z);
             arrow.el.object3D.visible = (dist < 10);
         }
@@ -290,15 +304,17 @@ function _tick() {
         distToTurn = Math.hypot(camPos.x - finalPt.x, camPos.z - finalPt.z);
     }
 
-    /* Kalan mesafe hesabı (Fiziksel Euclidean hesaplaması) */
+    /* Kalan mesafe hesabı (SADECE o anki bacağın (leg) mesafesi) */
+    let curLegTotalDist = 0;
+    if (curLeg && curLeg.path) {
+        curLegTotalDist = _calcLegDistance(curLeg.path);
+    }
+
     let covered = 0;
-    for (let i = 0; i < AppState.legIdx; i++) {
-        covered += _calcLegDistance(AppState.arLegs[i].path);
-    }
     if (curLeg?.path) {
-        covered += _getProgress(camPos, curLeg.path.map(_parsePos));
+        covered = _getProgress(camPos, curLeg.path.map(_parsePos));
     }
-    const remain = Math.max(0, AppState.totalDist - covered);
+    const remain = Math.max(0, curLegTotalDist - covered);
 
     /* HUD metrik güncelle */
     document.getElementById('ar-dist').textContent = remain < 1 ? '<1m' : `${Math.round(remain)}m`;
