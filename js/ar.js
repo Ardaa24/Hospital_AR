@@ -29,12 +29,24 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M    = 0.7;   // Ok arası mesafe (metre)
+const ARROW_SPACING_M    = 0.4;   // Ok arası mesafe (metre) - Daha sıkıştırıldı
 const ARRIVAL_THRESHOLD  = 1.5;   // Otomatik varış eşiği (metre)
-const TURN_WARN_DISTANCE = 3.0;   // Dönüş uyarısı başlama mesafesi (metre)
+const TURN_WARN_DISTANCE = 3.5;   // Dönüş uyarısı başlama mesafesi (metre) - Sabitlendi
 const GRACE_PERIOD_MS    = 2000;  // AR açıldıktan sonra varış sayılmaz
 const TURN_KEYWORDS_LEFT  = ['sola'];
 const TURN_KEYWORDS_RIGHT = ['sağa'];
+
+/* ── Mesafe Hesaplama Yardımcısı ── */
+function _calcLegDistance(path) {
+    if (!path || path.length < 2) return 0;
+    let dist = 0;
+    for (let i = 1; i < path.length; i++) {
+        const a = _parsePos(path[i - 1]);
+        const b = _parsePos(path[i]);
+        dist += Math.hypot(b.x - a.x, b.z - a.z);
+    }
+    return dist;
+}
 
 /* ════════════════════════════════════════════════════
    AR BAŞLATMA
@@ -48,7 +60,7 @@ function startAR(route) {
     AppState.arActive    = false;
     AppState.arStartTime = null;
     AppState.totalDist   = AppState.arLegs.reduce(
-        (acc, l) => acc + (l.path ? l.path.length : 0), 0
+        (acc, l) => acc + _calcLegDistance(l.path), 0
     );
 
     _updateArrivedBtn();
@@ -151,54 +163,41 @@ function _parsePos(pt) {
     return { x: x||0, y: y||0, z: z||0 };
 }
 
-function _createArrow(px, pz, angleDeg, angleRad, delayMs) {
-    const hx = px + Math.sin(angleRad) * 0.28;
-    const hz = pz + Math.cos(angleRad) * 0.28;
+let _activeArrows = []; // Animasyon ve culling için ok listesi
 
-    // Glowing Base Ring (Pulsing holographic ground marker)
-    const ring = document.createElement('a-ring');
-    ring.setAttribute('radius-inner', '0.18');
-    ring.setAttribute('radius-outer', '0.24');
-    ring.setAttribute('rotation', '-90 0 0');
-    ring.setAttribute('position', `${px} 0.01 ${pz}`);
-    ring.setAttribute('material', 'shader: standard; color: #0A7AFF; emissive: #0A7AFF; emissiveIntensity: 0.8; transparent: true; opacity: 0.5; side: double');
-    ring.setAttribute('animation__scale', `property: scale; from: 0.8 0.8 0.8; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1200; easing: easeInOutQuad; delay: ${delayMs}`);
-    ring.setAttribute('animation__op', `property: material.opacity; from: 0.6; to: 0; dir: alternate; loop: true; dur: 1200; easing: easeInOutQuad; delay: ${delayMs}`);
-
-    // Sleek holographic shaft
-    const shaft = document.createElement('a-cylinder');
-    shaft.setAttribute('radius', '0.05');
-    shaft.setAttribute('height', '0.35');
-    shaft.setAttribute('position', `${px} 0.05 ${pz}`);
-    shaft.setAttribute('rotation', `90 ${angleDeg} 0`);
-    shaft.setAttribute('material', 'shader: standard; color: #ffffff; emissive: #0A7AFF; emissiveIntensity: 0.4; transparent: true; opacity: 0.85; roughness: 0.1; metalness: 0.6');
-    shaft.setAttribute('animation__float', `property: position; to: ${px} 0.15 ${pz}; from: ${px} 0.05 ${pz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
-
-    // Bright inner core for neon tube effect
-    const core = document.createElement('a-cylinder');
-    core.setAttribute('radius', '0.015');
-    core.setAttribute('height', '0.36');
-    core.setAttribute('position', `${px} 0.05 ${pz}`);
-    core.setAttribute('rotation', `90 ${angleDeg} 0`);
-    core.setAttribute('material', 'shader: flat; color: #ffffff; transparent: true; opacity: 0.9');
-    core.setAttribute('animation__float', `property: position; to: ${px} 0.15 ${pz}; from: ${px} 0.05 ${pz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
-
-    // Sleek aerodynamic head
-    const head = document.createElement('a-cone');
-    head.setAttribute('radius-bottom', '0.12');
-    head.setAttribute('radius-top', '0.01');
-    head.setAttribute('height', '0.25');
-    head.setAttribute('position', `${hx} 0.05 ${hz}`);
-    head.setAttribute('rotation', `90 ${angleDeg} 0`);
-    head.setAttribute('material', 'shader: standard; color: #0A7AFF; emissive: #0A7AFF; emissiveIntensity: 0.6; transparent: true; opacity: 0.95; roughness: 0.2; metalness: 0.3');
-    head.setAttribute('animation__float', `property: position; to: ${hx} 0.15 ${hz}; from: ${hx} 0.05 ${hz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
-
-    return [ring, shaft, core, head];
+function _createChevron(px, pz, angleDeg, delayMs) {
+    const el = document.createElement('a-entity');
+    el.setAttribute('position', `${px} 0.05 ${pz}`);
+    el.setAttribute('rotation', `0 ${angleDeg} 0`);
+    
+    // Sol kanat
+    const left = document.createElement('a-box');
+    left.setAttribute('position', '-0.15 0 -0.15');
+    left.setAttribute('rotation', '0 45 0');
+    left.setAttribute('width', '0.4');
+    left.setAttribute('height', '0.02');
+    left.setAttribute('depth', '0.06');
+    left.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
+    
+    // Sağ kanat
+    const right = document.createElement('a-box');
+    right.setAttribute('position', '0.15 0 -0.15');
+    right.setAttribute('rotation', '0 -45 0');
+    right.setAttribute('width', '0.4');
+    right.setAttribute('height', '0.02');
+    right.setAttribute('depth', '0.06');
+    right.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
+    
+    el.appendChild(left);
+    el.appendChild(right);
+    
+    return { el, baseY: 0.05, offset: delayMs };
 }
 
 function _drawArrows() {
     const arrowsEl = _dom.arrows();
     arrowsEl.innerHTML = '';
+    _activeArrows = [];
 
     const leg = AppState.arLegs[AppState.legIdx];
     if (!leg || !leg.path || leg.path.length < 2) {
@@ -207,6 +206,8 @@ function _drawArrows() {
     }
 
     const path = leg.path;
+    let arrowIndex = 0;
+    
     for (let i = 1; i < path.length; i++) {
         const prev = _parsePos(path[i - 1]);
         const curr = _parsePos(path[i]);
@@ -222,8 +223,11 @@ function _drawArrows() {
             const t = (j + 0.5) / steps;
             const px = prev.x + dx * t;
             const pz = prev.z + dz * t;
-            _createArrow(px, pz, angleDeg, angleRad, j * 120)
-                .forEach(el => arrowsEl.appendChild(el));
+            
+            const chevron = _createChevron(px, pz, angleDeg, arrowIndex * 150);
+            arrowsEl.appendChild(chevron.el);
+            _activeArrows.push(chevron);
+            arrowIndex++;
         }
     }
 
@@ -258,28 +262,39 @@ function _getProgress(camPos, pathPoints) {
 function _tick() {
     if (!AppState.arActive) return;
 
-    const cam      = _dom.cam().object3D;
-    const arrowsEl = _dom.arrows();
-    const heads    = Array.from(arrowsEl.children).filter(el => el.tagName?.toLowerCase() === 'a-cone');
-    const lastHead = heads[heads.length - 1];
-
-    if (!lastHead) { AppState.tickRafId = requestAnimationFrame(_tick); return; }
-
-    lastHead.object3D.updateMatrixWorld(true);
-    const camPos    = new THREE.Vector3();
-    const targetPos = new THREE.Vector3();
+    const cam = _dom.cam().object3D;
+    const camPos = new THREE.Vector3();
     cam.getWorldPosition(camPos);
-    lastHead.object3D.getWorldPosition(targetPos);
 
-    const distToEnd = Math.hypot(camPos.x - targetPos.x, camPos.z - targetPos.z);
-    const inGrace   = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
+    /* Three.js Optimizasyonu: Animasyonları DOM'dan koparıp burada yapıyoruz */
+    const time = Date.now();
+    for (let i = 0; i < _activeArrows.length; i++) {
+        const arrow = _activeArrows[i];
+        if (arrow.el.object3D) {
+            // İleri geri yavaş süzülme animasyonu
+            const floatZ = Math.sin((time + arrow.offset) * 0.003) * 0.08;
+            arrow.el.object3D.position.z += floatZ * 0.01; // micro adjustment
+            // Frustum Culling (Performans için sadece 10m yakındakiler görünür)
+            const dist = Math.hypot(camPos.x - arrow.el.object3D.position.x, camPos.z - arrow.el.object3D.position.z);
+            arrow.el.object3D.visible = (dist < 10);
+        }
+    }
 
-    /* Kalan mesafe hesabı */
+    const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
+    const curLeg = AppState.arLegs[AppState.legIdx];
+
+    /* Gerçek hedefe olan (bacak bitişi) uzaklık */
+    let distToTurn = Infinity;
+    if (curLeg && curLeg.path && curLeg.path.length > 0) {
+        const finalPt = _parsePos(curLeg.path[curLeg.path.length - 1]);
+        distToTurn = Math.hypot(camPos.x - finalPt.x, camPos.z - finalPt.z);
+    }
+
+    /* Kalan mesafe hesabı (Fiziksel Euclidean hesaplaması) */
     let covered = 0;
     for (let i = 0; i < AppState.legIdx; i++) {
-        if (AppState.arLegs[i].path) covered += AppState.arLegs[i].path.length;
+        covered += _calcLegDistance(AppState.arLegs[i].path);
     }
-    const curLeg = AppState.arLegs[AppState.legIdx];
     if (curLeg?.path) {
         covered += _getProgress(camPos, curLeg.path.map(_parsePos));
     }
@@ -291,11 +306,11 @@ function _tick() {
     const estSec = Math.ceil(remain * 1.5);
     document.getElementById('ar-time').textContent = estSec >= 60 ? `${Math.ceil(estSec / 60)}dk` : `${estSec}sn`;
 
-    /* Dönüş uyarısı */
-    _handleTurnWarning(distToEnd);
+    /* Dönüş uyarısı (Dalgalanmayı önleyen sabit hedef hesabı ile) */
+    _handleTurnWarning(distToTurn);
 
     /* Otomatik varış (son bacak) */
-    if (distToEnd < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {
+    if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {
         cancelAnimationFrame(AppState.tickRafId);
         _dom.scene().exitVR();
         _showDone();
