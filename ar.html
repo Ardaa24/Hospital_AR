@@ -347,7 +347,13 @@
     <!-- ══ BAŞLANGIÇ EKRANI ══ -->
     <div id="start-screen" class="fullscreen-card">
         <div class="fc-header">
-            <div class="fc-icon" id="ss-icon">📍</div>
+            <!-- Logo + rota ikonu birlikte -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
+                <img src="Assets/logo.png" alt="T.C. Sağlık Bakanlığı"
+                     style="width:44px;height:44px;object-fit:contain;flex-shrink:0;">
+                <div style="width:1px;height:36px;background:#E5E8ED;"></div>
+                <div class="fc-icon" id="ss-icon" style="margin:0;font-size:40px;">📍</div>
+            </div>
             <div class="fc-title" id="ss-title">Yükleniyor...</div>
             <div class="fc-sub" id="ss-sub"></div>
         </div>
@@ -362,18 +368,19 @@
         </div>
     </div>
 
-    <!-- ══ BİLGİ EKRANI (Asansör / Ara Adım) ══
-         FIX: içerik artık leg.lines array'inden besleniyor, leg.instruction değil
-    ══ -->
+    <!-- ══ BİLGİ EKRANI (Asansör / Ara Adım) ══ -->
     <div id="info-screen" class="fullscreen-card" style="display:none;">
         <div class="fc-header">
-            <div class="fc-icon" id="is-icon">🛗</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
+                <img src="Assets/logo.png" alt="" style="width:36px;height:36px;object-fit:contain;">
+                <div style="width:1px;height:30px;background:#E5E8ED;"></div>
+                <div class="fc-icon" id="is-icon" style="margin:0;font-size:40px;">🛗</div>
+            </div>
             <div class="fc-title" id="is-title">Bilgi</div>
         </div>
         
         <div class="info-card">
             <div class="ic-label">Yapmanız Gerekenler</div>
-            <!-- FIX: ol yerine ul.info-lines, her satır .info-line-item olarak render edilecek -->
             <ul class="info-lines" id="is-lines"></ul>
         </div>
         
