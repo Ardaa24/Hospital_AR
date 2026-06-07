@@ -155,33 +155,45 @@ function _createArrow(px, pz, angleDeg, angleRad, delayMs) {
     const hx = px + Math.sin(angleRad) * 0.28;
     const hz = pz + Math.cos(angleRad) * 0.28;
 
-    const shaft = document.createElement('a-cylinder');
-    shaft.setAttribute('radius', '0.06');
-    shaft.setAttribute('height', '0.32');
-    shaft.setAttribute('position', `${px} 0.04 ${pz}`);
-    shaft.setAttribute('rotation', `90 ${angleDeg} 0`);
-    shaft.setAttribute('material', 'color:#1A6FD4;transparent:true;opacity:.88;roughness:.3;metalness:.1');
-    shaft.setAttribute('animation__float', `property:position;to:${px} 0.14 ${pz};from:${px} 0.04 ${pz};dir:alternate;loop:true;dur:1000;easing:easeInOutSine;delay:${delayMs}`);
-
-    const head = document.createElement('a-cone');
-    head.setAttribute('radius-bottom', '0.14');
-    head.setAttribute('radius-top', '0');
-    head.setAttribute('height', '0.22');
-    head.setAttribute('position', `${hx} 0.04 ${hz}`);
-    head.setAttribute('rotation', `90 ${angleDeg} 0`);
-    head.setAttribute('material', 'color:#1A6FD4;transparent:true;opacity:.95;roughness:.2;metalness:.15');
-    head.setAttribute('animation__float', `property:position;to:${hx} 0.14 ${hz};from:${hx} 0.04 ${hz};dir:alternate;loop:true;dur:1000;easing:easeInOutSine;delay:${delayMs}`);
-
+    // Glowing Base Ring (Pulsing holographic ground marker)
     const ring = document.createElement('a-ring');
-    ring.setAttribute('radius-inner', '0.16');
-    ring.setAttribute('radius-outer', '0.22');
+    ring.setAttribute('radius-inner', '0.18');
+    ring.setAttribute('radius-outer', '0.24');
     ring.setAttribute('rotation', '-90 0 0');
-    ring.setAttribute('position', `${px} 0.005 ${pz}`);
-    ring.setAttribute('material', 'color:#1A6FD4;transparent:true;opacity:.35;side:double');
-    ring.setAttribute('animation__scale', `property:scale;from:1 1 1;to:1.4 1.4 1.4;dir:alternate;loop:true;dur:900;easing:easeInOutSine;delay:${delayMs}`);
-    ring.setAttribute('animation__op', `property:material.opacity;from:.35;to:0;dir:alternate;loop:true;dur:900;easing:easeInOutSine;delay:${delayMs}`);
+    ring.setAttribute('position', `${px} 0.01 ${pz}`);
+    ring.setAttribute('material', 'shader: standard; color: #0A7AFF; emissive: #0A7AFF; emissiveIntensity: 0.8; transparent: true; opacity: 0.5; side: double');
+    ring.setAttribute('animation__scale', `property: scale; from: 0.8 0.8 0.8; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1200; easing: easeInOutQuad; delay: ${delayMs}`);
+    ring.setAttribute('animation__op', `property: material.opacity; from: 0.6; to: 0; dir: alternate; loop: true; dur: 1200; easing: easeInOutQuad; delay: ${delayMs}`);
 
-    return [ring, shaft, head];
+    // Sleek holographic shaft
+    const shaft = document.createElement('a-cylinder');
+    shaft.setAttribute('radius', '0.05');
+    shaft.setAttribute('height', '0.35');
+    shaft.setAttribute('position', `${px} 0.05 ${pz}`);
+    shaft.setAttribute('rotation', `90 ${angleDeg} 0`);
+    shaft.setAttribute('material', 'shader: standard; color: #ffffff; emissive: #0A7AFF; emissiveIntensity: 0.4; transparent: true; opacity: 0.85; roughness: 0.1; metalness: 0.6');
+    shaft.setAttribute('animation__float', `property: position; to: ${px} 0.15 ${pz}; from: ${px} 0.05 ${pz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
+
+    // Bright inner core for neon tube effect
+    const core = document.createElement('a-cylinder');
+    core.setAttribute('radius', '0.015');
+    core.setAttribute('height', '0.36');
+    core.setAttribute('position', `${px} 0.05 ${pz}`);
+    core.setAttribute('rotation', `90 ${angleDeg} 0`);
+    core.setAttribute('material', 'shader: flat; color: #ffffff; transparent: true; opacity: 0.9');
+    core.setAttribute('animation__float', `property: position; to: ${px} 0.15 ${pz}; from: ${px} 0.05 ${pz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
+
+    // Sleek aerodynamic head
+    const head = document.createElement('a-cone');
+    head.setAttribute('radius-bottom', '0.12');
+    head.setAttribute('radius-top', '0.01');
+    head.setAttribute('height', '0.25');
+    head.setAttribute('position', `${hx} 0.05 ${hz}`);
+    head.setAttribute('rotation', `90 ${angleDeg} 0`);
+    head.setAttribute('material', 'shader: standard; color: #0A7AFF; emissive: #0A7AFF; emissiveIntensity: 0.6; transparent: true; opacity: 0.95; roughness: 0.2; metalness: 0.3');
+    head.setAttribute('animation__float', `property: position; to: ${hx} 0.15 ${hz}; from: ${hx} 0.05 ${hz}; dir: alternate; loop: true; dur: 1200; easing: easeInOutSine; delay: ${delayMs}`);
+
+    return [ring, shaft, core, head];
 }
 
 function _drawArrows() {
