@@ -373,12 +373,12 @@ function _tick(time) {
     
 
     /* Three.js Optimizasyonu: Wave (Dalga) animasyonları */
-    const time = Date.now();
+    const now = Date.now();
     for (let i = 0; i < _activeArrows.length; i++) {
         const arrow = _activeArrows[i];
         if (arrow.el.object3D) {
             // Dalga efekti: ardışık oklar sırayla parlar ve süzülür
-            const wave = Math.sin((time * 0.005) - (arrow.index * 0.4)); 
+            const wave = Math.sin((now * 0.005) - (arrow.index * 0.4)); 
             
             // Opaklık (0.3 ile 0.9 arası gidip gelir)
             const op = 0.6 + (wave * 0.3);
@@ -401,7 +401,6 @@ function _tick(time) {
     const curLeg = AppState.arLegs[AppState.legIdx];
 
     /* HUD Compass Arrow Update */
-    const curLeg = AppState.arLegs[AppState.legIdx];
     if (curLeg && curLeg.path && curLeg.path.length > 1) {
         const nextPt = _parsePos(curLeg.path[Math.min(1, curLeg.path.length - 1)]);
         const dx = nextPt.x - camPos.x;
