@@ -293,7 +293,7 @@ const NAV_ROUTES = [
     },
     {
         id: "fizik-tedavi", order: 99, name: "Fizik Tedavi Polikliniği", shortName: "FTR",
-        icon: "wheelchair", category: "Poliklinikler", isAvailable: false,
+        icon: "accessibility", category: "Poliklinikler", isAvailable: false,
         block: "D Blok", floor: "Zemin Kat", room: "FTR Ünitesi", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "D Blok, Zemin Kat — FTR Ünitesi",

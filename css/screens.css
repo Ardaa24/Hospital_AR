@@ -63,15 +63,23 @@
 .welcome-cta {
     width: 100%;
     margin-bottom: 16px;
-    /* Miras alınan .btn kuralları uygulanır */
-    border-radius: 16px;
-    font-size: 18px;
-    background: #0A7AFF;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    /* Brand Gradient colors (kurumsal uyum için) */
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: #fff;
-    box-shadow: 0 4px 18px rgba(10,122,255,.3);
+    box-shadow: 0 6px 20px rgba(26, 111, 212, 0.24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
 }
 .welcome-cta:active {
-    box-shadow: 0 2px 8px rgba(10,122,255,.15);
+    transform: scale(0.985);
+    box-shadow: 0 3px 10px rgba(26, 111, 212, 0.15);
 }
 
 .welcome-location {
