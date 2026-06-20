@@ -10,9 +10,13 @@ a-scene {
     top: 0; left: 0;
     width: 100vw;
     height: 100vh;
-    display: none;
+    visibility: hidden;
+    z-index: -1;
 }
-a-scene.ar-active { display: block; }
+a-scene.ar-active { 
+    visibility: visible;
+    z-index: 10;
+}
 
 /* ── AR Overlay ── */
 #ar-overlay {
@@ -20,9 +24,9 @@ a-scene.ar-active { display: block; }
     inset: 0;
     z-index: 100;
     pointer-events: none;
-    display: none;
+    visibility: hidden;
 }
-#ar-overlay.ar-active { display: block; }
+#ar-overlay.ar-active { visibility: visible; }
 .ar-interactive { pointer-events: auto; }
 
 /* ────────────────────────────────────────────────────

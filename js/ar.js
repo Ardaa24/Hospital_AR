@@ -77,7 +77,28 @@ function startAR(route) {
 function _enterAR() {
     const scene = _dom.scene();
     scene.classList.add('ar-active');
-    scene.enterAR();
+    
+    // WebXR API kontrolü (HTTPS zorunluluğu)
+    if (!navigator.xr) {
+        showToast("Hata: WebXR desteklenmiyor veya bağlantı güvenli değil (HTTPS gerekli).");
+        scene.classList.remove('ar-active');
+        return;
+    }
+
+    try {
+        const p = scene.enterAR();
+        if (p && p.catch) {
+            p.catch(err => {
+                console.error("AR Start Error:", err);
+                showToast("AR Başlatılamadı: Kameraya izin verilmedi veya desteklenmiyor.");
+                scene.classList.remove('ar-active');
+            });
+        }
+    } catch (e) {
+        console.error("AR Start Exception:", e);
+        showToast("AR Başlatılamadı: A-Frame motoru hatası.");
+        scene.classList.remove('ar-active');
+    }
 }
 
 /* ════════════════════════════════════════════════════
