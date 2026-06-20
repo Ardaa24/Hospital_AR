@@ -15,15 +15,15 @@ function _createRouteCard(route) {
     const isAR = route.isAvailable;
 
     const card = document.createElement('div');
-    card.className = `route-card${isAR ? ' ar-route' : ''}`;
+    card.className = `route-card ar-route`; // Always ar-route class
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', `${route.name}, ${route.desc}${isAR ? ', AR navigasyon mevcut' : ''}`);
+    card.setAttribute('aria-label', `${route.name}, ${route.desc}, AR navigasyon mevcut`);
 
     /* İkon */
     const icon = document.createElement('div');
     icon.className = 'rc-icon';
-    icon.textContent = route.icon;
+    icon.innerHTML = `<i data-lucide="${route.icon}"></i>`;
     icon.setAttribute('aria-hidden', 'true');
 
     /* Bilgi */
@@ -39,8 +39,8 @@ function _createRouteCard(route) {
     right.className = 'rc-right';
     right.setAttribute('aria-hidden', 'true');
     right.innerHTML = `
-        <span class="rc-badge ${isAR ? 'badge-ar' : 'badge-passive'}">
-            ${isAR ? '▶ AR' : 'Bilgi'}
+        <span class="rc-badge badge-ar">
+            ▶ AR
         </span>
         <span class="rc-chevron">›</span>
     `;
@@ -101,9 +101,13 @@ function renderList(filter = '') {
     if (totalVisible === 0) {
         listEl.innerHTML = `
             <div class="no-results" role="status" aria-live="polite">
-                <div class="no-results-icon" aria-hidden="true">🔍</div>
+                <div class="no-results-icon" aria-hidden="true"><i data-lucide="search" width="40" height="40"></i></div>
                 <div class="no-results-text">"${filter}" için sonuç bulunamadı.</div>
             </div>`;
+    }
+
+    if (window.lucide) {
+        lucide.createIcons({ root: listEl });
     }
 }
 

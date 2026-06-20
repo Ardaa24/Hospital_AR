@@ -31,7 +31,7 @@ const _dom = {
 /* ── Sabitler ── */
 const ARROW_SPACING_M    = 0.4;   // Ok arası mesafe (metre) - Daha sıkıştırıldı
 const ARRIVAL_THRESHOLD  = 0.5;   // Otomatik varış eşiği (metre) - 0.5m yapılarak son oka kadar gitme sağlandı
-const TURN_WARN_DISTANCE = 3.5;   // Dönüş uyarısı başlama mesafesi (metre) - Sabitlendi
+const TURN_WARN_DISTANCE = 2.5;   // Dönüş uyarısı başlama mesafesi (metre) - Sabitlendi
 const GRACE_PERIOD_MS    = 2000;  // AR açıldıktan sonra varış sayılmaz
 const TURN_KEYWORDS_LEFT  = ['sola'];
 const TURN_KEYWORDS_RIGHT = ['sağa'];
@@ -53,6 +53,28 @@ function _calcLegDistance(path) {
 ════════════════════════════════════════════════════ */
 
 function startAR(route) {
+    const modal = document.getElementById('ar-onboarding');
+    modal.style.display = 'flex';
+    
+    document.getElementById('btn-accept-ar').onclick = () => {
+        modal.style.display = 'none';
+        
+        // Kalibrasyon uyarısı
+        window.addEventListener('deviceorientation', function(e) {
+            if (e.webkitCompassAccuracy && e.webkitCompassAccuracy > 15) {
+                showToast("Pusula kalibrasyonu düşük olabilir. Telefonunuzu havada 8 çizerek sallayın.");
+            }
+        }, {once: true});
+
+        _doStartAR(route);
+    };
+    
+    document.getElementById('btn-cancel-ar').onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
+function _doStartAR(route) {
     /* Durumu sıfırla */
     AppState.activeRoute = route;
     AppState.arLegs      = route.legs || [];
@@ -111,16 +133,36 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.addEventListener('exit-vr',  _onExitAR);
 });
 
+let _hitTestSource = null;
+let _xrRefSpace = null;
+let _xrViewerSpace = null;
+let _groundY = -1.5; // fallback
+
 function _onEnterAR() {
     AppState.arActive    = true;
     AppState.arStartTime = AppState.arStartTime || Date.now();
     document.body.style.background = 'transparent';
+
+    const scene = _dom.scene();
+    if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
+        const xrSession = scene.renderer.xr.getSession();
+        xrSession.requestReferenceSpace('local').then((refSpace) => { _xrRefSpace = refSpace; });
+        xrSession.requestReferenceSpace('viewer').then((refSpace) => {
+            _xrViewerSpace = refSpace;
+            xrSession.requestHitTestSource({ space: _xrViewerSpace }).then((source) => {
+                _hitTestSource = source;
+            }).catch(err => console.log("Hit test not supported", err));
+        });
+    }
 
     /* Overlay + HUD göster */
     _dom.infoScreen().classList.remove('visible');
     _dom.overlay().classList.add('ar-active');
     _dom.topHud().style.display    = 'flex';
     _dom.bottomPanel().style.display = 'flex';
+    
+    // Show HUD arrow
+    document.getElementById('ar-hud-arrow').style.display = 'block';
 
     _updateHUD();
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
@@ -133,10 +175,16 @@ function _onExitAR() {
     AppState.arActive = false;
     document.body.style.background = '';
     cancelAnimationFrame(AppState.tickRafId);
+    
+    if (_hitTestSource) {
+        _hitTestSource.cancel();
+        _hitTestSource = null;
+    }
 
     _dom.topHud().style.display    = 'none';
     _dom.bottomPanel().style.display = 'none';
     _dom.turnOverlay().classList.remove('visible');
+    document.getElementById('ar-hud-arrow').style.display = 'none';
     _dom.arrows().innerHTML = '';
     _dom.scene().classList.remove('ar-active');
     _dom.overlay().classList.remove('ar-active');
@@ -152,19 +200,20 @@ function _updateHUD() {
     const actionEl = document.getElementById('ar-nc-action');
 
     if (nextLeg && nextLeg.type === 'info') {
-        iconEl.textContent   = nextLeg.icon || 'ℹ️';
+        iconEl.innerHTML     = `<i data-lucide="${nextLeg.icon || 'info'}"></i>`;
         labelEl.textContent  = 'Sonraki Adım';
         actionEl.textContent = nextLeg.title || 'Bilgi Ekranı';
     } else if (nextLeg && nextLeg.instruction) {
-        iconEl.textContent   = '↗';
+        iconEl.innerHTML     = `<i data-lucide="corner-up-right"></i>`;
         labelEl.textContent  = 'Sonraki Dönüş';
         actionEl.textContent = nextLeg.instruction
             .replace(/[⬆️⬅️➡️↗↙↖↘]/g, '').trim().substring(0, 28);
     } else {
-        iconEl.textContent   = '🏁';
+        iconEl.innerHTML     = `<i data-lucide="flag"></i>`;
         labelEl.textContent  = 'Son Düzlük';
         actionEl.textContent = 'Hedefe yaklaştınız';
     }
+    if (window.lucide) lucide.createIcons({root: iconEl});
 }
 
 function _updateArrivedBtn() {
@@ -188,7 +237,8 @@ let _activeArrows = []; // Animasyon ve culling için ok listesi
 
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
-    el.setAttribute('position', `${px} 0.05 ${pz}`);
+    const yPos = _groundY + 0.05;
+    el.setAttribute('position', `${px} ${yPos} ${pz}`);
     // A-Frame kamerası -Z yönüne bakar, bu yüzden oku ileri (+Z) bakıyorsa çevirmek için +180 ekliyoruz
     el.setAttribute('rotation', `0 ${angleDeg + 180} 0`);
     
@@ -213,7 +263,7 @@ function _createChevron(px, pz, angleDeg, indexOffset) {
     el.appendChild(left);
     el.appendChild(right);
     
-    return { el, baseY: 0.05, index: indexOffset };
+    return { el, baseY: yPos, index: indexOffset };
 }
 
 function _drawArrows() {
@@ -283,12 +333,44 @@ function _getProgress(camPos, pathPoints) {
     return coveredUpTo;
 }
 
-function _tick() {
+const TARGET_FPS = 30;
+const FRAME_INTERVAL = 1000 / TARGET_FPS;
+let _lastTickTime = 0;
+
+function _tick(time) {
     if (!AppState.arActive) return;
+    
+    if (time - _lastTickTime < FRAME_INTERVAL) {
+        AppState.tickRafId = requestAnimationFrame(_tick);
+        return;
+    }
+    _lastTickTime = time;
 
     const cam = _dom.cam().object3D;
     const camPos = new THREE.Vector3();
     cam.getWorldPosition(camPos);
+    
+    // 1. WebXR Hit Test
+    const scene = _dom.scene();
+    if (_hitTestSource && scene.frame && _xrRefSpace) {
+        const hitTestResults = scene.frame.getHitTestResults(_hitTestSource);
+        if (hitTestResults.length > 0) {
+            const pose = hitTestResults[0].getPose(_xrRefSpace);
+            if (pose) {
+                _groundY = pose.transform.position.y;
+                _hitTestSource.cancel();
+                _hitTestSource = null;
+                // Oklari guncelle
+                _activeArrows.forEach(arr => {
+                    arr.baseY = _groundY + 0.05;
+                });
+            }
+        }
+    } else if (camPos.y !== 0) {
+        // Fallback: camera Y - 1.5m
+        _groundY = camPos.y - 1.5;
+    }
+    
 
     /* Three.js Optimizasyonu: Wave (Dalga) animasyonları */
     const time = Date.now();
@@ -317,6 +399,22 @@ function _tick() {
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
+
+    /* HUD Compass Arrow Update */
+    const curLeg = AppState.arLegs[AppState.legIdx];
+    if (curLeg && curLeg.path && curLeg.path.length > 1) {
+        const nextPt = _parsePos(curLeg.path[Math.min(1, curLeg.path.length - 1)]);
+        const dx = nextPt.x - camPos.x;
+        const dz = nextPt.z - camPos.z;
+        const targetAngleRad = Math.atan2(dx, dz);
+        
+        let camRotY = cam.rotation.y;
+        let relativeAngle = targetAngleRad - camRotY;
+        let deg = THREE.MathUtils.radToDeg(relativeAngle);
+        
+        const arrowEl = document.getElementById('ar-hud-arrow');
+        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 180}deg)`; // +180 due to -Z forward
+    }
 
     /* Gerçek hedefe olan (bacak bitişi) uzaklık */
     let distToTurn = Infinity;
@@ -366,9 +464,9 @@ function _handleTurnWarning(distToEnd) {
     }
     const ins = (nextLeg.instruction || nextLeg.title || '').toLowerCase();
     if (TURN_KEYWORDS_LEFT.some(kw => ins.includes(kw))) {
-        _showTurn('⬅️', 'SOLA DÖN', distToEnd);
+        _showTurn('corner-up-left', 'Sola Dönün', distToEnd);
     } else if (TURN_KEYWORDS_RIGHT.some(kw => ins.includes(kw))) {
-        _showTurn('➡️', 'SAĞA DÖN', distToEnd);
+        _showTurn('corner-up-right', 'Sağa Dönün', distToEnd);
     } else {
         _hideTurn();
     }
@@ -380,8 +478,9 @@ function _showTurn(icon, text, dist) {
     const distEl  = document.getElementById('ar-turn-dist');
     const overlay = _dom.turnOverlay();
 
-    iconEl.textContent = icon;
-    iconEl.style.animation = `${icon.includes('⬅') ? 'bounceL' : 'bounceR'} .6s ease-in-out infinite alternate`;
+    iconEl.innerHTML = `<i data-lucide="${icon}" width="36" height="36" style="color:white;"></i>`;
+    
+    iconEl.style.animation = `${icon.includes('left') ? 'bounceL' : 'bounceR'} .6s ease-in-out infinite alternate`;
     textEl.textContent = text;
     distEl.textContent = dist ? `${Math.round(dist)}m sonra` : '';
 
@@ -398,7 +497,9 @@ function _hideTurn() { _dom.turnOverlay().classList.remove('visible'); }
 ════════════════════════════════════════════════════ */
 function _showInfoScreen(leg) {
     const screen = _dom.infoScreen();
-    document.getElementById('ais-step-icon').textContent = leg.icon || 'ℹ️';
+    const iconWrapper = document.getElementById('ais-step-icon');
+    iconWrapper.innerHTML = `<i data-lucide="${leg.icon || 'info'}" width="38" height="38"></i>`;
+    if (window.lucide) lucide.createIcons({root: iconWrapper});
     document.getElementById('ais-title').textContent     = leg.title || 'Bilgi';
 
     const ul = document.getElementById('ais-lines');

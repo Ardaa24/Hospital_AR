@@ -40,7 +40,7 @@ const NAV_ROUTES = [
         order:    1,
         name:     "Nöroloji Polikliniği",
         shortName: "Nöroloji",
-        icon:     "🧠",
+        icon:     "brain",
         category: "Poliklinikler",
         isAvailable: true,
 
@@ -87,7 +87,7 @@ const NAV_ROUTES = [
         order:    2,
         name:     "Engelli Erişim Tuvaleti",
         shortName: "Engelli Tuvaleti",
-        icon:     "♿",
+        icon:     "accessibility",
         category: "Tuvaletler ve Erişim",
         isAvailable: true,
 
@@ -132,7 +132,7 @@ const NAV_ROUTES = [
         order:    3,
         name:     "Laboratuvar Birimi",
         shortName: "Laboratuvar",
-        icon:     "🔬",
+        icon:     "flask-conical",
         category: "Laboratuvarlar",
         isAvailable: true,
 
@@ -158,7 +158,7 @@ const NAV_ROUTES = [
             },
             {
                 type: "info",
-                icon: "🛗",
+                icon: "arrow-up-down",
                 title: "Asansöre Binin",
                 lines: [
                     "Önünüzdeki asansöre girin.",
@@ -197,7 +197,7 @@ const NAV_ROUTES = [
         order:    4,
         name:     "Danışma Noktası",
         shortName: "Danışma",
-        icon:     "ℹ️",
+        icon:     "info",
         category: "Danışma ve Hizmetler",
         isAvailable: true,
 
@@ -239,7 +239,7 @@ const NAV_ROUTES = [
     /* Poliklinikler */
     {
         id: "acil-servis", order: 99, name: "Acil Servis", shortName: "Acil Servis",
-        icon: "🚑", category: "Acil ve Müdahale", isAvailable: false,
+        icon: "ambulance", category: "Acil ve Müdahale", isAvailable: false,
         block: "Ana Bina", floor: "Zemin Kat", room: "Kuzey Giriş", hours: "7/24",
         accessible: true, hasElevator: false,
         desc: "Ana Bina, Zemin Kat — Kuzey Giriş (7/24)",
@@ -248,7 +248,7 @@ const NAV_ROUTES = [
     },
     {
         id: "agri-pol", order: 99, name: "Ağrı Polikliniği", shortName: "Ağrı",
-        icon: "💊", category: "Poliklinikler", isAvailable: false,
+        icon: "pill", category: "Poliklinikler", isAvailable: false,
         block: "B Blok", floor: "2. Kat", room: "Oda 215", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "B Blok, 2. Kat — Oda 215",
@@ -257,7 +257,7 @@ const NAV_ROUTES = [
     },
     {
         id: "cocuk-sag", order: 99, name: "Çocuk Sağlığı ve Hastalıkları", shortName: "Pediatri",
-        icon: "🧒", category: "Poliklinikler", isAvailable: false,
+        icon: "baby", category: "Poliklinikler", isAvailable: false,
         block: "A Blok", floor: "1. Kat", room: "Oda 108", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "A Blok, 1. Kat — Oda 108",
@@ -266,7 +266,7 @@ const NAV_ROUTES = [
     },
     {
         id: "dahiliye", order: 99, name: "İç Hastalıkları Polikliniği", shortName: "Dahiliye",
-        icon: "🩺", category: "Poliklinikler", isAvailable: false,
+        icon: "stethoscope", category: "Poliklinikler", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "Oda 005", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — Oda 005",
@@ -275,7 +275,7 @@ const NAV_ROUTES = [
     },
     {
         id: "dermatoloji", order: 99, name: "Dermatoloji Polikliniği", shortName: "Cildiye",
-        icon: "🌿", category: "Poliklinikler", isAvailable: false,
+        icon: "leaf", category: "Poliklinikler", isAvailable: false,
         block: "A Blok", floor: "2. Kat", room: "Oda 210", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "A Blok, 2. Kat — Oda 210",
@@ -284,7 +284,7 @@ const NAV_ROUTES = [
     },
     {
         id: "genel-cerrahi", order: 99, name: "Genel Cerrahi", shortName: "Genel Cerrahi",
-        icon: "🔪", category: "Poliklinikler", isAvailable: false,
+        icon: "scissors", category: "Poliklinikler", isAvailable: false,
         block: "C Blok", floor: "1. Kat", room: "Oda 115", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "C Blok, 1. Kat — Oda 115",
@@ -293,7 +293,7 @@ const NAV_ROUTES = [
     },
     {
         id: "fizik-tedavi", order: 99, name: "Fizik Tedavi Polikliniği", shortName: "FTR",
-        icon: "🦽", category: "Poliklinikler", isAvailable: false,
+        icon: "wheelchair", category: "Poliklinikler", isAvailable: false,
         block: "D Blok", floor: "Zemin Kat", room: "FTR Ünitesi", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "D Blok, Zemin Kat — FTR Ünitesi",
@@ -302,7 +302,7 @@ const NAV_ROUTES = [
     },
     {
         id: "gogus-pol", order: 99, name: "Göğüs Polikliniği", shortName: "Göğüs Hst.",
-        icon: "🫁", category: "Poliklinikler", isAvailable: false,
+        icon: "activity", category: "Poliklinikler", isAvailable: false,
         block: "B Blok", floor: "1. Kat", room: "Oda 118", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, 1. Kat — Oda 118",
@@ -311,7 +311,7 @@ const NAV_ROUTES = [
     },
     {
         id: "goz-pol", order: 99, name: "Göz Polikliniği", shortName: "Göz",
-        icon: "👁️", category: "Poliklinikler", isAvailable: false,
+        icon: "eye", category: "Poliklinikler", isAvailable: false,
         block: "A Blok", floor: "3. Kat", room: "Oda 301", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "A Blok, 3. Kat — Oda 301",
@@ -320,7 +320,7 @@ const NAV_ROUTES = [
     },
     {
         id: "kadin-dogum", order: 99, name: "Kadın Hastalıkları ve Doğum", shortName: "Kadın-Doğum",
-        icon: "🤰", category: "Poliklinikler", isAvailable: false,
+        icon: "baby", category: "Poliklinikler", isAvailable: false,
         block: "A Blok", floor: "2. Kat", room: "Oda 220", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "A Blok, 2. Kat — Oda 220",
@@ -329,7 +329,7 @@ const NAV_ROUTES = [
     },
     {
         id: "kbb", order: 99, name: "Kulak Burun Boğaz", shortName: "KBB",
-        icon: "👂", category: "Poliklinikler", isAvailable: false,
+        icon: "ear", category: "Poliklinikler", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "Oda 010", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — Oda 010",
@@ -338,7 +338,7 @@ const NAV_ROUTES = [
     },
     {
         id: "kardiyoloji", order: 99, name: "Kardiyoloji Polikliniği", shortName: "Kardiyoloji",
-        icon: "❤️", category: "Poliklinikler", isAvailable: false,
+        icon: "heart", category: "Poliklinikler", isAvailable: false,
         block: "A Blok", floor: "2. Kat", room: "Oda 205", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "A Blok, 2. Kat — Oda 205",
@@ -347,7 +347,7 @@ const NAV_ROUTES = [
     },
     {
         id: "dis-pol", order: 99, name: "Diş Hastalıkları", shortName: "Diş",
-        icon: "🦷", category: "Poliklinikler", isAvailable: false,
+        icon: "plus-square", category: "Poliklinikler", isAvailable: false,
         block: "Ek Bina", floor: "Zemin Kat", room: "Diş Kliniği", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "Ek Bina, Zemin Kat — Diş Kliniği",
@@ -356,7 +356,7 @@ const NAV_ROUTES = [
     },
     {
         id: "uroloji", order: 99, name: "Üroloji Polikliniği", shortName: "Üroloji",
-        icon: "🫘", category: "Poliklinikler", isAvailable: false,
+        icon: "activity", category: "Poliklinikler", isAvailable: false,
         block: "C Blok", floor: "1. Kat", room: "Oda 120", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "C Blok, 1. Kat — Oda 120",
@@ -365,7 +365,7 @@ const NAV_ROUTES = [
     },
     {
         id: "ortopedi", order: 99, name: "Ortopedi Polikliniği", shortName: "Ortopedi",
-        icon: "🦴", category: "Poliklinikler", isAvailable: false,
+        icon: "bone", category: "Poliklinikler", isAvailable: false,
         block: "C Blok", floor: "2. Kat", room: "Oda 215", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: true,
         desc: "C Blok, 2. Kat — Oda 215",
@@ -374,7 +374,7 @@ const NAV_ROUTES = [
     },
     {
         id: "psikiyatri", order: 99, name: "Psikiyatri Polikliniği", shortName: "Psikiyatri",
-        icon: "🧘", category: "Poliklinikler", isAvailable: false,
+        icon: "user", category: "Poliklinikler", isAvailable: false,
         block: "D Blok", floor: "1. Kat", room: "Oda 110", hours: "Pzt–Cum  09:00–17:00",
         accessible: true, hasElevator: false,
         desc: "D Blok, 1. Kat — Oda 110",
@@ -383,7 +383,7 @@ const NAV_ROUTES = [
     },
     {
         id: "trsm", order: 99, name: "Toplum Ruh Sağlığı Birimi", shortName: "TRSM",
-        icon: "🤝", category: "Danışma ve Hizmetler", isAvailable: false,
+        icon: "users", category: "Danışma ve Hizmetler", isAvailable: false,
         block: "D Blok", floor: "1. Kat", room: "TRSM Birimi", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "D Blok, 1. Kat — TRSM Birimi",
@@ -392,7 +392,7 @@ const NAV_ROUTES = [
     },
     {
         id: "anestezi", order: 99, name: "Anesteziyoloji ve Reanimasyon", shortName: "Anestezi",
-        icon: "💉", category: "Acil ve Müdahale", isAvailable: false,
+        icon: "syringe", category: "Acil ve Müdahale", isAvailable: false,
         block: "C Blok", floor: "Zemin Kat", room: "Ameliyathane Kompleksi", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "C Blok, Zemin Kat — Ameliyathane Kompleksi",
@@ -401,7 +401,7 @@ const NAV_ROUTES = [
     },
     {
         id: "enfeksiyon", order: 99, name: "Enfeksiyon Polikliniği", shortName: "Enfeksiyon",
-        icon: "🦠", category: "Poliklinikler", isAvailable: false,
+        icon: "bug", category: "Poliklinikler", isAvailable: false,
         block: "B Blok", floor: "1. Kat", room: "Oda 125", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, 1. Kat — Oda 125",
@@ -412,7 +412,7 @@ const NAV_ROUTES = [
     /* ── Röntgen ve Tomografi ── */
     {
         id: "goruntuleme", order: 99, name: "Görüntüleme Merkezi", shortName: "Görüntüleme",
-        icon: "📡", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "radio", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "Radyoloji Koridoru", hours: "Pzt–Cmt  07:30–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — Radyoloji Koridoru",
@@ -421,7 +421,7 @@ const NAV_ROUTES = [
     },
     {
         id: "usg", order: 99, name: "USG (Ultrasonografi)", shortName: "USG",
-        icon: "🔊", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "volume-2", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "USG Odaları", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — USG Odaları",
@@ -430,7 +430,7 @@ const NAV_ROUTES = [
     },
     {
         id: "mamografi", order: 99, name: "Mamografi", shortName: "Mamografi",
-        icon: "🩻", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "activity", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "Mamografi Odası", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — Mamografi Odası",
@@ -439,7 +439,7 @@ const NAV_ROUTES = [
     },
     {
         id: "bt", order: 99, name: "Bilgisayarlı Tomografi (BT)", shortName: "BT / CT",
-        icon: "🖥️", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "monitor", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "Zemin Kat", room: "BT Odası", hours: "Pzt–Cmt  07:30–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, Zemin Kat — BT Odası",
@@ -448,7 +448,7 @@ const NAV_ROUTES = [
     },
     {
         id: "emg", order: 99, name: "EMG (Elektromiyografi)", shortName: "EMG",
-        icon: "⚡", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "zap", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "1. Kat", room: "EMG Odası", hours: "Pzt–Cum  09:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, 1. Kat — EMG Odası",
@@ -457,7 +457,7 @@ const NAV_ROUTES = [
     },
     {
         id: "eeg", order: 99, name: "EEG (Elektroensefalografi)", shortName: "EEG",
-        icon: "🧬", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "dna", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "B Blok", floor: "1. Kat", room: "EEG Odası", hours: "Pzt–Cum  09:00–17:00",
         accessible: true, hasElevator: false,
         desc: "B Blok, 1. Kat — EEG Odası",
@@ -466,7 +466,7 @@ const NAV_ROUTES = [
     },
     {
         id: "pano-dis-rontgen", order: 99, name: "Panoramik Diş Röntgeni", shortName: "Pano Röntgen",
-        icon: "🦷", category: "Röntgen ve Tomografi", isAvailable: false,
+        icon: "plus-square", category: "Röntgen ve Tomografi", isAvailable: false,
         block: "Ek Bina", floor: "Zemin Kat", room: "Diş Röntgen", hours: "Pzt–Cum  08:00–17:00",
         accessible: true, hasElevator: false,
         desc: "Ek Bina, Zemin Kat — Diş Röntgen",
@@ -477,7 +477,7 @@ const NAV_ROUTES = [
     /* ── Laboratuvarlar ── */
     {
         id: "mikrobiyoloji-lab", order: 99, name: "Mikrobiyoloji Laboratuvarı", shortName: "Mikrobiyoloji Lab.",
-        icon: "🧫", category: "Laboratuvarlar", isAvailable: false,
+        icon: "circle-dashed", category: "Laboratuvarlar", isAvailable: false,
         block: "C Blok", floor: "Alt Zemin Kat (−1)", room: "Mikrobiyoloji", hours: "Pzt–Cum  07:30–17:00",
         accessible: true, hasElevator: true,
         desc: "C Blok, Alt Zemin Kat (−1) — Asansörlü Erişim",
@@ -486,7 +486,7 @@ const NAV_ROUTES = [
     },
     {
         id: "biyokimya-lab", order: 99, name: "Biyokimya Laboratuvarı", shortName: "Biyokimya Lab.",
-        icon: "🧪", category: "Laboratuvarlar", isAvailable: false,
+        icon: "test-tube", category: "Laboratuvarlar", isAvailable: false,
         block: "C Blok", floor: "Alt Zemin Kat (−1)", room: "Biyokimya", hours: "Pzt–Cmt  07:00–18:00",
         accessible: true, hasElevator: true,
         desc: "C Blok, Alt Zemin Kat (−1) — Asansörlü Erişim",

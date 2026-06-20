@@ -8,12 +8,29 @@
 ──────────────────────────────────────────────────── */
 #s-welcome {
     background: var(--card);
+    /* padding: 52px 28px 48px; removed, handled in top and bottom */
+    gap: 0;
+    overflow-y: hidden; /* no scroll on main container */
+}
+
+.welcome-top {
+    flex: 1;
+    overflow-y: auto;
+    padding: 52px 28px 24px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     text-align: center;
-    /* FIX: justify-content kaldırıldı → scroll çalışıyor */
-    padding: 52px 28px 48px;
-    gap: 0;
-    overflow-y: auto;
+}
+
+.welcome-bottom {
+    padding: 16px 28px calc(env(safe-area-inset-bottom, 24px) + 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    margin-top: auto;
 }
 
 .welcome-logo { margin-bottom: 32px; }
@@ -383,3 +400,40 @@
     color: var(--ink);
     line-height: 1.65;
 }
+
+/* ── Onboarding Modal ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.modal-content {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+.modal-icon-bg {
+    width: 64px;
+    height: 64px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+.modal-icon { width: 32px; height: 32px; }
+.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+.modal-text { font-size: 15px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+.modal-buttons { display: flex; flex-direction: column; }

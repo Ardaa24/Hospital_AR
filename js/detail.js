@@ -51,7 +51,7 @@ function _buildARContent(route, stats) {
         <!-- Hero Kart -->
         <div class="detail-hero" role="region" aria-label="${route.name} detayları">
             <div class="detail-hero-top">
-                <div class="detail-hero-icon" aria-hidden="true">${route.icon}</div>
+                <div class="detail-hero-icon" aria-hidden="true"><i data-lucide="${route.icon}"></i></div>
                 <div>
                     <div class="detail-hero-name">${route.name}</div>
                     <div class="detail-hero-loc">
@@ -84,11 +84,11 @@ function _buildARContent(route, stats) {
         <!-- Konum Bilgileri -->
         <div class="section-card" role="region" aria-label="Konum bilgileri">
             <div class="section-label">Konum Bilgileri</div>
-            ${_infoRow('🏢', 'Blok / Alan', route.block)}
-            ${_infoRow('🪜', 'Kat', route.floor)}
-            ${_infoRow('🚪', 'Oda / Bölüm', route.room)}
-            ${_infoRow('🕐', 'Çalışma Saatleri', route.hours)}
-            ${_infoRow('📞', 'İletişim', route.phone)}
+            ${_infoRow('<i data-lucide="building" width="18" height="18"></i>', 'Blok / Alan', route.block)}
+            ${_infoRow('<i data-lucide="layers" width="18" height="18"></i>', 'Kat', route.floor)}
+            ${_infoRow('<i data-lucide="door-open" width="18" height="18"></i>', 'Oda / Bölüm', route.room)}
+            ${_infoRow('<i data-lucide="clock" width="18" height="18"></i>', 'Çalışma Saatleri', route.hours)}
+            ${_infoRow('<i data-lucide="phone" width="18" height="18"></i>', 'İletişim', route.phone)}
         </div>
 
         <!-- Birim Hakkında -->
@@ -110,7 +110,7 @@ function _buildPassiveContent(route) {
         <!-- Hero Kart -->
         <div class="detail-hero" role="region" aria-label="${route.name} detayları">
             <div class="detail-hero-top">
-                <div class="detail-hero-icon passive" aria-hidden="true">${route.icon}</div>
+                <div class="detail-hero-icon passive" aria-hidden="true"><i data-lucide="${route.icon}"></i></div>
                 <div>
                     <div class="detail-hero-name">${route.name}</div>
                     <div class="detail-hero-loc">
@@ -130,11 +130,11 @@ function _buildPassiveContent(route) {
         <!-- Konum Bilgileri -->
         <div class="section-card" role="region" aria-label="Konum bilgileri">
             <div class="section-label">Konum Bilgileri</div>
-            ${_infoRow('🏢', 'Blok / Alan', route.block)}
-            ${_infoRow('🪜', 'Kat', route.floor)}
-            ${_infoRow('🚪', 'Oda / Bölüm', route.room)}
-            ${_infoRow('🕐', 'Çalışma Saatleri', route.hours)}
-            ${_infoRow('📞', 'İletişim', route.phone)}
+            ${_infoRow('<i data-lucide="building" width="18" height="18"></i>', 'Blok / Alan', route.block)}
+            ${_infoRow('<i data-lucide="layers" width="18" height="18"></i>', 'Kat', route.floor)}
+            ${_infoRow('<i data-lucide="door-open" width="18" height="18"></i>', 'Oda / Bölüm', route.room)}
+            ${_infoRow('<i data-lucide="clock" width="18" height="18"></i>', 'Çalışma Saatleri', route.hours)}
+            ${_infoRow('<i data-lucide="phone" width="18" height="18"></i>', 'İletişim', route.phone)}
         </div>
 
         <!-- Birim Hakkında -->
@@ -189,4 +189,7 @@ function openDetail(route) {
     }
 
     showScreen('s-detail');
+    if (window.lucide) {
+        lucide.createIcons({ root: document.getElementById('s-detail') });
+    }
 }
