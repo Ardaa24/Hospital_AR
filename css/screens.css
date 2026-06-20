@@ -16,10 +16,11 @@
 .welcome-top {
     flex: 1;
     overflow-y: auto;
-    padding: 52px 28px 24px;
+    padding: 32px 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center; /* Dikey olarak ortala */
     text-align: center;
 }
 
@@ -62,6 +63,7 @@
 
 .welcome-cta {
     width: 100%;
+    max-width: 320px; /* Enterprise genişlik kısıtı */
     margin-bottom: 16px;
     border-radius: 14px;
     font-size: 16px;
