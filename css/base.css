@@ -72,6 +72,8 @@ ul, ol { list-style: none; }
 .screen {
     display: none;
     flex-direction: column;
+    position: relative; /* Samsung/GPU stacking context fix */
+    z-index: 2;         /* Samsung/GPU stacking context fix */
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
