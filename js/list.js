@@ -15,7 +15,7 @@ function _createRouteCard(route) {
     const isAR = route.isAvailable;
 
     const card = document.createElement('div');
-    card.className = isAR ? 'route-card ar-route' : 'route-card passive-route'; // Samsung flex GPU fix ve state separation
+    card.className = 'route-card'; // Tüm listeyi standart kurumsal stilde tut (Samsung bug'ı flex/width ile çözüldü)
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `${route.name}, ${route.desc}${isAR ? ', AR navigasyon mevcut' : ''}`);
@@ -34,14 +34,14 @@ function _createRouteCard(route) {
         <div class="rc-desc">${route.desc}</div>
     `;
 
-    /* Sağ Taraf - Dinamik AR / Yakında Etiketi */
+    /* Sağ Taraf - Sabit AR Etiketi (Kurumsal Bütünlük) */
     const right = document.createElement('div');
     right.className = 'rc-right';
     right.setAttribute('aria-hidden', 'true');
     
     right.innerHTML = `
-        <span class="rc-badge ${isAR ? 'badge-ar' : 'badge-passive'}">
-            <i data-lucide="${isAR ? 'play' : 'clock'}" width="11" height="11" fill="currentColor"></i> ${isAR ? 'AR' : 'YAKINDA'}
+        <span class="rc-badge badge-ar">
+            <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR
         </span>
     `;
 

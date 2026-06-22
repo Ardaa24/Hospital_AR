@@ -225,11 +225,10 @@
     gap: 13px;
     /* Erişilebilirlik: minimum kart yüksekliği */
     min-height: var(--card-min);
-    border: 1.5px solid var(--border); /* Varsayılan border */
-    box-shadow: var(--shadow-sm); /* Varsayılan gölge */
+    border: 1.5px solid rgba(26,111,212,.16); /* Kurumsal mavi çerçeve */
+    box-shadow: inset 4px 0 0 var(--primary), var(--shadow-sm); /* Kurumsal mavi çentik */
     cursor: pointer;
     position: relative;
-    /* Samsung flexbox render fix */
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
@@ -239,35 +238,16 @@
 }
 .route-card:active { transform: scale(.99); }
 
-/* AR olan rotalar */
-.route-card.ar-route {
-    border-color: rgba(26,111,212,.16);
-    box-shadow: inset 4px 0 0 var(--primary), var(--shadow-sm);
-}
-.ar-route .rc-icon {
-    background: var(--primary-light);
-    color: var(--primary);
-}
-
-/* AR olmayan (Yakında) rotalar */
-.route-card.passive-route {
-    border-color: var(--border);
-    box-shadow: inset 4px 0 0 #D1D5DB, var(--shadow-sm);
-    background: #F9FAFB;
-}
-.passive-route .rc-icon {
-    background: #F3F4F6;
-    color: #6B7280;
-}
-
 /* Rota ikonu */
 .rc-icon {
     width: 48px;
     height: 48px;
     border-radius: var(--radius-sm);
+    background: var(--primary-light); /* Kurumsal mavi arka plan */
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--primary); /* Kurumsal mavi ikon */
     font-size: 24px;
     flex-shrink: 0;
     transition: all 0.2s;
