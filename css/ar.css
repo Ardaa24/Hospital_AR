@@ -7,13 +7,15 @@
 /* ── A-Frame Sahnesi ── */
 a-scene {
     position: fixed;
-    top: 0; left: 0;
+    top: 0; 
+    left: -9999px; /* Samsung GPU/WebGL compositing yırtılmalarını önlemek için inaktifken ekran dışına taşı */
     width: 100vw;
     height: 100vh;
     visibility: hidden;
     z-index: -1;
 }
 a-scene.ar-active { 
+    left: 0;
     visibility: visible;
     z-index: 10;
 }

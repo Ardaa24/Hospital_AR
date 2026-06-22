@@ -125,6 +125,9 @@ function _enterAR() {
     const scene = _dom.scene();
     scene.classList.add('ar-active');
     
+    // WebGL render döngüsünü aktifleştir
+    if (scene.play) scene.play();
+    
     // WebXR API kontrolü (HTTPS zorunluluğu)
     if (!navigator.xr) {
         showToast("Hata: WebXR desteklenmiyor veya bağlantı güvenli değil (HTTPS gerekli).");
@@ -156,6 +159,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     scene.addEventListener('enter-vr', _onEnterAR);
     scene.addEventListener('exit-vr',  _onExitAR);
+    
+    // Sayfa ilk yüklendiğinde WebGL render döngüsünü durdurarak GPU ve pil tasarrufu sağla
+    scene.addEventListener('loaded', () => {
+        if (scene.pause) scene.pause();
+    });
 });
 
 let _hitTestSource = null;
@@ -213,6 +221,10 @@ function _onExitAR() {
     _dom.arrows().innerHTML = '';
     _dom.scene().classList.remove('ar-active');
     _dom.overlay().classList.remove('ar-active');
+    
+    // WebGL render döngüsünü durdurarak GPU yırtılmalarını önle ve pil tasarrufu sağla
+    const scene = _dom.scene();
+    if (scene.pause) scene.pause();
 }
 
 /* ════════════════════════════════════════════════════
