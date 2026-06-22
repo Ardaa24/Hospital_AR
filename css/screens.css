@@ -226,13 +226,13 @@
     /* Erişilebilirlik: minimum kart yüksekliği */
     min-height: var(--card-min);
     border: 1.5px solid rgba(26,111,212,.16); /* Kurumsal mavi çerçeve */
-    box-shadow: inset 4px 0 0 var(--primary), var(--shadow-sm); /* Kurumsal mavi çentik */
+    border-left: 4px solid var(--primary); /* Doğal sol mavi çentik (Samsung Bug Fix) */
+    box-shadow: var(--shadow-sm); /* Standart gölge */
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
-    /* overflow: hidden, absolute ::before ve linear-gradient kaldırıldı - Samsung GPU/WebGL compositing glitchlerini önler */
     transition: box-shadow .18s, transform .1s;
     -webkit-tap-highlight-color: transparent;
 }
@@ -243,11 +243,11 @@
     width: 48px;
     height: 48px;
     border-radius: var(--radius-sm);
-    background: var(--primary-light); /* Kurumsal mavi arka plan */
+    background: var(--bg); /* Varsayılan arkaplan */
+    color: var(--ink); /* Orijinal koyu ikon rengi */
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary); /* Kurumsal mavi ikon */
     font-size: 24px;
     flex-shrink: 0;
     transition: all 0.2s;
