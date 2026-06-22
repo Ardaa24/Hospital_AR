@@ -487,20 +487,17 @@
     margin: 0 16px;
 }
 
-/* Tags container with horizontal scrolling */
-.detail-tags-scroll {
+/* Tags container with centered flex wrapping */
+.detail-tags-flex {
     display: flex;
-    overflow-x: auto;
-    padding: 14px 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     gap: 8px;
-    -webkit-overflow-scrolling: touch;
+    padding: 14px 20px 0;
 }
 
-.detail-tags-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-.detail-tags-scroll .tag {
+.detail-tags-flex .tag {
     flex-shrink: 0;
 }
 

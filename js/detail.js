@@ -56,9 +56,6 @@ function _buildARContent(route, stats) {
                 </div>
                 <div class="detail-hero-info">
                     <div class="detail-hero-name">${route.name}</div>
-                    <span class="detail-hero-badge-ar">
-                        <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR Navigasyon
-                    </span>
                 </div>
             </div>
 
@@ -77,8 +74,8 @@ function _buildARContent(route, stats) {
                 </div>
             </div>
 
-            <!-- Etiketler (Yatay Scroll) -->
-            <div class="detail-tags-scroll">
+            <!-- Etiketler -->
+            <div class="detail-tags-flex">
                 <span class="tag tag-green"><i data-lucide="accessibility" width="13" height="13"></i> Engelsiz Erişim</span>
                 ${stats.hasElev ? `<span class="tag tag-gray"><i data-lucide="chevrons-up-down" width="13" height="13"></i> Asansör</span>` : ''}
                 ${stats.turns > 0 ? `<span class="tag tag-gray"><i data-lucide="corner-down-right" width="13" height="13"></i> ${stats.turns} Dönüş</span>` : ''}
@@ -119,14 +116,11 @@ function _buildPassiveContent(route) {
                 </div>
                 <div class="detail-hero-info">
                     <div class="detail-hero-name">${route.name}</div>
-                    <span class="detail-hero-badge-passive">
-                        <i data-lucide="play-circle" width="11" height="11"></i> AR Yakında
-                    </span>
                 </div>
             </div>
 
-            <!-- Etiketler (Yatay Scroll) -->
-            <div class="detail-tags-scroll">
+            <!-- Etiketler -->
+            <div class="detail-tags-flex">
                 <span class="tag tag-green"><i data-lucide="accessibility" width="13" height="13"></i> Engelsiz Erişim</span>
                 ${hasElev ? `<span class="tag tag-gray"><i data-lucide="chevrons-up-down" width="13" height="13"></i> Asansör</span>` : ''}
             </div>
