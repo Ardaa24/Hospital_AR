@@ -15,7 +15,7 @@ function _createRouteCard(route) {
     const isAR = route.isAvailable;
 
     const card = document.createElement('div');
-    card.className = 'route-card ar-route'; // Tüm kartlarda kurumsal bütünlük için ar-route
+    card.className = isAR ? 'route-card ar-route' : 'route-card'; // ar-route sınıfını sadece isAR olduğunda ekle, Samsung GPU bug'ı için
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `${route.name}, ${route.desc}${isAR ? ', AR navigasyon mevcut' : ''}`);
