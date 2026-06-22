@@ -13,6 +13,7 @@ function initSettings() {
     const backdrop = document.getElementById('settings-backdrop');
     const drawer = document.getElementById('settings-drawer');
     const handle = document.getElementById('settings-handle');
+    const header = document.querySelector('.settings-header');
 
     if (!btnToggle || !btnClose || !backdrop || !drawer) return;
 
@@ -21,42 +22,63 @@ function initSettings() {
     // Kapat
     btnClose.addEventListener('click', closeSettingsDrawer);
     backdrop.addEventListener('click', closeSettingsDrawer);
-    handle.addEventListener('click', closeSettingsDrawer);
 
     // Swipe down to close gesture
     let startY = 0;
     let currentY = 0;
+    let isDragging = false;
 
-    handle.addEventListener('touchstart', (e) => {
+    const onTouchStart = (e) => {
         startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
         drawer.style.transition = 'none';
-    });
+    };
 
-    handle.addEventListener('touchmove', (e) => {
+    const onTouchMove = (e) => {
+        if (!isDragging) return;
         currentY = e.touches[0].clientY;
         const diff = currentY - startY;
         if (diff > 0) {
             drawer.style.transform = `translateY(${diff}px)`;
+            if (e.cancelable) e.preventDefault();
         }
-    });
+    };
 
-    handle.addEventListener('touchend', (e) => {
+    const onTouchEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
         drawer.style.transition = 'transform 0.3s cubic-bezier(0.32, 1, 0.6, 1)';
         const diff = currentY - startY;
-        if (diff > 100) {
+        if (diff > 80) {
             closeSettingsDrawer();
         } else {
             drawer.style.transform = 'translateY(0)';
         }
         startY = 0;
         currentY = 0;
-    });
+    };
+
+    // Attach to handle
+    if (handle) {
+        handle.addEventListener('touchstart', onTouchStart, { passive: true });
+        handle.addEventListener('touchmove', onTouchMove, { passive: false });
+        handle.addEventListener('touchend', onTouchEnd, { passive: true });
+    }
+
+    // Attach to header as well for better target area
+    if (header) {
+        header.addEventListener('touchstart', onTouchStart, { passive: true });
+        header.addEventListener('touchmove', onTouchMove, { passive: false });
+        header.addEventListener('touchend', onTouchEnd, { passive: true });
+    }
 }
 
 function openSettingsDrawer() {
     const backdrop = document.getElementById('settings-backdrop');
     const drawer = document.getElementById('settings-drawer');
     
+    drawer.style.transition = 'transform 0.3s cubic-bezier(0.32, 1, 0.6, 1)';
     backdrop.style.display = 'block';
     setTimeout(() => {
         backdrop.classList.add('visible');
@@ -75,6 +97,7 @@ function closeSettingsDrawer() {
     const backdrop = document.getElementById('settings-backdrop');
     const drawer = document.getElementById('settings-drawer');
     
+    drawer.style.transition = 'transform 0.3s cubic-bezier(0.32, 1, 0.6, 1)';
     drawer.style.transform = 'translateY(100%)';
     backdrop.classList.remove('visible');
     

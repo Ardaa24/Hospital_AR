@@ -50,15 +50,12 @@ function _buildARContent(route, stats) {
     return `
         <!-- Hero Kart -->
         <div class="detail-hero" role="region" aria-label="${route.name} detayları">
-            <div class="detail-hero-band">
+            <div class="detail-hero-header">
                 <div class="detail-hero-icon-lg" aria-hidden="true">
                     <i data-lucide="${route.icon}"></i>
                 </div>
-                <div class="detail-hero-band-info">
+                <div class="detail-hero-info">
                     <div class="detail-hero-name">${route.name}</div>
-                    <div class="detail-hero-loc">
-                        ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
-                    </div>
                     <span class="detail-hero-badge-ar">
                         <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR Navigasyon
                     </span>
@@ -116,15 +113,12 @@ function _buildPassiveContent(route) {
     return `
         <!-- Hero Kart -->
         <div class="detail-hero passive" role="region" aria-label="${route.name} detayları">
-            <div class="detail-hero-band">
+            <div class="detail-hero-header">
                 <div class="detail-hero-icon-lg" aria-hidden="true">
                     <i data-lucide="${route.icon}"></i>
                 </div>
-                <div class="detail-hero-band-info">
+                <div class="detail-hero-info">
                     <div class="detail-hero-name">${route.name}</div>
-                    <div class="detail-hero-loc">
-                        ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
-                    </div>
                     <span class="detail-hero-badge-passive">
                         <i data-lucide="play-circle" width="11" height="11"></i> AR Yakında
                     </span>

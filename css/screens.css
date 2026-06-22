@@ -354,58 +354,54 @@
     border-radius: var(--radius-lg);
     border: 1.5px solid var(--border);
     box-shadow: var(--shadow-md);
-    padding: 0 0 16px;
+    padding: 16px 0;
     overflow: hidden;
     margin-bottom: 12px;
 }
 
-.detail-hero-band {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-    padding: 20px;
+.detail-hero-header {
+    padding: 0 20px 16px;
     display: flex;
     align-items: center;
     gap: 16px;
-    position: relative;
-}
-
-/* Koyu gray/dark gradient for passive hero */
-.detail-hero.passive .detail-hero-band {
-    background: linear-gradient(135deg, #3A3F47 0%, #555E6B 100%);
+    border-bottom: 1px solid var(--border);
 }
 
 .detail-hero-icon-lg {
-    width: 68px;
-    height: 68px;
+    width: 56px;
+    height: 56px;
     border-radius: var(--radius);
-    background: var(--card);
+    background: var(--primary-light);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
     flex-shrink: 0;
+}
+.detail-hero.passive .detail-hero-icon-lg {
+    background: var(--bg);
 }
 
 /* Active icon color is primary, passive is gray */
 .detail-hero-icon-lg i {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     color: var(--primary);
 }
 .detail-hero.passive .detail-hero-icon-lg i {
-    color: #4B5563;
+    color: var(--muted);
 }
 
-.detail-hero-band-info {
+.detail-hero-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
 }
 
-.detail-hero-band-info .detail-hero-name {
+.detail-hero-name {
     font-size: 18px;
     font-weight: 800;
-    color: #fff;
+    color: var(--ink);
     line-height: 1.2;
     margin-bottom: 0;
     white-space: nowrap;
@@ -413,16 +409,7 @@
     text-overflow: ellipsis;
 }
 
-.detail-hero-band-info .detail-hero-loc {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* AR badge inside hero card header band */
+/* AR badge inside hero card header */
 .detail-hero-badge-ar {
     display: inline-flex;
     align-items: center;
@@ -431,11 +418,11 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: var(--primary-light);
+    color: var(--primary);
     padding: 3px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(26, 111, 212, 0.15);
     margin-top: 2px;
 }
 
@@ -447,11 +434,11 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.15);
-    color: rgba(255, 255, 255, 0.85);
+    background: var(--danger-light);
+    color: var(--danger);
     padding: 3px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.15);
     margin-top: 2px;
 }
 
