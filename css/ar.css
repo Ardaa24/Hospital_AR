@@ -7,13 +7,16 @@
 /* ── A-Frame Sahnesi ── */
 a-scene {
     position: fixed;
-    top: 0; left: 0;
+    top: 0; left: -9999px;
     width: 100vw;
     height: 100vh;
     visibility: hidden;
     z-index: -1;
+    display: none;
 }
 a-scene.ar-active { 
+    left: 0;
+    display: block;
     visibility: visible;
     z-index: 10;
 }
