@@ -170,6 +170,32 @@
 }
 .search-input::placeholder { color: var(--muted); }
 
+/* Voice Search */
+.btn-voice {
+    background: transparent;
+    color: var(--muted);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.btn-voice:active {
+    background: var(--border);
+}
+.btn-voice.listening {
+    color: var(--danger);
+    animation: voicePulse 1.5s infinite;
+}
+@keyframes voicePulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
 /* Rota listesi kapsayıcı */
 #route-list {
     padding: 10px 16px 48px;
@@ -272,7 +298,7 @@
 }
 .badge-ar      { background: var(--primary); color: #fff; }
 .badge-passive { background: #F0F2F5; color: var(--muted); }
-.rc-chevron    { color: var(--muted); font-size: 14px; opacity: .4; }
+.rc-chevron    { color: var(--primary); font-size: 16px; opacity: .55; display: flex; align-items: center; justify-content: center; }
 
 /* Boş sonuç */
 .no-results {
@@ -295,8 +321,6 @@
     align-items: center;
     justify-content: center;
     color: var(--primary);
-    font-size: 20px;
-    font-weight: 700;
     border: 1.5px solid var(--border);
     flex-shrink: 0;
     transition: background .15s;
@@ -333,7 +357,7 @@
 }
 .detail-hero-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 15px;
     margin-bottom: 16px;
 }
@@ -452,7 +476,32 @@
     justify-content: center;
     margin: 0 auto 16px;
 }
-.modal-icon { width: 32px; height: 32px; }
+.modal-icon { width: 32px; height: 32px; animation: modalPulse 2s infinite ease-in-out; }
+@keyframes modalPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
 .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
-.modal-text { font-size: 15px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+.modal-text { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+.modal-features {
+    text-align: left;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.4;
+}
+.modal-features li i {
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
 .modal-buttons { display: flex; flex-direction: column; }

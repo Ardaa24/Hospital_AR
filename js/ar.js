@@ -52,12 +52,37 @@ function _calcLegDistance(path) {
    AR BAŞLATMA
 ════════════════════════════════════════════════════ */
 
-function startAR(route) {
+async function startAR(route) {
+    const hasSessionPerm = sessionStorage.getItem('ar_camera_granted');
+    
+    // Tarayıcı izin API'si kontrolü
+    let permStatus = 'prompt';
+    if (navigator.permissions && navigator.permissions.query) {
+        try {
+            const status = await navigator.permissions.query({ name: 'camera' });
+            permStatus = status.state;
+        } catch (e) {
+            console.warn("Permissions API error:", e);
+        }
+    }
+
+    if (permStatus === 'denied') {
+        showToast("Kamera izni reddedildi. Lütfen tarayıcı ayarlarından etkinleştirin.");
+        return;
+    }
+
+    if (permStatus === 'granted' || hasSessionPerm === 'true') {
+        _doStartAR(route);
+        return;
+    }
+
+    // Modal Gösterimi
     const modal = document.getElementById('ar-onboarding');
     modal.style.display = 'flex';
     
     document.getElementById('btn-accept-ar').onclick = () => {
         modal.style.display = 'none';
+        sessionStorage.setItem('ar_camera_granted', 'true');
         
         // Kalibrasyon uyarısı
         window.addEventListener('deviceorientation', function(e) {

@@ -42,7 +42,7 @@ function _createRouteCard(route) {
         <span class="rc-badge badge-ar">
             ▶ AR
         </span>
-        <span class="rc-chevron">›</span>
+        <span class="rc-chevron"><i data-lucide="chevron-right" width="18" height="18"></i></span>
     `;
 
     card.append(icon, info, right);
@@ -119,4 +119,67 @@ function initSearch() {
     input.addEventListener('input',  e => renderList(e.target.value));
     input.addEventListener('focus',  () => wrap.style.borderColor = 'var(--primary)');
     input.addEventListener('blur',   () => wrap.style.borderColor = '');
+
+    initVoiceSearch(input);
+}
+
+/* ── Sesli Arama (Web Speech API) ── */
+function initVoiceSearch(inputEl) {
+    const btnVoice = document.getElementById('btn-voice-search');
+    if (!btnVoice) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        return; // Desteklenmiyorsa butonu gösterme
+    }
+
+    btnVoice.style.display = 'flex'; // Destekleniyorsa göster
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    let isListening = false;
+
+    btnVoice.addEventListener('click', () => {
+        if (isListening) {
+            recognition.stop();
+            return;
+        }
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Speech API Error:", e);
+        }
+    });
+
+    recognition.onstart = () => {
+        isListening = true;
+        btnVoice.classList.add('listening');
+        btnVoice.innerHTML = `<i data-lucide="mic-off" width="18" height="18"></i>`;
+        if (window.lucide) lucide.createIcons({ root: btnVoice });
+        inputEl.placeholder = "Dinleniyor...";
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputEl.value = transcript;
+        renderList(transcript);
+    };
+
+    recognition.onerror = (event) => {
+        console.warn("Ses tanıma hatası: ", event.error);
+        if (event.error === 'not-allowed') {
+            showToast("Mikrofon izni reddedildi.");
+        }
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        btnVoice.classList.remove('listening');
+        btnVoice.innerHTML = `<i data-lucide="mic" width="18" height="18"></i>`;
+        if (window.lucide) lucide.createIcons({ root: btnVoice });
+        inputEl.placeholder = "Klinik veya birim ara...";
+    };
 }

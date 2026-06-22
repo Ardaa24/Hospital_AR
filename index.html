@@ -98,6 +98,9 @@
                    autocorrect="off"
                    spellcheck="false"
                    aria-label="Klinik veya birim ara">
+            <button id="btn-voice-search" class="btn-voice" aria-label="Sesli arama" style="display:none;">
+                <i data-lucide="mic" width="18" height="18"></i>
+            </button>
         </div>
     </header>
 
@@ -113,7 +116,7 @@
         <button id="btn-detail-back"
                 class="detail-back-btn"
                 aria-label="Geri — Rota Listesine Dön">
-            ←
+            <i data-lucide="arrow-left" width="20" height="20"></i>
         </button>
         <h2 class="detail-header-title">Birim Bilgisi</h2>
     </header>
@@ -270,10 +273,22 @@
     <div class="modal-content">
         <div class="modal-icon-bg"><i data-lucide="camera" class="modal-icon"></i></div>
         <h3 class="modal-title">Kamera İzni Gerekli</h3>
-        <p class="modal-text">AR Navigasyon oklarını görebilmeniz için kameranıza erişim izni vermeniz gerekmektedir. Lütfen etrafınıza dikkat ederek yürüyün.</p>
+        <p class="modal-text">AR Navigasyon oklarını görebilmeniz için kameranıza erişim izni vermeniz gerekmektedir.</p>
+        
+        <ul class="modal-features">
+            <li>
+                <i data-lucide="shield-check" width="18" height="18"></i>
+                <span>Görüntüler kaydedilmez, sadece anlık yönlendirme için kullanılır.</span>
+            </li>
+            <li>
+                <i data-lucide="footprints" width="18" height="18"></i>
+                <span>Lütfen kamerayı açtıktan sonra etrafınıza dikkat ederek yürüyün.</span>
+            </li>
+        </ul>
+
         <div class="modal-buttons">
-            <button id="btn-accept-ar" class="btn btn-primary">Anladım, Başlat</button>
-            <button id="btn-cancel-ar" class="btn btn-ghost" style="margin-top: 8px;">İptal</button>
+            <button id="btn-accept-ar" class="btn btn-primary">Kamerayı Aç</button>
+            <button id="btn-cancel-ar" class="btn btn-ghost" style="margin-top: 8px;">Şimdi Değil</button>
         </div>
     </div>
 </div>
