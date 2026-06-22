@@ -154,7 +154,7 @@
     
     <!-- HUD Compass Arrow -->
     <div id="ar-hud-arrow" class="ar-hud-arrow">
-        <i data-lucide="arrow-up" style="width:100%;height:100%;stroke-width:3px;color:var(--primary);"></i>
+        <i data-lucide="navigation" style="width:28px;height:28px;stroke-width:2.5px;color:var(--primary);"></i>
     </div>
 
     <!-- Üst HUD -->
@@ -162,7 +162,7 @@
         <button class="ar-back-btn ar-interactive"
                 onclick="exitARToRoutes()"
                 aria-label="AR'dan çık, rota listesine dön">
-            ←
+            <i data-lucide="arrow-left" width="20" height="20"></i>
         </button>
         <div class="ar-next-pill" role="status" aria-live="polite">
             <span class="anp-icon" id="ar-nc-icon" aria-hidden="true">↗</span>
@@ -320,6 +320,7 @@
                 <i data-lucide="trash-2" width="18" height="18"></i>
                 Oturum Verilerini Temizle
             </button>
+            <p class="settings-desc" style="font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; text-align: center;">Kamera erişim izinlerini ve geçici uygulama verilerini sıfırlar. AR kamerası açılmazsa veya donma yaşarsanız kullanabilirsiniz.</p>
         </div>
     </div>
 </div>

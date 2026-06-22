@@ -15,7 +15,7 @@ function _createRouteCard(route) {
     const isAR = route.isAvailable;
 
     const card = document.createElement('div');
-    card.className = `route-card${isAR ? ' ar-route' : ''}`;
+    card.className = 'route-card ar-route'; // Tüm kartlarda kurumsal bütünlük için ar-route
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `${route.name}, ${route.desc}${isAR ? ', AR navigasyon mevcut' : ''}`);
@@ -28,7 +28,6 @@ function _createRouteCard(route) {
 
     /* Bilgi */
     const info = document.createElement('div');
-    icon.className = isAR ? 'rc-icon' : 'rc-icon'; // keep same class
     info.className = 'rc-info';
     info.innerHTML = `
         <div class="rc-name">${route.name}</div>
@@ -40,19 +39,12 @@ function _createRouteCard(route) {
     right.className = 'rc-right';
     right.setAttribute('aria-hidden', 'true');
     
-    if (isAR) {
-        right.innerHTML = `
-            <span class="rc-badge badge-ar">
-                <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR
-            </span>
-        `;
-    } else {
-        right.innerHTML = `
-            <span class="rc-badge badge-passive">
-                Yakında
-            </span>
-        `;
-    }
+    // Kurumsal bütünlük: Listedeki tüm birimlerde AR etiketi görünür (detayda Yakında yazar)
+    right.innerHTML = `
+        <span class="rc-badge badge-ar">
+            <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR
+        </span>
+    `;
 
     card.append(icon, info, right);
 

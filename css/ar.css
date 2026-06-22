@@ -32,17 +32,22 @@ a-scene.ar-active {
 /* ── HUD Compass Arrow ── */
 .ar-hud-arrow {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 80px;
-    height: 80px;
-    margin-left: -40px;
-    margin-top: -40px;
-    opacity: 0.85;
+    top: 120px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     pointer-events: none;
     z-index: 50;
-    transition: transform 0.1s ease-out;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+    transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* ────────────────────────────────────────────────────

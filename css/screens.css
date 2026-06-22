@@ -777,8 +777,8 @@
     color: var(--danger);
 }
 .perm-badge.status-prompt {
-    background: #E5E7EB;
-    color: #4B5563;
+    background: #FEF3C7;
+    color: #D97706;
 }
 .perm-badge.status-unknown {
     background: #F3F4F6;

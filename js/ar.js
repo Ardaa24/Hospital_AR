@@ -433,7 +433,8 @@ function _tick(time) {
         const targetAngleRad = Math.atan2(dx, dz);
         
         let camRotY = cam.rotation.y;
-        let relativeAngle = targetAngleRad - camRotY;
+        // Kamera sağa/sola döndüğünde pusulanın ters dönme hatasını düzeltmek için işareti + yaptık.
+        let relativeAngle = targetAngleRad + camRotY;
         let deg = THREE.MathUtils.radToDeg(relativeAngle);
         
         const arrowEl = document.getElementById('ar-hud-arrow');
