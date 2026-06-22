@@ -80,6 +80,9 @@
                 <div class="list-header-title">Tarsus Devlet Hastanesi</div>
                 <div class="list-header-sub">AR Navigasyon Sistemi</div>
             </div>
+            <button id="btn-settings" class="btn-settings-toggle" aria-label="Ayarları Aç">
+                <i data-lucide="settings" width="20" height="20"></i>
+            </button>
         </div>
 
         <div class="search-wrap" role="search">
@@ -265,6 +268,62 @@
     </div>
 </div>
 
+<!-- Ayarlar Paneli (Bottom Sheet Drawer) -->
+<div id="settings-backdrop" class="settings-backdrop" style="display:none;"></div>
+<div id="settings-drawer" class="settings-drawer" role="dialog" aria-modal="true" aria-labelledby="settings-title" style="transform: translateY(100%);">
+    <div class="settings-handle" id="settings-handle"></div>
+    <div class="settings-header">
+        <h3 id="settings-title" class="settings-title">Sistem Ayarları</h3>
+        <button id="btn-settings-close" class="btn-settings-close" aria-label="Ayarları Kapat">
+            <i data-lucide="x" width="20" height="20"></i>
+        </button>
+    </div>
+    
+    <div class="settings-content">
+        <!-- Bölüm A: Sistem Bilgisi -->
+        <div class="settings-section">
+            <div class="settings-section-label">🏥 Uygulama Bilgisi</div>
+            <div class="settings-row">
+                <div class="settings-row-label">Sürüm</div>
+                <div class="settings-row-value">v1.0.2</div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-label">Kurum</div>
+                <div class="settings-row-value">Tarsus Devlet Hastanesi</div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-label">Altyapı</div>
+                <div class="settings-row-value">Web AR (A-Frame)</div>
+            </div>
+        </div>
+        
+        <!-- Bölüm B: İzin Yönetimi -->
+        <div class="settings-section">
+            <div class="settings-section-label">🔐 İzin Yönetimi</div>
+            
+            <div class="settings-row-flex">
+                <div class="settings-row-info">
+                    <i data-lucide="camera" width="18" height="18"></i>
+                    <span>Kamera İzni</span>
+                </div>
+                <div class="settings-row-actions">
+                    <span id="perm-camera-badge" class="perm-badge status-unknown">Bilinmiyor</span>
+                    <button onclick="resetCameraPermission()" class="settings-btn-reset" aria-label="Kamera iznini sıfırla">Sıfırla</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bölüm C: Veri Temizleme -->
+        <div class="settings-section">
+            <div class="settings-section-label">🗑️ Veri Temizleme</div>
+            <button onclick="clearSessionData()" class="btn-settings-danger">
+                <i data-lucide="trash-2" width="18" height="18"></i>
+                Oturum Verilerini Temizle
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast Bildirimi -->
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
@@ -301,6 +360,7 @@
      4. ar.js      — AR motoru
 ════════════════════════════════════════════════════ -->
 <script src="js/router.js?v=1.0.2"></script>
+<script src="js/settings.js?v=1.0.2"></script>
 <script src="js/list.js?v=1.0.2"></script>
 <script src="js/detail.js?v=1.0.2"></script>
 <script src="js/ar.js?v=1.0.2"></script>
@@ -326,6 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* Arama */
     initSearch();
+
+    /* Ayarlar */
+    initSettings();
 
     /* ar.html'den veya done param ile dönüş kontrolü */
     handleReturnParam();

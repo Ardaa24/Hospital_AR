@@ -34,15 +34,14 @@ function _createRouteCard(route) {
         <div class="rc-desc">${route.desc}</div>
     `;
 
-    /* Sağ kısım (badge + ok) */
+    /* Sağ kısım (badge) */
     const right = document.createElement('div');
     right.className = 'rc-right';
     right.setAttribute('aria-hidden', 'true');
     right.innerHTML = `
         <span class="rc-badge badge-ar">
-            ▶ AR
+            <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR
         </span>
-        <span class="rc-chevron"><i data-lucide="chevron-right" width="18" height="18"></i></span>
     `;
 
     card.append(icon, info, right);

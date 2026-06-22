@@ -50,34 +50,41 @@ function _buildARContent(route, stats) {
     return `
         <!-- Hero Kart -->
         <div class="detail-hero" role="region" aria-label="${route.name} detayları">
-            <div class="detail-hero-top">
-                <div class="detail-hero-icon" aria-hidden="true"><i data-lucide="${route.icon}"></i></div>
-                <div>
+            <div class="detail-hero-band">
+                <div class="detail-hero-icon-lg" aria-hidden="true">
+                    <i data-lucide="${route.icon}"></i>
+                </div>
+                <div class="detail-hero-band-info">
                     <div class="detail-hero-name">${route.name}</div>
                     <div class="detail-hero-loc">
                         ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
                     </div>
+                    <span class="detail-hero-badge-ar">
+                        <i data-lucide="play" width="11" height="11" fill="currentColor"></i> AR Navigasyon
+                    </span>
                 </div>
             </div>
 
-            <!-- İstatistikler -->
-            <div class="detail-stats-grid" aria-label="Navigasyon bilgileri">
-                <div class="detail-stat">
-                    <div class="detail-stat-val" aria-label="${stats.totalDist} metre">${stats.totalDist}m</div>
-                    <div class="detail-stat-label">Tahmini Mesafe</div>
+            <!-- İstatistikler Şeridi -->
+            <div class="detail-stat-strip" aria-label="Navigasyon bilgileri">
+                <div class="detail-stat-item">
+                    <i data-lucide="milestone" width="16" height="16"></i>
+                    <div class="detail-stat-val">${stats.totalDist}m</div>
+                    <div class="detail-stat-label">Mesafe</div>
                 </div>
-                <div class="detail-stat">
-                    <div class="detail-stat-val" aria-label="yaklaşık ${stats.estMin} dakika">~${stats.estMin}&nbsp;dk</div>
-                    <div class="detail-stat-label">Yürüyüş Süresi</div>
+                <div class="detail-stat-sep"></div>
+                <div class="detail-stat-item">
+                    <i data-lucide="clock" width="16" height="16"></i>
+                    <div class="detail-stat-val">~${stats.estMin} dk</div>
+                    <div class="detail-stat-label">Yürüyüş</div>
                 </div>
             </div>
 
-            <!-- Etiketler -->
-            <div class="detail-tags">
-                <span class="tag tag-green" aria-label="Engelsiz erişim mevcut">♿ Engelsiz Erişim</span>
-                ${stats.hasElev ? `<span class="tag tag-gray">🛗 Asansör</span>` : ''}
-                <span class="tag tag-blue">📡 AR Navigasyon</span>
-                ${stats.turns > 0 ? `<span class="tag tag-gray" aria-label="${stats.turns} dönüş">↩ ${stats.turns} Dönüş</span>` : ''}
+            <!-- Etiketler (Yatay Scroll) -->
+            <div class="detail-tags-scroll">
+                <span class="tag tag-green"><i data-lucide="accessibility" width="13" height="13"></i> Engelsiz Erişim</span>
+                ${stats.hasElev ? `<span class="tag tag-gray"><i data-lucide="chevrons-up-down" width="13" height="13"></i> Asansör</span>` : ''}
+                ${stats.turns > 0 ? `<span class="tag tag-gray"><i data-lucide="corner-down-right" width="13" height="13"></i> ${stats.turns} Dönüş</span>` : ''}
             </div>
         </div>
 
@@ -108,22 +115,26 @@ function _buildPassiveContent(route) {
 
     return `
         <!-- Hero Kart -->
-        <div class="detail-hero" role="region" aria-label="${route.name} detayları">
-            <div class="detail-hero-top">
-                <div class="detail-hero-icon passive" aria-hidden="true"><i data-lucide="${route.icon}"></i></div>
-                <div>
+        <div class="detail-hero passive" role="region" aria-label="${route.name} detayları">
+            <div class="detail-hero-band">
+                <div class="detail-hero-icon-lg" aria-hidden="true">
+                    <i data-lucide="${route.icon}"></i>
+                </div>
+                <div class="detail-hero-band-info">
                     <div class="detail-hero-name">${route.name}</div>
                     <div class="detail-hero-loc">
                         ${[route.block, route.floor, route.room].filter(Boolean).join(' — ')}
                     </div>
+                    <span class="detail-hero-badge-passive">
+                        <i data-lucide="play-circle" width="11" height="11"></i> AR Yakında
+                    </span>
                 </div>
             </div>
-            <div class="detail-tags">
-                <span class="tag tag-green">♿ Engelsiz Erişim</span>
-                ${hasElev ? `<span class="tag tag-gray">🛗 Asansör</span>` : ''}
-                <span class="tag" style="background:#FEF2F2;color:var(--danger);border:1px solid rgba(220,38,38,.2);">
-                    📡 AR Yakında
-                </span>
+
+            <!-- Etiketler (Yatay Scroll) -->
+            <div class="detail-tags-scroll">
+                <span class="tag tag-green"><i data-lucide="accessibility" width="13" height="13"></i> Engelsiz Erişim</span>
+                ${hasElev ? `<span class="tag tag-gray"><i data-lucide="chevrons-up-down" width="13" height="13"></i> Asansör</span>` : ''}
             </div>
         </div>
 
@@ -166,7 +177,9 @@ function _buildARFooter() {
 function _buildPassiveFooter() {
     return `
         <div class="ar-pending" role="status" aria-label="AR navigasyon henüz aktif değil">
-            <div class="ar-pending-icon" aria-hidden="true">📡</div>
+            <div class="ar-pending-icon" aria-hidden="true">
+                <i data-lucide="play-circle" width="32" height="32" style="color: var(--muted); opacity: 0.5;"></i>
+            </div>
             <p class="ar-pending-text">
                 Bu birim için AR navigasyon<br>henüz aktif değildir.
             </p>
