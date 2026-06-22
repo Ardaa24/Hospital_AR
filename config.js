@@ -203,7 +203,7 @@ const NAV_ROUTES = [
 
         block:     "Ana Bina",
         floor:     "Zemin Kat",
-        room:      "Ana Giriş Karşısı",
+        room:      "Poliklinikler Kapısı Karşısı",
         hours:     "Pzt–Cum  08:00 – 17:00",
         phone: "(0324) 613 47 00",
         accessible: true,
