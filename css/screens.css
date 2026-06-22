@@ -487,18 +487,24 @@
     margin: 0 16px;
 }
 
-/* Tags container with centered flex wrapping */
+/* Tags container with structured 2-column grid */
 .detail-tags-flex {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
     padding: 14px 20px 0;
 }
 
 .detail-tags-flex .tag {
-    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+.detail-tags-flex .tag:last-child:nth-child(odd) {
+    grid-column: span 2;
 }
 
 /* AR desteksiz bilgi */
