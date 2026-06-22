@@ -13,6 +13,11 @@ a-scene {
     height: 100vh;
     visibility: hidden;
     z-index: -1;
+    /* Samsung GPU Fix */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, visibility;
+    transform: translateZ(0);
 }
 a-scene.ar-active { 
     left: 0;
@@ -27,6 +32,11 @@ a-scene.ar-active {
     z-index: 100;
     pointer-events: none;
     visibility: hidden;
+    /* Samsung GPU Fix */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, visibility;
+    transform: translateZ(0);
 }
 #ar-overlay.ar-active { visibility: visible; }
 .ar-interactive { pointer-events: auto; }
