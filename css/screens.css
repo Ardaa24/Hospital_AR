@@ -216,7 +216,7 @@
 
 /* Rota kartı */
 .route-card {
-    background: linear-gradient(to right, var(--border) 4px, var(--card) 4px);
+    background: var(--card);
     border-radius: var(--radius);
     padding: 14px 15px 14px 20px;
     margin-bottom: 8px;
@@ -226,17 +226,17 @@
     /* Erişilebilirlik: minimum kart yüksekliği */
     min-height: var(--card-min);
     border: 1.5px solid var(--border);
-    box-shadow: var(--shadow-sm);
+    box-shadow: inset 4px 0 0 var(--border), var(--shadow-sm);
     cursor: pointer;
     position: relative;
-    /* overflow: hidden ve absolute ::before kaldırıldı - Samsung GPU/WebGL compositing glitchlerini önler */
+    /* overflow: hidden, absolute ::before ve linear-gradient kaldırıldı - Samsung GPU/WebGL compositing glitchlerini önler */
     transition: box-shadow .18s, transform .1s;
     -webkit-tap-highlight-color: transparent;
 }
 
 .route-card.ar-route {
-    background: linear-gradient(to right, var(--primary) 4px, var(--card) 4px);
     border-color: rgba(26,111,212,.16);
+    box-shadow: inset 4px 0 0 var(--primary), var(--shadow-sm);
 }
 .route-card:active { transform: scale(.99); }
 

@@ -450,7 +450,7 @@ function _tick(time) {
         let deg = THREE.MathUtils.radToDeg(relativeAngle);
         
         const arrowEl = document.getElementById('ar-hud-arrow');
-        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 180}deg)`; // +180 due to -Z forward
+        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 180 - 45}deg)`; // +180 due to -Z forward, -45 for lucide default icon angle
     }
 
     /* Gerçek hedefe olan (bacak bitişi) uzaklık */
