@@ -487,18 +487,20 @@
     margin: 0 16px;
 }
 
-/* Tags container with centered flex wrapping */
+/* Tags container — 2 kolonlu, Samsung uyumlu flex-wrap */
 .detail-tags-flex {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
     gap: 8px;
     padding: 14px 20px 0;
 }
 
 .detail-tags-flex .tag {
-    flex-shrink: 0;
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 /* AR desteksiz bilgi */
