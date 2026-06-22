@@ -40,14 +40,9 @@
 
 html, body {
     height: 100%;
-    width: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden; /* Sayfa dışı kaydırmayı engelle, scroll screen içinde olacak */
-    /* Samsung Android: A-Frame canvas layout bozulmasını önle */
-    position: fixed;
-    top: 0;
-    left: 0;
 }
 
 html {
@@ -77,20 +72,10 @@ ul, ol { list-style: none; }
 .screen {
     display: none;
     flex-direction: column;
-    /* Samsung Android fix: position fixed + explicit dimensions */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch; /* iOS için yumuşak kaydırma */
-    /* A-Frame arkadan render etmesini engelle */
-    isolation: isolate;
-    contain: layout style;
 }
 .screen.active { display: flex; }
 

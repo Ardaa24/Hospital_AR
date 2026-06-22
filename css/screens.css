@@ -201,8 +201,6 @@
     padding: 10px 16px 48px;
     overflow-y: auto;
     flex: 1;
-    min-height: 0; /* Samsung Android: flex child scroll fix */
-    -webkit-overflow-scrolling: touch;
 }
 
 /* Kategori başlığı */
@@ -348,8 +346,6 @@
     padding: 16px 16px 0;
     overflow-y: auto;
     flex: 1;
-    min-height: 0; /* Samsung Android: flex child scroll fix */
-    -webkit-overflow-scrolling: touch;
 }
 
 /* Hero kart yeniden tasarımı */
