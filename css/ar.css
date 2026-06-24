@@ -253,8 +253,8 @@ a-scene.ar-active {
     opacity: 0.65;
     transform: none;
 }
-/* Kilit açıldığında pürüzsüz geçiş animasyonu */
-.btn-compact-arrive:not(:disabled) {
+/* ── Kilit açılma animasyonu — JS tarafından .btn-arrive-unlock classı ile tetiklenir ── */
+.btn-arrive-unlock {
     animation: btnUnlock .25s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes btnUnlock {

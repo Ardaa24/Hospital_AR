@@ -206,14 +206,21 @@ function _onExitAR() {
         _hitTestSource = null;
     }
 
-    _dom.topHud().style.display    = 'none';
+    _dom.topHud().style.display      = 'none';
     _dom.bottomPanel().style.display = 'none';
     _dom.turnOverlay().classList.remove('visible');
     document.getElementById('ar-hud-arrow').style.display = 'none';
     _dom.arrows().innerHTML = '';
     _dom.scene().classList.remove('ar-active');
     _dom.overlay().classList.remove('ar-active');
-    
+
+    // Buton state'ini temizle — bir sonraki AR oturumu için
+    const arrivedBtn = _dom.arrivedBtn();
+    if (arrivedBtn) {
+        arrivedBtn.disabled = false;
+        arrivedBtn.classList.remove('btn-arrive-unlock');
+    }
+
     // WebGL render döngüsünü durdurarak GPU yırtılmalarını önle ve pil tasarrufu sağla
     const scene = _dom.scene();
     if (scene.pause) scene.pause();
@@ -267,10 +274,14 @@ function _setArrivedBtnLocked(locked) {
     if (!btn) return;
     if (locked) {
         btn.disabled = true;
+        btn.classList.remove('btn-arrive-unlock');
     } else if (btn.disabled) {
-        // Sadece durum değişiyorsa animasyonu tetikle (DOM thrashing önle)
+        // Sadece durum değişiyorsa tetikle (DOM thrashing önle)
         btn.disabled = false;
-        vibrate(50); // Çok kısa, non-intrusive haptic
+        vibrate(50);
+        // Tek seferlik kilit açılma animasyonu
+        btn.classList.add('btn-arrive-unlock');
+        setTimeout(() => btn.classList.remove('btn-arrive-unlock'), 300);
     }
 }
 
