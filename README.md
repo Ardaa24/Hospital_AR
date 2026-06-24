@@ -35,4 +35,14 @@ Bu çalışma, hastane ortamlarında yön bulma problemlerini azaltmak ve dijita
 
 ---
 
-*Geliştirici: Arda — 2026*
+---
+<img width="377" height="777" alt="image" src="https://github.com/user-attachments/assets/4f705ec6-9d38-4dd2-bc12-d8e4544e3634" /> 
+<img width="377" height="782" alt="image" src="https://github.com/user-attachments/assets/e47b2126-8306-431d-9da7-82227272e5b1" />
+<img width="382" height="783" alt="image" src="https://github.com/user-attachments/assets/bfc7ad63-209a-404e-9128-7aa1d513de01" />
+<img width="372" height="777" alt="image" src="https://github.com/user-attachments/assets/f3b15627-be72-449b-92d6-d20572f42c26" />
+<img width="372" height="777" alt="image" src="https://github.com/user-attachments/assets/eab9e5d3-d644-4258-aa72-5d220d333045" />
+<img width="375" height="777" alt="image" src="https://github.com/user-attachments/assets/d58b294c-3d92-4d89-81c6-a4bf64d460b4" />
+<img width="372" height="775" alt="image" src="https://github.com/user-attachments/assets/9da0e885-7518-44db-9392-97c107b099d4" />
+
+
+*Geliştirici: <a href="linkedin.com/in/arda-can-süren-52605a314/">Arda</a> — 2026*
