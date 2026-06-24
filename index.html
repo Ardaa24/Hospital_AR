@@ -20,9 +20,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Stiller (ayrı katmanlar) -->
-    <link rel="stylesheet" href="css/base.css?v=1.1.3">
-    <link rel="stylesheet" href="css/screens.css?v=1.1.3">
-    <link rel="stylesheet" href="css/ar.css?v=1.1.3">
+    <link rel="stylesheet" href="css/base.css?v=1.2.0">
+    <link rel="stylesheet" href="css/screens.css?v=1.2.0">
+    <link rel="stylesheet" href="css/ar.css?v=1.2.0">
 </head>
 <body>
 
@@ -159,10 +159,10 @@
 
     <!-- Üst HUD -->
     <div id="ar-top-hud">
-        <button class="ar-back-btn ar-interactive"
+        <button class="ar-back-btn ar-exit-btn ar-interactive"
                 onclick="exitARToRoutes()"
-                aria-label="AR'dan çık, rota listesine dön">
-            <i data-lucide="arrow-left" width="20" height="20"></i>
+                aria-label="AR navigasyondan çık">
+            <i data-lucide="x" width="22" height="22"></i>
         </button>
         <div class="ar-next-pill" role="status" aria-live="polite">
             <span class="anp-icon" id="ar-nc-icon" aria-hidden="true">↗</span>
@@ -191,8 +191,10 @@
         <button id="ar-arrived-btn"
                 class="ar-interactive btn-compact-arrive"
                 onclick="onArrived()"
-                aria-label="Hedefe ulaştım">
-            <i data-lucide="check-circle" width="20" height="20"></i> Ulaştım
+                aria-label="Hedefe ulaştım"
+                disabled>
+            <i data-lucide="check-circle" width="20" height="20"></i>
+            <span id="ar-arrive-label">Ulaştım</span>
         </button>
     </div>
 </div>
@@ -360,11 +362,11 @@
      3. detail.js  — detay ekranı render
      4. ar.js      — AR motoru
 ════════════════════════════════════════════════════ -->
-<script src="js/router.js?v=1.1.3"></script>
-<script src="js/settings.js?v=1.1.3"></script>
-<script src="js/list.js?v=1.1.3"></script>
-<script src="js/detail.js?v=1.1.3"></script>
-<script src="js/ar.js?v=1.1.3"></script>
+<script src="js/router.js?v=1.2.0"></script>
+<script src="js/settings.js?v=1.2.0"></script>
+<script src="js/list.js?v=1.2.0"></script>
+<script src="js/detail.js?v=1.2.0"></script>
+<script src="js/ar.js?v=1.2.0"></script>
 
 <script>
 /* ── Uygulama Başlatma ── */

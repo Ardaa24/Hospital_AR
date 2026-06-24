@@ -29,12 +29,18 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M    = 0.4;   // Ok arası mesafe (metre) - Daha sıkıştırıldı
-const ARRIVAL_THRESHOLD  = 0.5;   // Otomatik varış eşiği (metre) - 0.5m yapılarak son oka kadar gitme sağlandı
-const TURN_WARN_DISTANCE = 2.5;   // Dönüş uyarısı başlama mesafesi (metre) - Sabitlendi
-const GRACE_PERIOD_MS    = 2000;  // AR açıldıktan sonra varış sayılmaz
-const TURN_KEYWORDS_LEFT  = ['sola'];
-const TURN_KEYWORDS_RIGHT = ['sağa'];
+const ARROW_SPACING_M          = 0.55;  // Holografik segment aralığı (metre)
+const ARRIVAL_THRESHOLD        = 0.5;   // Otomatik varış eşiği (metre)
+const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyardısı mesafesi (metre)
+const GRACE_PERIOD_MS          = 2000;  // AR açıldıktan sonra varış sayılmaz
+const NEXT_SECTION_UNLOCK_DIST = 0.5;   // Sonraki Bölüm butonu kilit açma mesafesi
+const HOLO_DISK_RADIUS         = 0.16;  // Holografik disk yarıçapı (metre)
+const HOLO_DISK_HEIGHT         = 0.018; // Disk kalınlığı
+const HOLO_ARROW_INTERVAL      = 3;     // Kaç diskten birinde yön oku olsun
+const HOLO_COLOR_PATH          = '#0A7AFF'; // Yol rengi (mavi)
+const HOLO_COLOR_WARN          = '#FF6B2C'; // Uyardı rengi (tur. — dönüş)
+const TURN_KEYWORDS_LEFT       = ['sola'];
+const TURN_KEYWORDS_RIGHT      = ['sağa'];
 
 /* ── Mesafe Hesaplama Yardımcısı ── */
 function _calcLegDistance(path) {
@@ -201,7 +207,7 @@ function _onEnterAR() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    setTimeout(_drawArrows, 1500);
+    setTimeout(_drawHolographicPath, 1500);
 }
 
 function _onExitAR() {
@@ -256,13 +262,37 @@ function _updateHUD() {
 function _updateArrivedBtn() {
     const btn = _dom.arrivedBtn();
     if (!btn) return;
-    const isLast = AppState.legIdx === AppState.arLegs.length - 1;
-    btn.textContent = isLast ? '🎉 Hedefe Vardım' : '✅ Sonraki Bölüm';
+
+    const isLast  = AppState.legIdx === AppState.arLegs.length - 1;
+    const label   = document.getElementById('ar-arrive-label');
+    if (label) label.textContent = isLast ? 'Hedefe Vardım' : 'Sonraki Bölüm';
     btn.setAttribute('aria-label', isLast ? 'Hedefe vardım' : 'Sonraki bölüme geç');
+
+    // Her yeni bacakta kilit sıfırlanır (0.5m'de JS açacak)
+    _setArrivedBtnLocked(true);
 }
 
 /* ════════════════════════════════════════════════════
-   OK ÇİZİMİ
+   VARIL BUTONU KİLTİ YONETIMi
+   Tek sorumluluk: disabled state toggle.
+   Grace period dışında, distToTurn <= 0.5m olduğunda çağrılır.
+════════════════════════════════════════════════════ */
+function _setArrivedBtnLocked(locked) {
+    const btn = _dom.arrivedBtn();
+    if (!btn) return;
+    if (locked) {
+        btn.disabled = true;
+    } else if (btn.disabled) {
+        // Sadece durum değişiyorsa animasyonu tetikle (DOM thrashing önle)
+        btn.disabled = false;
+        vibrate(50); // Çok kısa, non-intrusive haptic
+    }
+}
+
+/* ════════════════════════════════════════════════════
+   HOLOGRAFiK YOL SİSTEMİ
+   Stil 3: Yere projeksiyon, GPU-dostu flat shader.
+   Her segment: ince disk (a-cylinder) + seyrek yön oku (a-cone)
 ════════════════════════════════════════════════════ */
 function _parsePos(pt) {
     if (!pt || !pt.pos) return { x: 0, y: 0, z: 0 };
@@ -272,38 +302,63 @@ function _parsePos(pt) {
 
 let _activeArrows = []; // Animasyon ve culling için ok listesi
 
-function _createChevron(px, pz, angleDeg, indexOffset) {
-    const el = document.createElement('a-entity');
-    const yPos = _groundY + 0.05;
-    el.setAttribute('position', `${px} ${yPos} ${pz}`);
-    // A-Frame kamerası -Z yönüne bakar, bu yüzden oku ileri (+Z) bakıyorsa çevirmek için +180 ekliyoruz
-    el.setAttribute('rotation', `0 ${angleDeg + 180} 0`);
-    
-    // Sol kanat (daha uzun ve keskin açı)
-    const left = document.createElement('a-box');
-    left.setAttribute('position', '-0.12 0 0.15');
-    left.setAttribute('rotation', '0 35 0');
-    left.setAttribute('width', '0.45');
-    left.setAttribute('height', '0.015');
-    left.setAttribute('depth', '0.05');
-    left.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
-    
-    // Sağ kanat
-    const right = document.createElement('a-box');
-    right.setAttribute('position', '0.12 0 0.15');
-    right.setAttribute('rotation', '0 -35 0');
-    right.setAttribute('width', '0.45');
-    right.setAttribute('height', '0.015');
-    right.setAttribute('depth', '0.05');
-    right.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
-    
-    el.appendChild(left);
-    el.appendChild(right);
-    
-    return { el, baseY: yPos, index: indexOffset };
+/**
+ * Tek bir holografik yol segmentı oluşturur.
+ * @param {number} px   Dünya X koordinatı
+ * @param {number} pz   Dünya Z koordinatı
+ * @param {number} angleDeg Y-eksen rotasyonu (yön)
+ * @param {number} idx  Zincirdeki sıra (faz hesabı için)
+ * @returns {{ el: Element, baseY: number, index: number }}
+ */
+function _createHoloSegment(px, pz, angleDeg, idx) {
+    const wrapper = document.createElement('a-entity');
+    const yPos    = _groundY + (HOLO_DISK_HEIGHT / 2) + 0.005;
+    wrapper.setAttribute('position', `${px} ${yPos} ${pz}`);
+    wrapper.setAttribute('rotation', `0 ${angleDeg + 180} 0`);
+
+    // ── Ana disk (ince puck, GPU-dostu flat shader) ──
+    const disk = document.createElement('a-cylinder');
+    disk.setAttribute('radius',          String(HOLO_DISK_RADIUS));
+    disk.setAttribute('height',          String(HOLO_DISK_HEIGHT));
+    disk.setAttribute('segments-radial', '12'); // Düşük polygon — performans
+    disk.setAttribute('segments-height', '1');
+    disk.setAttribute('material',
+        `shader: flat; color: ${HOLO_COLOR_PATH}; transparent: true; opacity: 0.82; emissive: ${HOLO_COLOR_PATH}; emissiveIntensity: 0.25`);
+    wrapper.appendChild(disk);
+
+    // ── Kenar glow halkası (flat, alpha blend ile simüle) ──
+    const glow = document.createElement('a-cylinder');
+    glow.setAttribute('radius',          String(HOLO_DISK_RADIUS + 0.035));
+    glow.setAttribute('height',          '0.003');
+    glow.setAttribute('segments-radial', '12');
+    glow.setAttribute('segments-height', '1');
+    glow.setAttribute('position',        '0 -0.007 0');
+    glow.setAttribute('material',
+        `shader: flat; color: ${HOLO_COLOR_PATH}; transparent: true; opacity: 0.28`);
+    wrapper.appendChild(glow);
+
+    // ── Yön oku: her HOLO_ARROW_INTERVAL segmentten birinde ──
+    if (idx % HOLO_ARROW_INTERVAL === 0) {
+        const cone = document.createElement('a-cone');
+        cone.setAttribute('radius-bottom', '0.055');
+        cone.setAttribute('radius-top',    '0');
+        cone.setAttribute('height',        '0.065');
+        cone.setAttribute('segments-radial','8');  // Düşük polygon
+        cone.setAttribute('position',      '0 0.022 -0.06');
+        cone.setAttribute('rotation',      '-90 0 0');
+        cone.setAttribute('material',
+            'shader: flat; color: #FFFFFF; transparent: true; opacity: 0.92');
+        wrapper.appendChild(cone);
+    }
+
+    return { el: wrapper, baseY: yPos, index: idx, disk, glow };
 }
 
-function _drawArrows() {
+/**
+ * Mevcut bacak için tüm holografik segmentleri çizer.
+ * Frustum culling ve faz-dalgası animasyonu _tick() içinde yönetilir.
+ */
+function _drawHolographicPath() {
     const arrowsEl = _dom.arrows();
     arrowsEl.innerHTML = '';
     _activeArrows = [];
@@ -315,30 +370,30 @@ function _drawArrows() {
     }
 
     const path = leg.path;
-    let arrowIndex = 0;
-    
+    let   segIdx = 0;
+
     for (let i = 1; i < path.length; i++) {
-        const prev = _parsePos(path[i - 1]);
-        const curr = _parsePos(path[i]);
-        const dx = curr.x - prev.x, dz = curr.z - prev.z;
+        const prev   = _parsePos(path[i - 1]);
+        const curr   = _parsePos(path[i]);
+        const dx     = curr.x - prev.x;
+        const dz     = curr.z - prev.z;
         const segLen = Math.hypot(dx, dz);
         if (segLen < 0.001) continue;
 
         const angleRad = Math.atan2(dx, dz);
         const angleDeg = THREE.MathUtils.radToDeg(angleRad);
         const steps    = Math.max(1, Math.round(segLen / ARROW_SPACING_M));
+        const startJ   = (i === 1) ? 0 : 1;
 
-        // Noktaları tam hedefe oturtmak için t=1'e kadar gidiyoruz. i>1 ise j=1'den başla ki üst üste binmesin.
-        const startJ = (i === 1) ? 0 : 1;
         for (let j = startJ; j <= steps; j++) {
-            const t = j / steps;
+            const t  = j / steps;
             const px = prev.x + dx * t;
             const pz = prev.z + dz * t;
-            
-            const chevron = _createChevron(px, pz, angleDeg, arrowIndex);
-            arrowsEl.appendChild(chevron.el);
-            _activeArrows.push(chevron);
-            arrowIndex++;
+
+            const seg = _createHoloSegment(px, pz, angleDeg, segIdx);
+            arrowsEl.appendChild(seg.el);
+            _activeArrows.push(seg);
+            segIdx++;
         }
     }
 
@@ -397,9 +452,11 @@ function _tick(time) {
                 _groundY = pose.transform.position.y;
                 _hitTestSource.cancel();
                 _hitTestSource = null;
-                // Oklari guncelle
+                // Holografik segmentlerin zeminini güncelle
+                const newBaseY = _groundY + (HOLO_DISK_HEIGHT / 2) + 0.005;
                 _activeArrows.forEach(arr => {
-                    arr.baseY = _groundY + 0.05;
+                    arr.baseY = newBaseY;
+                    if (arr.el.object3D) arr.el.object3D.position.y = newBaseY;
                 });
             }
         }
@@ -409,28 +466,34 @@ function _tick(time) {
     }
     
 
-    /* Three.js Optimizasyonu: Wave (Dalga) animasyonları */
-    const now = Date.now();
+    /* Holografik Yol: Nabız (pulse) animasyonu — GPU-dostu, sadece opacity */
+    const now        = Date.now();
+    const isNearWarn = AppState.arLegs[AppState.legIdx + 1] !== undefined;
     for (let i = 0; i < _activeArrows.length; i++) {
-        const arrow = _activeArrows[i];
-        if (arrow.el.object3D) {
-            // Dalga efekti: ardışık oklar sırayla parlar ve süzülür
-            const wave = Math.sin((now * 0.005) - (arrow.index * 0.4)); 
-            
-            // Opaklık (0.3 ile 0.9 arası gidip gelir)
-            const op = 0.6 + (wave * 0.3);
-            if (arrow.el.object3D.children) {
-                arrow.el.object3D.children.forEach(c => {
-                    if (c.material) c.material.opacity = op;
-                });
-            }
+        const seg = _activeArrows[i];
+        if (!seg.el.object3D) continue;
 
-            // Yukarı aşağı hafif zıplama
-            arrow.el.object3D.position.y = arrow.baseY + (wave * 0.04);
-            
-            // Frustum Culling
-            const dist = Math.hypot(camPos.x - arrow.el.object3D.position.x, camPos.z - arrow.el.object3D.position.z);
-            arrow.el.object3D.visible = (dist < 10);
+        // Frustum culling: sadece 10m içindeki segmentler render edilir
+        const dCam = Math.hypot(
+            camPos.x - seg.el.object3D.position.x,
+            camPos.z - seg.el.object3D.position.z
+        );
+        seg.el.object3D.visible = (dCam < 10);
+        if (!seg.el.object3D.visible) continue;
+
+        // Faz-kaydırmalı nabız: ardardına segmentler dalga gibi parlar
+        const phase  = (now * 0.004) - (seg.index * 0.45);
+        const pulse  = 0.5 + (Math.sin(phase) * 0.5); // 0..1 arası
+        const opMain = 0.45 + pulse * 0.45;  // 0.45 → 0.90
+        const opGlow = 0.12 + pulse * 0.22;  // 0.12 → 0.34
+
+        // Ana disk opasitesi (Three.js material doğrudan)
+        if (seg.disk?.object3D?.children?.[0]?.material) {
+            seg.disk.object3D.children[0].material.opacity = opMain;
+        }
+        // Glow opasitesi
+        if (seg.glow?.object3D?.children?.[0]?.material) {
+            seg.glow.object3D.children[0].material.opacity = opGlow;
         }
     }
 
@@ -480,6 +543,11 @@ function _tick(time) {
 
     /* Dönüş uyarısı (Dalgalanmayı önleyen sabit hedef hesabı ile) */
     _handleTurnWarning(distToTurn);
+
+    /* Sonraki Bölüm butonu kilit açma (grace period dışında, 0.5m eşiğinde) */
+    if (!inGrace) {
+        _setArrivedBtnLocked(distToTurn > NEXT_SECTION_UNLOCK_DIST);
+    }
 
     /* Otomatik varış (son bacak) */
     if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {

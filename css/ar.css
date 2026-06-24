@@ -94,6 +94,20 @@ a-scene.ar-active {
 }
 .ar-back-btn:active { opacity: .75; }
 
+/* ── AR Çıkış Butonu (X ikonu) ── */
+.ar-exit-btn {
+    /* Nötr çıkış tonu — tehlike değil, tamamlama eylemi */
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px;
+    color: #1C1C1E;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.ar-exit-btn:active {
+    background: rgba(235, 235, 240, 0.98);
+    transform: scale(0.95);
+    opacity: 1;
+}
+
 .ar-next-pill {
     flex: 1;
     background: rgba(255,255,255,.92);
@@ -168,17 +182,19 @@ a-scene.ar-active {
 .ar-bottom-compact {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    background: rgba(255,255,255,.94);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 24px 24px 0 0;
-    padding: 16px 16px calc(env(safe-area-inset-bottom, 16px) + 16px);
-    box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 28px 28px 0 0;
+    /* Büyütülmüş padding — daha fazla soluk alma alanı */
+    padding: 20px 18px calc(env(safe-area-inset-bottom, 20px) + 20px);
+    min-height: 90px;
+    box-shadow: 0 -4px 28px rgba(0,0,0,.12);
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 14px;
     pointer-events: auto;
     z-index: 10;
 }
@@ -190,24 +206,26 @@ a-scene.ar-active {
     flex-direction: column;
     gap: 2px;
 }
+/* Hedef adı — büyütülmüş */
 .abc-dest {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/* Metrikler — büyütülmüş */
 .abc-metrics {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--muted);
 }
 .abc-dist { color: var(--primary); font-weight: 700; }
 
 .btn-compact-arrive {
-    min-height: 48px;
-    padding: 0 16px;
+    min-height: 52px;
+    padding: 0 18px;
     border-radius: 14px;
     font-size: 15px;
     font-weight: 700;
@@ -216,15 +234,33 @@ a-scene.ar-active {
     box-shadow: 0 4px 12px rgba(24,165,88,.25);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     border: none;
-    transition: transform .1s, opacity .15s;
+    transition: transform .12s cubic-bezier(.34,1.56,.64,1), opacity .15s, background .3s;
     white-space: nowrap;
     cursor: pointer;
 }
-.btn-compact-arrive:active {
+.btn-compact-arrive:active:not(:disabled) {
     transform: scale(.96);
     opacity: .9;
+}
+
+/* ── Disabled (kilitli) durum — 0.5m kala JS tarafından kaldırılır ── */
+.btn-compact-arrive:disabled {
+    background: linear-gradient(135deg, #C7C7CC 0%, #AEAEB2 100%);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.65;
+    transform: none;
+}
+/* Kilit açıldığında pürüzsüz geçiş animasyonu */
+.btn-compact-arrive:not(:disabled) {
+    animation: btnUnlock .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes btnUnlock {
+    0%   { transform: scale(1.0); }
+    50%  { transform: scale(1.07); }
+    100% { transform: scale(1.0); }
 }
 
 /* ────────────────────────────────────────────────────
