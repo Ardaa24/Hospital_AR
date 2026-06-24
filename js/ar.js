@@ -288,6 +288,14 @@ function _setArrivedBtnLocked(locked) {
 /* ════════════════════════════════════════════════════
    OK ÇİZİMİ
 ════════════════════════════════════════════════════ */
+function _parsePos(pt) {
+    if (!pt || !pt.pos) return { x: 0, y: 0, z: 0 };
+    const [x, y, z] = pt.pos.split(' ').map(Number);
+    return { x: x||0, y: y||0, z: z||0 };
+}
+
+let _activeArrows = []; // Animasyon ve culling için ok listesi
+
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
     const yPos = _groundY + 0.05;
