@@ -1,11 +1,9 @@
 /**
- * settings.js — Sistem Ayarları & Bottom Sheet Drawer Yönetimi
- *
- * Sorumluluk: Ayarlar drawer'ını yönetme, izin durumlarını sorgulama/sıfırlama ve oturum verilerini silme.
- *
- * Bağımlılıklar: router.js (showToast)
+ * settings.js — Sistem Ayarları & Bottom Sheet Drawer Yönetimi v2.0
+ * Bağımlılıklar: router.js (showToast), ar.js (window.ARDebug)
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
  */
+
 
 function initSettings() {
     const btnToggle = document.getElementById('btn-settings');

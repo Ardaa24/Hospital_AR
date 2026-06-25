@@ -1,7 +1,7 @@
 /**
  * list.js — Rota Listesi Render & Arama
  *
- * Sorumluluk: Yalnızca Screen 2 (Route List) içeriği.
+ * Sorumluluk: 
  *   - Kategori + rota kartlarını DOM'a yaz
  *   - Arama/filtre
  *   - Kart tıklama → openDetail() veya startAR() yönlendirmesi

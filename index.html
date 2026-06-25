@@ -13,7 +13,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- A-Frame AR Motoru -->
-    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <!-- A-Frame AR Motoru v1.6.0 (ARKit/ARCore iyileştirmeleri, local-floor stabilitesi) -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+    <!-- AR/VR Buton Flaş Engelleyici — A-Frame DOM inject etmeden önce çalışır -->
+    <script>
+    (function() {
+        'use strict';
+        // Layer 3: MutationObserver — A-Frame inject ettiği anı yakalar
+        const _arFlashObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+                m.addedNodes.forEach(function(node) {
+                    if (!node.classList) return;
+                    if (node.classList.contains('a-enter-vr') ||
+                        node.classList.contains('a-enter-ar') ||
+                        node.classList.contains('a-enter-vr-button') ||
+                        node.classList.contains('a-enter-ar-button')) {
+                        node.style.cssText = 'display:none!important;visibility:hidden!important;pointer-events:none!important;';
+                        setTimeout(function() { if (node.parentNode) node.parentNode.removeChild(node); }, 0);
+                    }
+                });
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            _arFlashObserver.observe(document.body, { childList: true, subtree: true });
+            var scene = document.getElementById('ar-scene');
+            if (scene) {
+                scene.addEventListener('loaded', function() {
+                    setTimeout(function() { _arFlashObserver.disconnect(); }, 3000);
+                });
+            }
+        });
+    })();
+    </script>
 
     <!-- Uygulama Verisi -->
     <script src="config.js?v=1.0.2"></script>
@@ -132,18 +164,26 @@
 <!-- ════════════════════════════════════════════════════
      AR — A-FRAME SAHNESİ
 ════════════════════════════════════════════════════ -->
+<!-- Layer 4: Dummy button wiring — A-Frame kendi butonunu asla göstermez -->
+<button id="_ar-dummy-enter-btn" aria-hidden="true"
+        style="display:none!important;visibility:hidden!important;pointer-events:none!important;"
+        tabindex="-1">
+</button>
+
 <a-scene id="ar-scene"
-         xr-mode-ui="enabled: false"
-         webxr="optionalFeatures: dom-overlay, hit-test; overlayElement: #ar-overlay"
+         xr-mode-ui="enterARButton: #_ar-dummy-enter-btn; enterVRButton: #_ar-dummy-enter-btn"
+         webxr="requiredFeatures: local-floor; optionalFeatures: dom-overlay, hit-test; overlayElement: #ar-overlay"
          device-orientation-permission-ui="enabled: false"
-         renderer="antialias: true; alpha: true"
+         renderer="antialias: true; alpha: true; colorManagement: true"
          background="transparent: true"
+         vr-mode-ui="enabled: false"
          aria-hidden="true">
     <a-entity id="ar-cam"
               camera
               position="0 1.6 0"
               look-controls="pointerLockEnabled: false">
     </a-entity>
+    <!-- Holographic path & footstep container -->
     <a-entity id="ar-arrows"></a-entity>
 </a-scene>
 
@@ -286,7 +326,7 @@
             <div class="settings-section-label">🏥 Uygulama Bilgisi</div>
             <div class="settings-row">
                 <div class="settings-row-label">Sürüm</div>
-                <div class="settings-row-value">v1.0.2</div>
+                <div class="settings-row-value">v2.0.0</div>
             </div>
             <div class="settings-row">
                 <div class="settings-row-label">Kurum</div>
@@ -294,7 +334,7 @@
             </div>
             <div class="settings-row">
                 <div class="settings-row-label">Altyapı</div>
-                <div class="settings-row-value">Web AR (A-Frame)</div>
+                <div class="settings-row-value">Web AR (A-Frame 1.6.0)</div>
             </div>
         </div>
         
@@ -322,6 +362,16 @@
                 Oturum Verilerini Temizle
             </button>
             <p class="settings-desc" style="font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; text-align: center;">Kamera erişim izinlerini ve geçici uygulama verilerini sıfırlar. AR kamerası açılmazsa veya donma yaşarsanız kullanabilirsiniz.</p>
+        </div>
+
+        <!-- Bölüm D: Geliştirici Araçları [v2.0] -->
+        <div class="settings-section">
+            <div class="settings-section-label">🛠️ Geliştirici Araçları</div>
+            <button onclick="if(window.ARDebug){ARDebug.toggleCoordCapture()}else{showToast('AR aktif değil — önce navigasyon başlatın')}" class="btn-settings-danger" style="background:rgba(88,28,135,0.12);color:#6d28d9;border:1.5px solid rgba(109,40,217,0.25);">
+                <i data-lucide="map-pin" width="18" height="18"></i>
+                Koordinat Yakalayıcı
+            </button>
+            <p class="settings-desc" style="font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; text-align: center;">AR aktifken dokunarak kamera konumunu panoya kopyalar. Gerçek hastane koordinatlarını ölçmek için kullanın.</p>
         </div>
     </div>
 </div>
@@ -355,17 +405,18 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════
-     JS MODÜLLER (Yükleme sırası önemli)
+     JS MODÜLLER
      1. router.js  — global state + ekran geçişi
-     2. list.js    — rota listesi render
-     3. detail.js  — detay ekranı render
-     4. ar.js      — AR motoru
+     2. settings.js — ayarlar drawer
+     3. list.js    — rota listesi render
+     4. detail.js  — detay ekranı render
+     5. ar.js      — AR motoru v2.0 (holographic path)
 ════════════════════════════════════════════════════ -->
-<script src="js/router.js?v=1.2.0"></script>
-<script src="js/settings.js?v=1.2.0"></script>
-<script src="js/list.js?v=1.2.0"></script>
-<script src="js/detail.js?v=1.2.0"></script>
-<script src="js/ar.js?v=1.2.0"></script>
+<script src="js/router.js?v=2.0.0"></script>
+<script src="js/settings.js?v=2.0.0"></script>
+<script src="js/list.js?v=2.0.0"></script>
+<script src="js/detail.js?v=2.0.0"></script>
+<script src="js/ar.js?v=2.0.0"></script>
 
 <script>
 /* ── Uygulama Başlatma ── */

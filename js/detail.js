@@ -1,7 +1,7 @@
 /**
  * detail.js — Rota Detay Ekranı
  *
- * Sorumluluk: Yalnızca Screen 3 (Route Detail) içeriği.
+ * Sorumluluk:
  *   - İstatistik hesaplama (mesafe, süre, dönüş sayısı)
  *   - Hero kart, stat grid, etiketler, konum bilgileri render
  *   - AR butonuna tıklandığında startAR() çağrısı

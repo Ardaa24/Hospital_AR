@@ -1,7 +1,7 @@
 /**
  * router.js — Ekran Yönetimi & Global Uygulama Durumu
  *
- * Sorumluluk: Tek sorumluluk ilkesi (SRP) gereği yalnızca
+ * Sorumluluk: 
  *   - Ekranlar arası geçiş
  *   - Toast bildirimleri
  *   - Paylaşılan uygulama durumu
