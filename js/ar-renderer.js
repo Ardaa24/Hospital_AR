@@ -28,10 +28,14 @@ const ARRenderer = (function() {
         float chevronMask(vec2 uv, float freq, float t, float speed) {
             float u = fract(uv.x * freq - t * speed);
             float vNorm = abs(uv.y - 0.5) * 2.0;
-            // Şeklin merkezden uzaklığı
-            float shape = abs(u - (1.0 - vNorm) * 0.42 - 0.5);
-            // Fix #2 (v2.2): Kurumsal ve net görüntü için çok keskin kenar (Anti-aliased crisp edge)
-            return 1.0 - smoothstep(0.10, 0.13, shape);
+            
+            // v2.3: Daha üçgen/ok ucu (arrowhead) görünümlü, merkeze doğru kalınlaşan formül
+            float uMid = (1.0 - vNorm) * 0.30 + 0.45;
+            float halfWidth = (1.0 - vNorm) * 0.15 + 0.08;
+            float shape = abs(u - uMid);
+            
+            // Anti-aliased keskin kenarlar
+            return 1.0 - smoothstep(halfWidth - 0.015, halfWidth + 0.015, shape);
         }
 
         void main() {

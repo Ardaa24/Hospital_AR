@@ -1,13 +1,6 @@
 /**
  * js/ar.js
  * AR Navigasyon Koordinatör Dosyası (Facade)
- * 
- * V2.1 Modular Mimari
- * - ARCore: Session & Event yönetimi
- * - ARRenderer: Three.js Ribbon & Footsteps
- * - ARCompass: Pusula hesabı
- * - ARNavigation: Mesafe & Hysteresis
- * - ARDebug: Koordinat yakalayıcı
  */
 
 'use strict';
@@ -132,6 +125,11 @@ function _onEnterARCallback() {
     AppState.arStartTime = AppState.arStartTime || Date.now();
     document.body.style.background = 'transparent';
 
+    // v2.3: Debug/Koordinat yakalayıcıyı başlat
+    if (window.ARDebug) {
+        window.ARDebug.initAR();
+    }
+
     const dom = ARCore.getDOM();
     dom.infoScreen().classList.remove('visible');
     dom.overlay().classList.add('ar-active');
@@ -158,6 +156,11 @@ function _onExitARCallback() {
     AppState.arActive = false;
     document.body.style.background = '';
     cancelAnimationFrame(AppState.tickRafId);
+
+    // v2.3: Debug/Koordinat yakalayıcıyı sonlandır
+    if (window.ARDebug) {
+        window.ARDebug.cleanupAR();
+    }
 
     const dom = ARCore.getDOM();
     dom.topHud().style.display = 'none';

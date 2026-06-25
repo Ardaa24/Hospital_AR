@@ -204,6 +204,9 @@
                 aria-label="AR navigasyondan çık">
             <i data-lucide="x" width="22" height="22"></i>
         </button>
+        <button id="ar-debug-pin-btn" class="ar-back-btn ar-interactive" style="display: none; background: rgba(109, 40, 217, 0.15); color: #6d28d9; border: 1.5px solid rgba(109, 40, 217, 0.3);" onclick="if(window.ARDebug){ARDebug.captureCurrentPose()}else{showToast('Hata: Modül yüklenemedi')}" aria-label="Koordinat Yakala">
+            <i data-lucide="map-pin" width="22" height="22"></i>
+        </button>
         <div class="ar-next-pill" role="status" aria-live="polite">
             <span class="anp-icon" id="ar-nc-icon" aria-hidden="true">↗</span>
             <div>
@@ -367,7 +370,7 @@
         <!-- Bölüm D: Geliştirici Araçları [v2.0] -->
         <div class="settings-section">
             <div class="settings-section-label">🛠️ Geliştirici Araçları</div>
-            <button onclick="if(window.ARDebug){ARDebug.toggleCoordCapture()}else{showToast('AR aktif değil — önce navigasyon başlatın')}" class="btn-settings-danger" style="background:rgba(88,28,135,0.12);color:#6d28d9;border:1.5px solid rgba(109,40,217,0.25);">
+            <button id="btn-toggle-debug" onclick="if(window.ARDebug){ARDebug.toggleCoordCapture()}else{showToast('Modül yüklenemedi')}" class="btn-settings-danger" style="background:rgba(88,28,135,0.12);color:#6d28d9;border:1.5px solid rgba(109,40,217,0.25);">
                 <i data-lucide="map-pin" width="18" height="18"></i>
                 Koordinat Yakalayıcı
             </button>

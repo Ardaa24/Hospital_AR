@@ -1,5 +1,4 @@
 /**
- * settings.js — Sistem Ayarları & Bottom Sheet Drawer Yönetimi v2.0
  * Bağımlılıklar: router.js (showToast), ar.js (window.ARDebug)
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
  */
@@ -84,6 +83,10 @@ function openSettingsDrawer() {
     }, 10);
 
     updatePermissionBadges();
+    
+    if (window.ARDebug && typeof window.ARDebug.updateSettingsUI === 'function') {
+        window.ARDebug.updateSettingsUI();
+    }
 
     // Rerender Lucide icons inside settings drawer
     if (window.lucide) {
