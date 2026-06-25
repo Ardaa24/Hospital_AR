@@ -27,15 +27,23 @@ const ARRenderer = (function() {
 
         float chevronMask(vec2 uv, float freq, float t, float speed) {
             float u = fract(uv.x * freq - t * speed);
-            float vNorm = abs(uv.y - 0.5) * 2.0;
+            float vNorm = (uv.y - 0.5) * 2.0;
+            vec2 p = vec2(u, abs(vNorm));
             
-            // v2.3: Daha üçgen/ok ucu (arrowhead) görünümlü, merkeze doğru kalınlaşan formül
-            float uMid = (1.0 - vNorm) * 0.30 + 0.45;
-            float halfWidth = (1.0 - vNorm) * 0.15 + 0.08;
-            float shape = abs(u - uMid);
+            // Segment tanımı: A (tepe noktası) -> B (kol bitişi)
+            // Çizgisel segment projeksiyonu (SDF) ile uniform kalınlık ve yuvarlatılmış uçlar elde edilir
+            vec2 a = vec2(0.80, 0.0);
+            vec2 b = vec2(0.35, 0.75);
+            float radius = 0.09;
             
-            // Anti-aliased keskin kenarlar
-            return 1.0 - smoothstep(halfWidth - 0.015, halfWidth + 0.015, shape);
+            vec2 ab = b - a;
+            vec2 ap = p - a;
+            float t_val = clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
+            vec2 closest = a + t_val * ab;
+            float dist = length(p - closest);
+            
+            // Kenarları yumuşatılmış jilet gibi keskin bir maske üretir
+            return 1.0 - smoothstep(radius - 0.012, radius + 0.012, dist);
         }
 
         void main() {

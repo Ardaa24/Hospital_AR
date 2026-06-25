@@ -125,7 +125,7 @@ function _onEnterARCallback() {
     AppState.arStartTime = AppState.arStartTime || Date.now();
     document.body.style.background = 'transparent';
 
-    // v2.3: Debug/Koordinat yakalayıcıyı başlat
+    // Debug/Koordinat yakalayıcıyı başlat
     if (window.ARDebug) {
         window.ARDebug.initAR();
     }
@@ -157,7 +157,7 @@ function _onExitARCallback() {
     document.body.style.background = '';
     cancelAnimationFrame(AppState.tickRafId);
 
-    // v2.3: Debug/Koordinat yakalayıcıyı sonlandır
+    // Debug/Koordinat yakalayıcıyı sonlandır
     if (window.ARDebug) {
         window.ARDebug.cleanupAR();
     }

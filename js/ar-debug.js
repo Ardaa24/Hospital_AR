@@ -1,6 +1,7 @@
 /**
  * js/ar-debug.js
- * AR Navigasyon Debug Araçları v2.3
+ * AR Navigasyon Debug Araçları
+ * Koordinat yakalama ve saha ölçümü için tasarlanmıştır.
  */
 
 'use strict';
@@ -46,17 +47,14 @@ const ARDebug = (function() {
         updateSettingsUI();
 
         if (window.showToast) {
-            showToast(active ? '📍 Koordinat modu AÇIK — HUD butonu veya sahneye dokunarak kopyala' : '📍 Koordinat modu KAPALI');
+            showToast(active ? '📍 Koordinat modu AÇIK — Ekrana dokunarak koordinat kopyalayabilirsiniz' : '📍 Koordinat modu KAPALI');
         }
 
-        // Eğer AR aktifse, HUD butonunu dinamik olarak göster/gizle
-        const pinBtn = document.getElementById('ar-debug-pin-btn');
-        if (pinBtn) {
-            if (typeof AppState !== 'undefined' && AppState.arActive && active) {
-                pinBtn.style.display = 'flex';
+        // Eğer AR aktifse, dokunma dinleyicisini dinamik olarak yönet
+        if (typeof AppState !== 'undefined' && AppState.arActive) {
+            if (active) {
                 _bindTouchCapture();
             } else {
-                pinBtn.style.display = 'none';
                 _unbindTouchCapture();
             }
         }
@@ -67,7 +65,6 @@ const ARDebug = (function() {
      */
     function captureCurrentPose() {
         if (typeof AppState === 'undefined' || !AppState.arActive) {
-            if (window.showToast) showToast('AR aktif değil!');
             return;
         }
 
@@ -83,7 +80,6 @@ const ARDebug = (function() {
         const pos = new THREE.Vector3();
         cam.getWorldPosition(pos);
 
-        // Koordinat formatı: JSON veya config formatı { pos: "X 0 Z" }
         const coordStr = `{ pos: "${pos.x.toFixed(3)} 0 ${pos.z.toFixed(3)}" }`;
         console.info('[AR Debug Coord]', coordStr);
 
@@ -139,12 +135,8 @@ const ARDebug = (function() {
      * AR oturumu başladığında çağrılır.
      */
     function initAR() {
-        const pinBtn = document.getElementById('ar-debug-pin-btn');
         if (isCaptureActive()) {
-            if (pinBtn) pinBtn.style.display = 'flex';
             _bindTouchCapture();
-        } else {
-            if (pinBtn) pinBtn.style.display = 'none';
         }
     }
 
@@ -152,8 +144,6 @@ const ARDebug = (function() {
      * AR oturumu kapandığında çağrılır.
      */
     function cleanupAR() {
-        const pinBtn = document.getElementById('ar-debug-pin-btn');
-        if (pinBtn) pinBtn.style.display = 'none';
         _unbindTouchCapture();
     }
 
