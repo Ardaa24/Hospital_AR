@@ -28,32 +28,32 @@ const ARRenderer = (function() {
         float chevronMask(vec2 uv, float freq, float t, float speed) {
             float u = fract(uv.x * freq - t * speed);
             float vNorm = (uv.y - 0.5) * 2.0;
-            vec2 p = vec2(u, abs(vNorm));
             
-            // Segment tanımı: A (tepe noktası) -> B (kol bitişi)
-            // Çizgisel segment projeksiyonu (SDF) ile uniform kalınlık ve yuvarlatılmış uçlar elde edilir
-            vec2 a = vec2(0.80, 0.0);
-            vec2 b = vec2(0.35, 0.75);
-            float radius = 0.09;
+            // Okun tepe ve taban sınırları (tam üçgen)
+            float uFront = 0.80 - abs(vNorm) * 0.55;
+            float uBack = 0.35;
             
-            vec2 ab = b - a;
-            vec2 ap = p - a;
-            float t_val = clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
-            vec2 closest = a + t_val * ab;
-            float dist = length(p - closest);
+            float frontMask = smoothstep(uFront + 0.015, uFront - 0.015, u);
+            float backMask = smoothstep(uBack - 0.015, uBack + 0.015, u);
             
-            // Kenarları yumuşatılmış jilet gibi keskin bir maske üretir
-            return 1.0 - smoothstep(radius - 0.012, radius + 0.012, dist);
+            // Yol kenarlarında boşluk bırakmak için yan sınır maskesi
+            float sideMask = smoothstep(0.76, 0.74, abs(vNorm));
+            
+            return frontMask * backMask * sideMask;
         }
-
+ 
         void main() {
             float edgeFade = 1.0 - pow(abs(vUv.y * 2.0 - 1.0), 1.8);
             float arrow = chevronMask(vUv, 3.0, uTime, uSpeed);
             float pulse = 0.88 + 0.12 * sin(uTime * 2.2);
             
-            // Taban opaklık + chevron
-            float alpha = (edgeFade * 0.38 + arrow * edgeFade * 0.62) * pulse * uOpacity;
-            gl_FragColor = vec4(uColor, alpha);
+            // Mavi yol rengi ile solid beyaz üçgen renginin karıştırılması
+            vec3 finalColor = mix(uColor, vec3(1.0, 1.0, 1.0), arrow);
+            
+            // Üçgen kısımları daha opak, yol tabanı daha saydam
+            float alpha = (edgeFade * 0.35 + arrow * 0.65) * pulse * uOpacity;
+            
+            gl_FragColor = vec4(finalColor, alpha);
         }
     `;
 
