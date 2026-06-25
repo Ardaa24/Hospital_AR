@@ -1,7 +1,7 @@
 /**
  * js/ar-renderer.js
- * AR Navigasyon Three.js Renderer (Ribbon ve Footstep Görselleri)
- * v2.3 — Bug #1: Ground Y fix | Bug #2: Google Maps tarzı solid arrow texture
+ * AR Navigasyon Three.js Renderer (Ribbon + Chevron + Footstep)
+ * v2.4 — Google Maps AR tarzı mavi şerit + beyaz ∧ chevron
  */
 
 'use strict';
@@ -11,88 +11,63 @@ const ARRenderer = (function() {
     /* ════════════════════════════════════════════════════
        STATE VE HAVUZLAR
     ════════════════════════════════════════════════════ */
-    let _footstepTexture   = null;
-    let _arrowTexture      = null;       // Bug #2: Canvas arrow texture
-    const _footstepMeshPool    = [];
-    const _activeFootstepAnims = [];
-    let _footstepSpawnTimers   = [];
+    let _footstepTexture    = null;
+    let _arrowTexture       = null;
+    const _footstepMeshPool     = [];
+    const _activeFootstepAnims  = [];
+    let _footstepSpawnTimers    = [];
 
     let _holoPathMesh    = null;
     let _holoMaterial    = null;
     let _holoFootstepObjs = [];
 
     /* ════════════════════════════════════════════════════
-       BUG #2 — CANVAS ARROW TEXTURE
-       Google Maps tarzı: solid üçgen uç + dikdörtgen gövde
-       Her "tile" 1 ok birimi (üçgen + gövde).
-       Animasyon: texture.offset.x ile UV scroll.
+       CANVAS ARROW TEXTURE — Google Maps AR Tarzı
+       Tile Yapısı (Three.js flipY=true nedeniyle):
+         Canvas üstü (Y=0) → UV V=1 → dünyada İLERİ yön (hedef)
+         Canvas altı (Y=H) → UV V=0 → dünyada GERİ yön (kullanıcı)
+       Chevron ucu (∧) canvas üstüne bakmalı → hedef yönünü gösterir.
     ════════════════════════════════════════════════════ */
 
-    /**
-     * 256×512 px canvas'a Google Maps benzeri ok tile çizer.
-     * Tile yapısı (Y ekseni yukarı, UV space):
-     *   [0.0 – 0.35] : ok ucu (solid izokeles üçgen)
-     *   [0.35 – 0.80]: ok gövdesi (dikdörtgen)
-     *   [0.80 – 1.0] : boşluk (oklar arası)
-     * X ekseni: ribbon genişliği boyunca 0→1
-     */
     function _buildArrowTexture() {
         if (_arrowTexture) return _arrowTexture;
 
-        const W  = 256;   // Genişlik (ribbon X)
-        const H  = 512;   // Yükseklik (ribbon Z / UV scroll yönü)
+        const W = 256;   // UV.x = ribbon genişliği boyutu
+        const H = 256;   // UV.y = her tile için şerit uzunluğu
 
         const canvas = document.createElement('canvas');
         canvas.width  = W;
         canvas.height = H;
         const ctx = canvas.getContext('2d');
 
-        // Arka plan — tamamen saydam
-        ctx.clearRect(0, 0, W, H);
+        // 1. Mavi solid arka plan — Google Maps AR ribbon rengi
+        ctx.fillStyle = 'rgba(10, 118, 255, 0.78)';
+        ctx.fillRect(0, 0, W, H);
 
-        // ── Renk Paleti ──
-        const ARROW_COLOR  = 'rgba(255, 255, 255, 0.92)';  // Solid beyaz ok
-        const BODY_COLOR   = 'rgba(0, 122, 255, 0.55)';    // Mavi şeffaf gövde
+        // 2. Beyaz ∧ chevron — kalın V şekli
+        //    Referans görsel: büyük, ribbon genişliğine yakın V şekli
+        const MX     = Math.round(W * 0.055);   // Yatay kenar boşluğu (~5.5%)
+        const TIP_Y  = Math.round(H * 0.16);    // Uç noktası — canvas üstüne yakın
+        const BASE_Y = Math.round(H * 0.82);    // Kolların alt bitiş noktası
+        const ARM_W  = Math.round(W * 0.125);   // Kol kalınlığı (~12.5% of width)
 
-        // ── Geometri Sabitleri ──
-        const TIP_H   = Math.round(H * 0.28);   // Üçgen yüksekliği (tile'ın %28'i)
-        const BODY_H  = Math.round(H * 0.42);   // Gövde yüksekliği
-        const GAP_H   = H - TIP_H - BODY_H;     // Oklar arası boşluk
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.97)';
+        ctx.lineWidth   = ARM_W;
+        ctx.lineCap     = 'butt';      // Düz uç (sharp)
+        ctx.lineJoin    = 'miter';     // Sivri birleşim noktası
+        ctx.miterLimit  = 25;          // Yüksek miter limit = keskin uç
 
-        const MARGIN  = Math.round(W * 0.10);   // Yanlarda boşluk (px)
-        const BODY_W  = W - MARGIN * 2;
-
-        // ── Gövde (dikdörtgen) ──
-        // UV Y=0 → canvas alt, Y=1 → canvas üst (Three.js UV convention)
-        // Ama biz canvas'a yukarıdan aşağıya çiziyoruz:
-        //   - İlk GAP_H px: boşluk
-        //   - Sonra TIP_H px: üçgen
-        //   - Sonra BODY_H px: gövde
-
-        const tipTop    = GAP_H;               // Üçgenin canvas üst kenarı (px)
-        const bodyTop   = GAP_H + TIP_H;       // Gövdenin canvas üst kenarı (px)
-
-        // Gövde — mavi dikdörtgen
-        ctx.fillStyle = BODY_COLOR;
-        ctx.fillRect(MARGIN, bodyTop, BODY_W, BODY_H);
-
-        // Üçgen — solid beyaz (tam izokeles)
-        ctx.fillStyle = ARROW_COLOR;
         ctx.beginPath();
-        ctx.moveTo(W / 2, tipTop);                   // Tepe nokta (orta üst)
-        ctx.lineTo(MARGIN, bodyTop);                  // Sol alt
-        ctx.lineTo(W - MARGIN, bodyTop);              // Sağ alt
-        ctx.closePath();
-        ctx.fill();
-
-        // Üçgen üzerine gövde rengini hafifçe bindirme (görsel bütünlük)
-        // (isteğe bağlı — atlıyoruz, solid üçgen yeterli)
+        ctx.moveTo(MX,       BASE_Y);  // Sol alt kol başı
+        ctx.lineTo(W / 2,    TIP_Y);   // Orta üst — uç nokta (hedef yönü)
+        ctx.lineTo(W - MX,   BASE_Y);  // Sağ alt kol başı
+        ctx.stroke();
+        ctx.restore();
 
         _arrowTexture = new THREE.CanvasTexture(canvas);
         _arrowTexture.wrapS = THREE.RepeatWrapping;
         _arrowTexture.wrapT = THREE.RepeatWrapping;
-        // Tek bir tile, yatayda 1 tekrar, uzunlukta dinamik tekrar
-        _arrowTexture.repeat.set(1, 1);
         _arrowTexture.needsUpdate = true;
         return _arrowTexture;
     }
@@ -143,11 +118,11 @@ const ARRenderer = (function() {
         }
         const geo = new THREE.PlaneGeometry(0.18, 0.32);
         const mat = new THREE.MeshBasicMaterial({
-            map:        _getFootstepTexture(),
+            map:         _getFootstepTexture(),
             transparent: true,
             opacity:     0,
             depthWrite:  false,
-            depthTest:   false,   // Bug #1: z-fighting önle
+            depthTest:   false,
             side:        THREE.DoubleSide,
         });
         return new THREE.Mesh(geo, mat);
@@ -186,12 +161,10 @@ const ARRenderer = (function() {
 
     function _spawnFootstep(parent, x, z, angleDeg, groundY, duration) {
         const mesh = _acquireFootstepMesh();
-        // Bug #1: groundY (=0) + 0.02m — zeminde, 1cm yerine 2cm kalkık (z-fighting önlemek için yeterli)
+        // groundY = 0 (local-floor), +0.02m z-fighting önleme
         mesh.position.set(x, groundY + 0.02, z);
-
-        // A-Frame / Three.js: parmak ucunun ileriyi göstermesi için
+        // Parmak ucu ileriyi gösterecek şekilde rotasyon
         mesh.rotation.set(-Math.PI / 2, 0, Math.PI - THREE.MathUtils.degToRad(angleDeg));
-
         parent.add(mesh);
         _holoFootstepObjs.push(mesh);
 
@@ -203,8 +176,8 @@ const ARRenderer = (function() {
     }
 
     function _scheduleFootsteps(parsedPath, parent, groundY, originOffset) {
-        const STEP_INTERVAL_M  = 0.45;
-        const SIDE_OFFSET_M    = 0.17;
+        const STEP_INTERVAL_M   = 0.45;
+        const SIDE_OFFSET_M     = 0.17;
         const DELAY_PER_STEP_MS = 340;
         const STEP_DURATION_MS  = 2600;
 
@@ -255,17 +228,19 @@ const ARRenderer = (function() {
 
     /* ════════════════════════════════════════════════════
        RIBBON (ŞERİT) GEOMETRİSİ
+       UV.x: 0 = sol kenar, 1 = sağ kenar
+       UV.y: arc-length bazlı, TILE_LEN metre başına 1 tam döngü
     ════════════════════════════════════════════════════ */
 
     function _buildRibbonGeo(points, width) {
-        const geo  = new THREE.BufferGeometry();
+        const geo     = new THREE.BufferGeometry();
         const verts   = [];
         const uvs     = [];
         const indices = [];
         const hw = width / 2;
         const N  = points.length;
 
-        // Arc-length bazlı UV'ler (animasyon hızını uzunluktan bağımsız tutar)
+        // Arc-length hesapla
         let runLen = 0;
         const arcLens = [0];
         for (let i = 1; i < N; i++) {
@@ -274,9 +249,8 @@ const ARRenderer = (function() {
         }
         const totalLen = runLen > 0 ? runLen : 1;
 
-        // Bug #2: Her ok tile'ı ~0.6m uzunluk kaplayacak şekilde tekrar sayısı ayarla
-        const TILE_LEN = 0.6;  // Metre cinsinden tek ok tile yüksekliği
-        const uvRepeat = totalLen / TILE_LEN;
+        // 1.0m başına 1 chevron tile (Google Maps tarzı aralık)
+        const TILE_LEN = 1.0;
 
         for (let i = 0; i < N; i++) {
             const pt   = points[i];
@@ -288,14 +262,14 @@ const ARRenderer = (function() {
 
             const perp = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(hw);
 
-            // UV: X = genişlik (0=sol, 1=sağ), Y = uzunluk boyunca tekrar
-            const t = (arcLens[i] / totalLen) * uvRepeat;
+            // UV.y: arcLen / TILE_LEN → her 1m'de 1 tam chevron tekrarı
+            const t = arcLens[i] / TILE_LEN;
 
             verts.push(
                 pt.x - perp.x, pt.y, pt.z - perp.z,  // sol kenar
                 pt.x + perp.x, pt.y, pt.z + perp.z   // sağ kenar
             );
-            // Sol vertex: uv(0, t), Sağ vertex: uv(1, t)
+            // Sol: UV(0, t), Sağ: UV(1, t)
             uvs.push(0, t,  1, t);
 
             if (i < N - 1) {
@@ -328,9 +302,7 @@ const ARRenderer = (function() {
             _holoPathMesh = null;
         }
 
-        _holoFootstepObjs.forEach(m => {
-            if (parent) parent.remove(m);
-        });
+        _holoFootstepObjs.forEach(m => { if (parent) parent.remove(m); });
         _holoFootstepObjs = [];
 
         _activeFootstepAnims.forEach(anim => _releaseFootstepMesh(anim.mesh));
@@ -347,7 +319,7 @@ const ARRenderer = (function() {
             return { x: x || 0, y: y || 0, z: z || 0 };
         });
 
-        // Rota başlangıcına yumuşak giriş: kameraya çok yakın bir başlangıç noktası ekle
+        // Başlangıca kameraya yumuşak giriş noktası ekle
         if (parsedPath.length > 0) {
             const first = parsedPath[0];
             if (Math.hypot(first.x, first.z) > 0.5) {
@@ -355,7 +327,7 @@ const ARRenderer = (function() {
             }
         }
 
-        // Bug #1: groundY her zaman 0 (local-floor). Y = 0.01m (1cm) üstte — z-fighting'i önler
+        // groundY = 0 (local-floor), ribbon 1cm üstte — z-fighting önleme
         const RIBBON_Y = groundY + 0.01;
 
         const pts = parsedPath.map(p => new THREE.Vector3(
@@ -368,22 +340,18 @@ const ARRenderer = (function() {
         const detail      = Math.max(40, parsedPath.length * 20);
         const curvePoints = curve.getPoints(detail);
 
-        // Geometri
-        const RIBBON_WIDTH = 1.2;
+        const RIBBON_WIDTH = 1.2;  // metre
         const geo = _buildRibbonGeo(curvePoints, RIBBON_WIDTH);
 
-        // Bug #2: Canvas arrow texture ile MeshBasicMaterial
         const tex = _buildArrowTexture();
-
-        // Her ok tile'ı başlangıçta 0 offset — updateUniforms ile kaydırılacak
         tex.offset.set(0, 0);
 
         _holoMaterial = new THREE.MeshBasicMaterial({
             map:         tex,
             transparent: true,
-            opacity:     0.90,
+            opacity:     0.92,
             depthWrite:  false,
-            depthTest:   false,   // Bug #1: z-fighting sıfırla
+            depthTest:   false,
             side:        THREE.DoubleSide,
             blending:    THREE.NormalBlending,
         });
@@ -395,16 +363,15 @@ const ARRenderer = (function() {
     }
 
     /**
-     * updateUniforms: Her frame'de ok texture'ını kaydırır (akan ok animasyonu).
-     * Artık shader uniform yerine texture offset kullanıyoruz.
-     * @param {number} time — performance.now() değeri (ms)
+     * Her frame'de çağrılır.
+     * Chevron texture'ı UV.y- yönünde kaydırır → ok hedef yönünde akar.
+     * @param {number} time — performance.now() (ms)
      */
     function updateUniforms(time) {
         if (_holoMaterial?.map) {
-            // Saniyede ~0.35 tile kaydır (ok akış hızı)
-            const SCROLL_SPEED = 0.35;
+            // 0.45 tile/sn = 0.45 m/sn görsel akış hızı
+            const SCROLL_SPEED = 0.45;
             _holoMaterial.map.offset.y = -(time * 0.001 * SCROLL_SPEED) % 1.0;
-            _holoMaterial.map.needsUpdate = false; // CanvasTexture dışında gereksiz
         }
     }
 
