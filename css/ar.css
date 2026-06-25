@@ -1,8 +1,29 @@
 /* ════════════════════════════════════════════════════
    ar.css — AR HUD, Info Screen, Done Screen
-   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
-   NOT: SOS modal kaldırıldı.
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi v2.0
+   Refactor: Holographic Path, EMA Compass, Hysteresis Turn
 ════════════════════════════════════════════════════ */
+
+/* ── Layer 1 & 2: AR/VR Buton Flaş Engelleyici ──
+   !important zorunlu — A-Frame kendi inline style'ını override eder. */
+.a-enter-vr,
+.a-enter-ar,
+.a-enter-vr-button,
+.a-enter-ar-button,
+[class*="a-enter-vr"],
+[class*="a-enter-ar"],
+.a-orientation-modal,
+.a-modal {
+    display:         none !important;
+    visibility:      hidden !important;
+    pointer-events:  none !important;
+    opacity:         0 !important;
+}
+
+/* ── Pusula (HUD Arrow) Transition Yumuşatma ── */
+#ar-hud-arrow {
+    transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
 
 /* ── A-Frame Sahnesi ── */
 a-scene {
