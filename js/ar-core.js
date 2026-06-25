@@ -80,28 +80,13 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        if (_hitTestSource && scene.frame && _xrRefSpace) {
-            const hits = scene.frame.getHitTestResults(_hitTestSource);
-            if (hits.length > 0) {
-                const pose = hits[0].getPose(_xrRefSpace);
-                if (pose) {
-                    const newGroundY = pose.transform.position.y;
-                    // Sadece makul değişimde güncelle
-                    if (Math.abs(newGroundY - _groundY) < 0.5) {
-                        _groundY = newGroundY;
-                    }
-                }
-            }
-        } else if (camY !== 0) {
-            // Kamera y eksenini fallback olarak zemin seviyesi ayarlarken 
-            // -1.5 metre çok derine inmesine neden oluyordu, bu kısım da yeniden düzenlenecekti, yapıldı.
-            // Fakat webxr 'local-floor' başarılıysa bu kısma girmemeli, test edilecek.
-            _groundY = camY - 1.5; 
-        }
+        // Fix #1 (v2.2): local-floor zemin koordinatı her zaman 0'dır.
+        // Kamera veya hit-test dalgalanmalarının oku havaya kaldırmasını önlemek için sabitliyoruz.
+        _groundY = 0;
     }
 
     function getGroundY() {
-        return _groundY;
+        return 0; // Her zaman 0 döndür
     }
 
     function getDOM() {

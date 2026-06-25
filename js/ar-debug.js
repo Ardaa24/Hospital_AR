@@ -46,7 +46,8 @@ const ARDebug = (function() {
             }
         };
 
-        document.addEventListener('click', _coordCaptureHandler);
+        // Fix #4 (v2.2): A-Frame click olaylarını engeller, bu yüzden capture phase'de pointerdown dinliyoruz.
+        document.addEventListener('pointerdown', _coordCaptureHandler, true);
     }
 
     /**
@@ -58,7 +59,7 @@ const ARDebug = (function() {
             showToast('📍 Koordinat modu KAPALI');
         }
         if (_coordCaptureHandler) {
-            document.removeEventListener('click', _coordCaptureHandler);
+            document.removeEventListener('pointerdown', _coordCaptureHandler, true);
             _coordCaptureHandler = null;
         }
     }

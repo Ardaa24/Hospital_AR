@@ -166,8 +166,8 @@ function _onExitARCallback() {
     document.getElementById('ar-hud-arrow').style.display = 'none';
 
     // Clear Path from Scene directly (Fix #1)
-    const sceneObj = dom.scene().object3D;
-    ARRenderer.clearPath(sceneObj);
+    const arrowsObj = dom.arrows().object3D;
+    ARRenderer.clearPath(arrowsObj);
 
     ARNavigation.reset();
     ARCompass.reset();
@@ -252,8 +252,8 @@ function _drawCurrentLegPath() {
 
     const originOffset = { x: _camPosCache.x, z: _camPosCache.z };
     
-    const sceneObj = dom.scene().object3D;
-    ARRenderer.drawPath(leg, sceneObj, ARCore.getGroundY(), originOffset);
+    const arrowsObj = dom.arrows().object3D;
+    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), originOffset);
 }
 
 /* ════════════════════════════════════════════════════

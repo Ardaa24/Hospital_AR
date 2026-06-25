@@ -69,9 +69,10 @@ const ARCompass = (function() {
         const dot   = forward.x * target.x + forward.z * target.z;
         const cross = forward.x * target.z - forward.z * target.x; 
 
-        // atan2(y, x) -> y=cross, x=dot
-        // Sağ el kuralında -Z ileri, +X sağ'dır.
-        const angleRad = Math.atan2(-cross, dot); 
+        // Fix #3 (v2.2): Sağ el kuralı CSS rotasyonunda tersine işlediği için (-cross) formülü 
+        // sağa/sola dönüşlerde kameranın tersini gösteriyordu. 
+        // Artık cross direkt kullanılarak doğru CW/CCW dönüş elde ediliyor.
+        const angleRad = Math.atan2(cross, dot); 
         return THREE.MathUtils.radToDeg(angleRad);
     }
 

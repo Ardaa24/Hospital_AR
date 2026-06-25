@@ -28,8 +28,10 @@ const ARRenderer = (function() {
         float chevronMask(vec2 uv, float freq, float t, float speed) {
             float u = fract(uv.x * freq - t * speed);
             float vNorm = abs(uv.y - 0.5) * 2.0;
-            float edge = 1.0 - abs(u - (1.0 - vNorm) * 0.42 - 0.5) * 4.2;
-            return clamp(edge, 0.0, 1.0);
+            // Şeklin merkezden uzaklığı
+            float shape = abs(u - (1.0 - vNorm) * 0.42 - 0.5);
+            // Fix #2 (v2.2): Kurumsal ve net görüntü için çok keskin kenar (Anti-aliased crisp edge)
+            return 1.0 - smoothstep(0.10, 0.13, shape);
         }
 
         void main() {
@@ -300,6 +302,16 @@ const ARRenderer = (function() {
             const [x, y, z] = (pt.pos || '').split(' ').map(Number);
             return { x: x || 0, y: y || 0, z: z || 0 };
         });
+
+        // Feature (v2.2): Rota çizmeye biraz ileriden başladığı için, 
+        // başlangıcı kameraya (kullanıcıya) çok yakın bir noktadan (-0.2m) başlatıyoruz.
+        if (parsedPath.length > 0) {
+            const first = parsedPath[0];
+            // Eğer ilk nokta 0.5 metreden uzaktaysa, önüne yumuşak bir başlangıç ekle
+            if (Math.hypot(first.x, first.z) > 0.5) {
+                parsedPath.unshift({ x: 0, y: 0, z: -0.2 });
+            }
+        }
 
         const pts = parsedPath.map(p => new THREE.Vector3(
             p.x + originOffset.x, 
