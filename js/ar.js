@@ -254,7 +254,11 @@ function _drawCurrentLegPath() {
     cam.getWorldPosition(_camPosCache);
 
     const originOffset = { x: _camPosCache.x, z: _camPosCache.z };
-    
+
+    // Bug #3 Fix: originOffset'i AppState'e yaz — tick içindeki mesafe
+    // hesabı da aynı referansı kullansın (null kalmaması için kritik).
+    AppState.arOriginOffset = originOffset;
+
     const arrowsObj = dom.arrows().object3D;
     ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), originOffset);
 }
@@ -309,7 +313,9 @@ function _tick(time) {
         // drawPath'e giden originOffset ilk enter-ar'da veya nextLeg'de belirleniyor.
         // Bunu AppState.arOriginOffset içinde tutmak mantıklı. Böylece tick içinde de kullanabilirim.
         
-        if(!AppState.arOriginOffset) AppState.arOriginOffset = { x:0, z:0 };
+        // Bug #3 Fix: arOriginOffset artık _drawCurrentLegPath'te garantili set
+        // ediliyor. Null kalma durumuna karşı güvenli fallback korunuyor.
+        if (!AppState.arOriginOffset) AppState.arOriginOffset = { x: 0, z: 0 };
 
         const localCamPos = new THREE.Vector3(
             _camPosCache.x - AppState.arOriginOffset.x,
@@ -384,15 +390,18 @@ function advanceLeg() {
         ARCore.getDOM().scene().exitVR();
         _showInfoScreen(nLeg);
     } else {
-        // Yeni bir ribbon çizileceği zaman, originOffset'i mevcut kameraya göre sıfırla
-        // Böylece oklar yine kullanıcının önünden başlar.
-        ARCore.getDOM().cam().object3D.getWorldPosition(_camPosCache);
-        AppState.arOriginOffset = { x: _camPosCache.x, z: _camPosCache.z };
-
-        _drawCurrentLegPath();
+        // Bug #3 Fix: Yeni bir ribbon çizilmeden önce 300ms bekle.
+        // Bu, WebXR kamera pozisyonunun yeni bölüme göre stabilize olmasını
+        // sağlar ve originOffset hatasını önler.
         _updateHUDInfo();
         _updateArrivedBtn();
         ARNavigation.reset();
+
+        setTimeout(() => {
+            if (!AppState.arActive) return;
+            // originOffset burada _drawCurrentLegPath içinde yenilenecek
+            _drawCurrentLegPath();
+        }, 300);
     }
 }
 
@@ -435,6 +444,33 @@ function exitARToRoutes() {
     ARCore.getDOM().infoScreen().classList.remove('visible');
     renderList();
     showScreen('s-routes');
+}
+
+/* ════════════════════════════════════════════════════
+   GLOBAL WRAPPERS (HTML onclick bağlantıları)
+   Bug #3 Fix: index.html'deki onclick="onArrived()" ve
+   onclick="onInfoContinue()" global scope'da tanımlı olmalı.
+════════════════════════════════════════════════════ */
+
+/**
+ * onArrived — "Sonraki Bölüm" / "Hedefe Vardım" butonu.
+ * index.html: <button onclick="onArrived()">.
+ */
+function onArrived() {
+    advanceLeg();
+}
+
+/**
+ * onInfoContinue — Bilgi Ekranı "Devam Et" butonu.
+ * index.html: <button onclick="onInfoContinue()">.
+ * _showInfoScreen() içinde #btn-info-next.onclick da set ediliyor;
+ * bu wrapper HTML inline handler ile uyumu sağlar.
+ */
+function onInfoContinue() {
+    const nextBtn = document.getElementById('btn-info-next');
+    if (nextBtn) {
+        nextBtn.click();
+    }
 }
 
 /* ════════════════════════════════════════════════════

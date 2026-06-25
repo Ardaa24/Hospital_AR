@@ -1,73 +1,101 @@
 /**
  * js/ar-renderer.js
  * AR Navigasyon Three.js Renderer (Ribbon ve Footstep Görselleri)
+ * v2.3 — Bug #1: Ground Y fix | Bug #2: Google Maps tarzı solid arrow texture
  */
 
 'use strict';
 
 const ARRenderer = (function() {
-    /* ════════════════════════════════════════════════════
-       GLSL SHADER KAYNAK KODLARI
-    ════════════════════════════════════════════════════ */
-
-    const HOLO_VERT = /* glsl */`
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `;
-
-    const HOLO_FRAG = /* glsl */`
-        uniform float uTime;
-        uniform vec3  uColor;
-        uniform float uSpeed;
-        uniform float uOpacity;
-        varying vec2  vUv;
-
-        float chevronMask(vec2 uv, float freq, float t, float speed) {
-            float u = fract(uv.x * freq - t * speed);
-            float vNorm = (uv.y - 0.5) * 2.0;
-            
-            // Okun tepe ve taban sınırları (tam üçgen)
-            float uFront = 0.80 - abs(vNorm) * 0.55;
-            float uBack = 0.35;
-            
-            float frontMask = smoothstep(uFront + 0.015, uFront - 0.015, u);
-            float backMask = smoothstep(uBack - 0.015, uBack + 0.015, u);
-            
-            // Yol kenarlarında boşluk bırakmak için yan sınır maskesi
-            float sideMask = smoothstep(0.76, 0.74, abs(vNorm));
-            
-            return frontMask * backMask * sideMask;
-        }
- 
-        void main() {
-            float edgeFade = 1.0 - pow(abs(vUv.y * 2.0 - 1.0), 1.8);
-            float arrow = chevronMask(vUv, 3.0, uTime, uSpeed);
-            float pulse = 0.88 + 0.12 * sin(uTime * 2.2);
-            
-            // Mavi yol rengi ile solid beyaz üçgen renginin karıştırılması
-            vec3 finalColor = mix(uColor, vec3(1.0, 1.0, 1.0), arrow);
-            
-            // Üçgen kısımları daha opak, yol tabanı daha saydam
-            float alpha = (edgeFade * 0.35 + arrow * 0.65) * pulse * uOpacity;
-            
-            gl_FragColor = vec4(finalColor, alpha);
-        }
-    `;
 
     /* ════════════════════════════════════════════════════
        STATE VE HAVUZLAR
     ════════════════════════════════════════════════════ */
-    let _footstepTexture = null;
-    const _footstepMeshPool = [];
+    let _footstepTexture   = null;
+    let _arrowTexture      = null;       // Bug #2: Canvas arrow texture
+    const _footstepMeshPool    = [];
     const _activeFootstepAnims = [];
-    let _footstepSpawnTimers = [];
+    let _footstepSpawnTimers   = [];
 
-    let _holoPathMesh = null;
-    let _holoUniforms = null;
+    let _holoPathMesh    = null;
+    let _holoMaterial    = null;
     let _holoFootstepObjs = [];
+
+    /* ════════════════════════════════════════════════════
+       BUG #2 — CANVAS ARROW TEXTURE
+       Google Maps tarzı: solid üçgen uç + dikdörtgen gövde
+       Her "tile" 1 ok birimi (üçgen + gövde).
+       Animasyon: texture.offset.x ile UV scroll.
+    ════════════════════════════════════════════════════ */
+
+    /**
+     * 256×512 px canvas'a Google Maps benzeri ok tile çizer.
+     * Tile yapısı (Y ekseni yukarı, UV space):
+     *   [0.0 – 0.35] : ok ucu (solid izokeles üçgen)
+     *   [0.35 – 0.80]: ok gövdesi (dikdörtgen)
+     *   [0.80 – 1.0] : boşluk (oklar arası)
+     * X ekseni: ribbon genişliği boyunca 0→1
+     */
+    function _buildArrowTexture() {
+        if (_arrowTexture) return _arrowTexture;
+
+        const W  = 256;   // Genişlik (ribbon X)
+        const H  = 512;   // Yükseklik (ribbon Z / UV scroll yönü)
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // Arka plan — tamamen saydam
+        ctx.clearRect(0, 0, W, H);
+
+        // ── Renk Paleti ──
+        const ARROW_COLOR  = 'rgba(255, 255, 255, 0.92)';  // Solid beyaz ok
+        const BODY_COLOR   = 'rgba(0, 122, 255, 0.55)';    // Mavi şeffaf gövde
+
+        // ── Geometri Sabitleri ──
+        const TIP_H   = Math.round(H * 0.28);   // Üçgen yüksekliği (tile'ın %28'i)
+        const BODY_H  = Math.round(H * 0.42);   // Gövde yüksekliği
+        const GAP_H   = H - TIP_H - BODY_H;     // Oklar arası boşluk
+
+        const MARGIN  = Math.round(W * 0.10);   // Yanlarda boşluk (px)
+        const BODY_W  = W - MARGIN * 2;
+
+        // ── Gövde (dikdörtgen) ──
+        // UV Y=0 → canvas alt, Y=1 → canvas üst (Three.js UV convention)
+        // Ama biz canvas'a yukarıdan aşağıya çiziyoruz:
+        //   - İlk GAP_H px: boşluk
+        //   - Sonra TIP_H px: üçgen
+        //   - Sonra BODY_H px: gövde
+
+        const tipTop    = GAP_H;               // Üçgenin canvas üst kenarı (px)
+        const bodyTop   = GAP_H + TIP_H;       // Gövdenin canvas üst kenarı (px)
+
+        // Gövde — mavi dikdörtgen
+        ctx.fillStyle = BODY_COLOR;
+        ctx.fillRect(MARGIN, bodyTop, BODY_W, BODY_H);
+
+        // Üçgen — solid beyaz (tam izokeles)
+        ctx.fillStyle = ARROW_COLOR;
+        ctx.beginPath();
+        ctx.moveTo(W / 2, tipTop);                   // Tepe nokta (orta üst)
+        ctx.lineTo(MARGIN, bodyTop);                  // Sol alt
+        ctx.lineTo(W - MARGIN, bodyTop);              // Sağ alt
+        ctx.closePath();
+        ctx.fill();
+
+        // Üçgen üzerine gövde rengini hafifçe bindirme (görsel bütünlük)
+        // (isteğe bağlı — atlıyoruz, solid üçgen yeterli)
+
+        _arrowTexture = new THREE.CanvasTexture(canvas);
+        _arrowTexture.wrapS = THREE.RepeatWrapping;
+        _arrowTexture.wrapT = THREE.RepeatWrapping;
+        // Tek bir tile, yatayda 1 tekrar, uzunlukta dinamik tekrar
+        _arrowTexture.repeat.set(1, 1);
+        _arrowTexture.needsUpdate = true;
+        return _arrowTexture;
+    }
 
     /* ════════════════════════════════════════════════════
        AYAK İZİ (FOOTSTEP)
@@ -78,7 +106,7 @@ const ARRenderer = (function() {
 
         const size = 128;
         const canvas = document.createElement('canvas');
-        canvas.width = size;
+        canvas.width  = size;
         canvas.height = size * 2;
         const ctx = canvas.getContext('2d');
 
@@ -94,9 +122,9 @@ const ARRenderer = (function() {
         const toes = [
             { x: 38, y: 70, rx: 11, ry: 13 },
             { x: 52, y: 59, rx: 10, ry: 12 },
-            { x: 66, y: 57, rx: 9, ry: 11 },
-            { x: 78, y: 63, rx: 8, ry: 10 },
-            { x: 88, y: 72, rx: 7, ry: 9 },
+            { x: 66, y: 57, rx: 9,  ry: 11 },
+            { x: 78, y: 63, rx: 8,  ry: 10 },
+            { x: 88, y: 72, rx: 7,  ry: 9  },
         ];
         toes.forEach(t => {
             ctx.beginPath(); ctx.ellipse(t.x, t.y, t.rx, t.ry, 0, 0, Math.PI * 2); ctx.fill();
@@ -115,11 +143,12 @@ const ARRenderer = (function() {
         }
         const geo = new THREE.PlaneGeometry(0.18, 0.32);
         const mat = new THREE.MeshBasicMaterial({
-            map: _getFootstepTexture(),
+            map:        _getFootstepTexture(),
             transparent: true,
-            opacity: 0,
-            depthWrite: false,
-            side: THREE.DoubleSide,
+            opacity:     0,
+            depthWrite:  false,
+            depthTest:   false,   // Bug #1: z-fighting önle
+            side:        THREE.DoubleSide,
         });
         return new THREE.Mesh(geo, mat);
     }
@@ -139,9 +168,9 @@ const ARRenderer = (function() {
             const progress = Math.min((now - anim.startTime) / anim.duration, 1);
 
             let opacity;
-            if (progress < 0.15) opacity = progress / 0.15;
+            if (progress < 0.15)      opacity = progress / 0.15;
             else if (progress < 0.70) opacity = 1.0;
-            else opacity = 1.0 - (progress - 0.70) / 0.30;
+            else                      opacity = 1.0 - (progress - 0.70) / 0.30;
 
             anim.mesh.material.opacity = Math.max(0, opacity);
 
@@ -157,11 +186,12 @@ const ARRenderer = (function() {
 
     function _spawnFootstep(parent, x, z, angleDeg, groundY, duration) {
         const mesh = _acquireFootstepMesh();
-        mesh.position.set(x, groundY + 0.03, z);
-        
-        // A-Frame ve Three.js rotasyon kuralına göre parmak ucunun ileriyi göstermesi için:
+        // Bug #1: groundY (=0) + 0.02m — zeminde, 1cm yerine 2cm kalkık (z-fighting önlemek için yeterli)
+        mesh.position.set(x, groundY + 0.02, z);
+
+        // A-Frame / Three.js: parmak ucunun ileriyi göstermesi için
         mesh.rotation.set(-Math.PI / 2, 0, Math.PI - THREE.MathUtils.degToRad(angleDeg));
-        
+
         parent.add(mesh);
         _holoFootstepObjs.push(mesh);
 
@@ -173,12 +203,12 @@ const ARRenderer = (function() {
     }
 
     function _scheduleFootsteps(parsedPath, parent, groundY, originOffset) {
-        const STEP_INTERVAL_M = 0.45;
-        const SIDE_OFFSET_M = 0.17;
+        const STEP_INTERVAL_M  = 0.45;
+        const SIDE_OFFSET_M    = 0.17;
         const DELAY_PER_STEP_MS = 340;
-        const STEP_DURATION_MS = 2600;
+        const STEP_DURATION_MS  = 2600;
 
-        let delay = 0;
+        let delay  = 0;
         let isLeft = true;
 
         for (let i = 1; i < parsedPath.length; i++) {
@@ -196,13 +226,12 @@ const ARRenderer = (function() {
             let dist = 0;
             while (dist < segLen) {
                 const ratio = dist / segLen;
-                // Fix #1: Apply originOffset
                 const px = (a.x + dx * ratio) + originOffset.x;
                 const pz = (a.z + dz * ratio) + originOffset.z;
-                
-                const side = isLeft ? -1 : 1;
+
+                const side  = isLeft ? -1 : 1;
                 const perpX = -uz * SIDE_OFFSET_M * side;
-                const perpZ = ux * SIDE_OFFSET_M * side;
+                const perpZ =  ux * SIDE_OFFSET_M * side;
 
                 (function capture(sx, sz, ang, d) {
                     const timerId = setTimeout(() => {
@@ -212,7 +241,7 @@ const ARRenderer = (function() {
                     _footstepSpawnTimers.push(timerId);
                 })(px + perpX, pz + perpZ, angleDeg, delay);
 
-                dist += STEP_INTERVAL_M;
+                dist  += STEP_INTERVAL_M;
                 delay += DELAY_PER_STEP_MS;
                 isLeft = !isLeft;
             }
@@ -229,14 +258,14 @@ const ARRenderer = (function() {
     ════════════════════════════════════════════════════ */
 
     function _buildRibbonGeo(points, width) {
-        const geo = new THREE.BufferGeometry();
-        const verts = [];
-        const uvs = [];
+        const geo  = new THREE.BufferGeometry();
+        const verts   = [];
+        const uvs     = [];
         const indices = [];
         const hw = width / 2;
-        const N = points.length;
+        const N  = points.length;
 
-        // Fix #2: Arc-length bazlı UV'ler
+        // Arc-length bazlı UV'ler (animasyon hızını uzunluktan bağımsız tutar)
         let runLen = 0;
         const arcLens = [0];
         for (let i = 1; i < N; i++) {
@@ -245,8 +274,12 @@ const ARRenderer = (function() {
         }
         const totalLen = runLen > 0 ? runLen : 1;
 
+        // Bug #2: Her ok tile'ı ~0.6m uzunluk kaplayacak şekilde tekrar sayısı ayarla
+        const TILE_LEN = 0.6;  // Metre cinsinden tek ok tile yüksekliği
+        const uvRepeat = totalLen / TILE_LEN;
+
         for (let i = 0; i < N; i++) {
-            const pt = points[i];
+            const pt   = points[i];
             const next = points[Math.min(i + 1, N - 1)];
 
             const dir = new THREE.Vector3().subVectors(next, pt);
@@ -254,26 +287,25 @@ const ARRenderer = (function() {
             dir.normalize();
 
             const perp = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(hw);
-            
-            const t = arcLens[i] / totalLen;
-            const uvScale = totalLen; // Uzunluğa göre tekrar sayısını ayarla
+
+            // UV: X = genişlik (0=sol, 1=sağ), Y = uzunluk boyunca tekrar
+            const t = (arcLens[i] / totalLen) * uvRepeat;
 
             verts.push(
-                pt.x - perp.x, pt.y, pt.z - perp.z,  /* sol */
-                pt.x + perp.x, pt.y, pt.z + perp.z   /* sağ */
+                pt.x - perp.x, pt.y, pt.z - perp.z,  // sol kenar
+                pt.x + perp.x, pt.y, pt.z + perp.z   // sağ kenar
             );
-            
-            // X ekseni boyunca uzunluk, Y ekseni boyunca en 0-1
-            uvs.push(t * uvScale, 0, t * uvScale, 1);
+            // Sol vertex: uv(0, t), Sağ vertex: uv(1, t)
+            uvs.push(0, t,  1, t);
 
             if (i < N - 1) {
                 const b = i * 2;
-                indices.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+                indices.push(b, b + 1, b + 2,  b + 1, b + 3, b + 2);
             }
         }
 
         geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
         geo.setIndex(indices);
         geo.computeVertexNormals();
         return geo;
@@ -289,15 +321,15 @@ const ARRenderer = (function() {
         if (_holoPathMesh && parent) {
             parent.remove(_holoPathMesh);
             _holoPathMesh.geometry.dispose();
-            _holoPathMesh.material.dispose();
+            if (_holoMaterial) {
+                _holoMaterial.dispose();
+                _holoMaterial = null;
+            }
             _holoPathMesh = null;
         }
-        _holoUniforms = null;
 
         _holoFootstepObjs.forEach(m => {
             if (parent) parent.remove(m);
-            // Havuzdaki mesh'leri yok etmiyoruz, release ediyoruz ama scene'den çıkardığımız için dispose gerekebilir.
-            // Pool mekanizması kullanıyorum, sadece active olanları durduracağım.
         });
         _holoFootstepObjs = [];
 
@@ -315,55 +347,64 @@ const ARRenderer = (function() {
             return { x: x || 0, y: y || 0, z: z || 0 };
         });
 
-        // Feature (v2.2): Rota çizmeye biraz ileriden başladığı için, 
-        // başlangıcı kameraya (kullanıcıya) çok yakın bir noktadan (-0.2m) başlatıyoruz.
+        // Rota başlangıcına yumuşak giriş: kameraya çok yakın bir başlangıç noktası ekle
         if (parsedPath.length > 0) {
             const first = parsedPath[0];
-            // Eğer ilk nokta 0.5 metreden uzaktaysa, önüne yumuşak bir başlangıç ekle
             if (Math.hypot(first.x, first.z) > 0.5) {
                 parsedPath.unshift({ x: 0, y: 0, z: -0.2 });
             }
         }
 
+        // Bug #1: groundY her zaman 0 (local-floor). Y = 0.01m (1cm) üstte — z-fighting'i önler
+        const RIBBON_Y = groundY + 0.01;
+
         const pts = parsedPath.map(p => new THREE.Vector3(
-            p.x + originOffset.x, 
-            groundY + 0.02, 
+            p.x + originOffset.x,
+            RIBBON_Y,
             p.z + originOffset.z
         ));
-        const curve = new THREE.CatmullRomCurve3(pts);
-        const detail = Math.max(40, parsedPath.length * 20);
+
+        const curve       = new THREE.CatmullRomCurve3(pts);
+        const detail      = Math.max(40, parsedPath.length * 20);
         const curvePoints = curve.getPoints(detail);
 
         // Geometri
         const RIBBON_WIDTH = 1.2;
         const geo = _buildRibbonGeo(curvePoints, RIBBON_WIDTH);
 
-        _holoUniforms = {
-            uTime: { value: 0 },
-            uColor: { value: new THREE.Color(0x0A7AFF) },
-            uSpeed: { value: 0.70 },
-            uOpacity: { value: 0.72 }, // Fix #2: Daha katı zemin (0.38 -> 0.72)
-        };
+        // Bug #2: Canvas arrow texture ile MeshBasicMaterial
+        const tex = _buildArrowTexture();
 
-        const mat = new THREE.ShaderMaterial({
-            uniforms: _holoUniforms,
-            vertexShader: HOLO_VERT,
-            fragmentShader: HOLO_FRAG,
+        // Her ok tile'ı başlangıçta 0 offset — updateUniforms ile kaydırılacak
+        tex.offset.set(0, 0);
+
+        _holoMaterial = new THREE.MeshBasicMaterial({
+            map:         tex,
             transparent: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            blending: THREE.NormalBlending,
+            opacity:     0.90,
+            depthWrite:  false,
+            depthTest:   false,   // Bug #1: z-fighting sıfırla
+            side:        THREE.DoubleSide,
+            blending:    THREE.NormalBlending,
         });
 
-        _holoPathMesh = new THREE.Mesh(geo, mat);
+        _holoPathMesh = new THREE.Mesh(geo, _holoMaterial);
         parent.add(_holoPathMesh);
 
         _scheduleFootsteps(parsedPath, parent, groundY, originOffset);
     }
 
+    /**
+     * updateUniforms: Her frame'de ok texture'ını kaydırır (akan ok animasyonu).
+     * Artık shader uniform yerine texture offset kullanıyoruz.
+     * @param {number} time — performance.now() değeri (ms)
+     */
     function updateUniforms(time) {
-        if (_holoUniforms) {
-            _holoUniforms.uTime.value = time * 0.001;
+        if (_holoMaterial?.map) {
+            // Saniyede ~0.35 tile kaydır (ok akış hızı)
+            const SCROLL_SPEED = 0.35;
+            _holoMaterial.map.offset.y = -(time * 0.001 * SCROLL_SPEED) % 1.0;
+            _holoMaterial.map.needsUpdate = false; // CanvasTexture dışında gereksiz
         }
     }
 
