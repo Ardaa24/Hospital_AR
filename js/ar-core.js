@@ -85,7 +85,7 @@ const ARCore = (function() {
                 const results = frame.getHitTestResults(_hitTestSource);
                 if (results.length > 0) {
                     const pose = results[0].getPose(_xrRefSpace);
-                    if (pose) {
+                    if (pose && pose.transform.position.y < camY - 0.4) {
                         _groundY = pose.transform.position.y;
                         try { _hitTestSource.cancel(); } catch (_) {}
                         _hitTestSource = null;
