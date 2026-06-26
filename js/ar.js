@@ -291,15 +291,7 @@ function _tick(time) {
     ARRenderer.updateAnimations();
 
     const arrowsObj = dom.arrows().object3D;
-    
-    const estimatedUserHeight = 1.6; // metre
-    const floorError = _camPosCache.y - estimatedUserHeight;
-    // Sadece hatırlı sapma varsa düzelt (>2cm), çok büyük sapma varsa yoksay
-    if (Math.abs(floorError) > 0.02 && Math.abs(floorError) < 0.5) {
-        arrowsObj.position.y = -floorError;
-    } else if (Math.abs(floorError) >= 0.5) {
-        arrowsObj.position.y = 0; // Çok fazla sapma — cihaz kalibrasyonu sorunu, dokunma
-    }
+    arrowsObj.position.y = 0; // Her zaman zemin referansı 0'da kalmalı.
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
