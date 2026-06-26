@@ -22,8 +22,7 @@ const ARCore = (function() {
     let _hitTestSource = null;
     let _xrRefSpace = null;
     let _xrViewerSpace = null;
-    //  local-floor zemin koordinatı Y=0
-    let _groundY = 0; 
+    let _groundY = -1.5; 
 
     // Callback event listeners (ar.js tarafından set edilecek)
     let _onEnterCallback = null;
@@ -52,11 +51,14 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local-floor').then(rs => {
+            xrSession.requestReferenceSpace('local').then(rs => {
                 _xrRefSpace = rs;
-            }).catch(() => {
-                // Fallback to local if local-floor is unsupported on this device
-                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
+            });
+            xrSession.requestReferenceSpace('viewer').then(rs => {
+                _xrViewerSpace = rs;
+                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
+                    _hitTestSource = source;
+                }).catch(err => console.log('[AR] Hit-test error:', err));
             });
         }
 
@@ -73,11 +75,28 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // Automatically handled by ARCore in local-floor space. No hit-test required.
+        if (_hitTestSource) {
+            _groundY = camY - 1.5;
+        }
+
+        if (scene.is('ar-mode') && _hitTestSource) {
+            const frame = scene.frame;
+            if (frame) {
+                const results = frame.getHitTestResults(_hitTestSource);
+                if (results.length > 0) {
+                    const pose = results[0].getPose(_xrRefSpace);
+                    if (pose) {
+                        _groundY = pose.transform.position.y;
+                        try { _hitTestSource.cancel(); } catch (_) {}
+                        _hitTestSource = null;
+                    }
+                }
+            }
+        }
     }
 
     function getGroundY() {
-        return 0; // In local-floor, Y=0 is always the physical ground.
+        return _groundY;
     }
 
     
