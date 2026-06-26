@@ -76,10 +76,9 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // Fallback ground if hit test hasn't found it yet.
-        // In 'local' space, the camera starts at Y=0.
-        // The real floor is roughly 1.5m below the camera.
-        if (_groundY === 0) {
+        // As long as we haven't found the real floor via hit-test,
+        // use a dynamic fallback: 1.5m below the current camera height.
+        if (_hitTestSource) {
              _groundY = camY - 1.5;
         }
 
@@ -89,7 +88,7 @@ const ARCore = (function() {
                 const results = frame.getHitTestResults(_hitTestSource);
                 if (results.length > 0) {
                     const pose = results[0].getPose(_xrRefSpace);
-                    if (pose && pose.transform.position.y < camY - 0.5) {
+                    if (pose) {
                         _groundY = pose.transform.position.y;
                         try { _hitTestSource.cancel(); } catch (_) {}
                         _hitTestSource = null;

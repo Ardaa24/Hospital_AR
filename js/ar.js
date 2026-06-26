@@ -142,11 +142,10 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    ARCore.waitForStableCamera(4000).then(stableCamPos => {
-        if (!AppState.arActive) return;
-        AppState.arOriginOffset = { x: stableCamPos.x, z: stableCamPos.z };
-        _drawCurrentLegPath();
-    });
+    // In local space, starting a new XR session automatically places the origin (0,0,0)
+    // at the user's current physical position. We don't need any offset!
+    AppState.arOriginOffset = { x: 0, z: 0 };
+    _drawCurrentLegPath();
 
     _lastTickTime = 0;
     AppState.tickRafId = requestAnimationFrame(_tick);
