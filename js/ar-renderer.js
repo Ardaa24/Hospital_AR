@@ -163,10 +163,9 @@ const ARRenderer = (function() {
     }
 
     function _spawnFootstep(parent, x, z, angleDeg, groundY, duration) {
+        // Mesh oluştur (Zemin hizasında)
         const mesh = _acquireFootstepMesh();
-        // groundY = 0 (local-floor), +0.02m z-fighting önleme
-        mesh.position.set(x, groundY + 0.02, z);
-        // Parmak ucu ileriyi gösterecek şekilde rotasyon
+        mesh.position.set(x, groundY + 0.015, z);
         mesh.rotation.set(-Math.PI / 2, 0, Math.PI - THREE.MathUtils.degToRad(angleDeg));
         parent.add(mesh);
         _holoFootstepObjs.push(mesh);
@@ -333,12 +332,9 @@ const ARRenderer = (function() {
             }
         }
 
-        // groundY = 0 (local-floor), ribbon 1cm üstte — z-fighting önleme
-        const RIBBON_Y = groundY + 0.01;
-
         const pts = parsedPath.map(p => new THREE.Vector3(
             p.x + originOffset.x,
-            RIBBON_Y,
+            0, // Yükseklik mesh position.y ile kontrol edilecek
             p.z + originOffset.z
         ));
 
@@ -363,6 +359,7 @@ const ARRenderer = (function() {
         });
 
         _holoPathMesh = new THREE.Mesh(geo, _holoMaterial);
+        _holoPathMesh.position.y = groundY + 0.01;
         parent.add(_holoPathMesh);
 
         _scheduleFootsteps(parsedPath, parent, groundY, originOffset);
@@ -381,10 +378,20 @@ const ARRenderer = (function() {
         }
     }
 
+    function updateGroundY(newGroundY) {
+        if (_holoPathMesh) {
+            _holoPathMesh.position.y = newGroundY + 0.01;
+        }
+        _holoFootstepObjs.forEach(m => {
+            m.position.y = newGroundY + 0.015;
+        });
+    }
+
     return {
         clearPath,
         drawPath,
         updateAnimations,
-        updateUniforms
+        updateUniforms,
+        updateGroundY
     };
 })();

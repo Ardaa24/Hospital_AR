@@ -50,14 +50,10 @@ const ARCore = (function() {
     function _handleEnterAR() {
         const scene = _dom.scene();
 
-        // XR Reference Space and Hit Test Source setup
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local-floor').then(rs => {
+            xrSession.requestReferenceSpace('local').then(rs => {
                 _xrRefSpace = rs;
-            }).catch(() => {
-                // Fallback to local
-                xrSession.requestReferenceSpace('local').then(rs => { _xrRefSpace = rs; });
             });
             xrSession.requestReferenceSpace('viewer').then(rs => {
                 _xrViewerSpace = rs;
@@ -80,9 +76,27 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // local-floor: zemin Y=0. Kamera Y'si kullanıcı boyu (~1.6m).
-        // Ribbon ve ayak izleri için zemin her zaman 0.
-        _groundY = 0;
+        // Fallback ground if hit test hasn't found it yet.
+        // In 'local' space, the camera starts at Y=0.
+        // The real floor is roughly 1.5m below the camera.
+        if (_groundY === 0) {
+             _groundY = camY - 1.5;
+        }
+
+        if (scene.is('ar-mode') && _hitTestSource) {
+            const frame = scene.frame;
+            if (frame) {
+                const results = frame.getHitTestResults(_hitTestSource);
+                if (results.length > 0) {
+                    const pose = results[0].getPose(_xrRefSpace);
+                    if (pose && pose.transform.position.y < camY - 0.5) {
+                        _groundY = pose.transform.position.y;
+                        try { _hitTestSource.cancel(); } catch (_) {}
+                        _hitTestSource = null;
+                    }
+                }
+            }
+        }
     }
 
     function getGroundY() {
@@ -90,44 +104,37 @@ const ARCore = (function() {
     }
 
     
-    async function waitForStableCamera(timeoutMs = 4000) {
+    async function waitForStableCamera(timeoutMs = 1500) {
         return new Promise((resolve) => {
-            const MIN_CAMERA_Y = 0.3; // XR tracking aktif eşiği
-            const SAMPLE_FRAMES = 3;  // Tracking aktifken kaç frame topla
+            const SAMPLE_FRAMES = 3;  
             const startTime = performance.now();
             const samples = [];
+            
+            // Wait 500ms for tracking to kick in, then take 3 frames
+            setTimeout(() => {
+                let rafId;
+                const check = () => {
+                    const cam = _dom.cam().object3D;
+                    const pos = new THREE.Vector3();
+                    cam.getWorldPosition(pos);
 
-            let rafId;
-            const check = () => {
-                const cam = _dom.cam().object3D;
-                const pos = new THREE.Vector3();
-                cam.getWorldPosition(pos);
-
-                if (pos.y >= MIN_CAMERA_Y) {
-                    // XR tracking aktif — bu frame'i say
                     samples.push({ x: pos.x, y: pos.y, z: pos.z });
                     if (samples.length >= SAMPLE_FRAMES) {
-                        // SAMPLE_FRAMES frame'in ortalamasını al
                         const avgX = samples.reduce((s, r) => s + r.x, 0) / samples.length;
                         const avgZ = samples.reduce((s, r) => s + r.z, 0) / samples.length;
                         const avgY = samples.reduce((s, r) => s + r.y, 0) / samples.length;
                         resolve(new THREE.Vector3(avgX, avgY, avgZ));
                         return;
                     }
-                }
 
-                if (performance.now() - startTime > timeoutMs) {
-                    // Timeout: kameradan anlık pozisyon oku (samples boş olsa bile)
-                    const cam2 = _dom.cam().object3D;
-                    const fallback = new THREE.Vector3();
-                    cam2.getWorldPosition(fallback);
-                    resolve(fallback);
-                    return;
-                }
-
+                    if (performance.now() - startTime > timeoutMs) {
+                        resolve(pos);
+                        return;
+                    }
+                    rafId = requestAnimationFrame(check);
+                };
                 rafId = requestAnimationFrame(check);
-            };
-            rafId = requestAnimationFrame(check);
+            }, 500);
         });
     }
 
