@@ -113,7 +113,10 @@ const ARRenderer = (function() {
     function _acquireFootstepMesh() {
         if (_footstepMeshPool.length > 0) {
             const m = _footstepMeshPool.pop();
+            // Bug 4 Fix: Yeniden kullanırken eski parent'tan detach et
+            if (m.parent) m.parent.remove(m);
             m.visible = true;
+            m.material.opacity = 0;
             return m;
         }
         const geo = new THREE.PlaneGeometry(0.18, 0.32);
@@ -302,7 +305,10 @@ const ARRenderer = (function() {
             _holoPathMesh = null;
         }
 
-        _holoFootstepObjs.forEach(m => { if (parent) parent.remove(m); });
+        // Bug 4 Fix: Mesh'leri parent'tan temizle
+        _holoFootstepObjs.forEach(m => {
+            if (m.parent) m.parent.remove(m);
+        });
         _holoFootstepObjs = [];
 
         _activeFootstepAnims.forEach(anim => _releaseFootstepMesh(anim.mesh));

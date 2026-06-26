@@ -22,7 +22,7 @@ const ARCore = (function() {
     let _hitTestSource = null;
     let _xrRefSpace = null;
     let _xrViewerSpace = null;
-    //  local-floor zemin koordinatı Y=0'dır.
+    //  local-floor zemin koordinatı Y=0
     let _groundY = 0; 
 
     // Callback event listeners (ar.js tarafından set edilecek)
@@ -80,13 +80,46 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // Fix #1 (v2.2): local-floor zemin koordinatı her zaman 0'dır.
-        // Kamera veya hit-test dalgalanmalarının oku havaya kaldırmasını önlemek için sabitliyoruz.
         _groundY = 0;
     }
 
     function getGroundY() {
-        return 0; // Her zaman 0 döndür
+        return _groundY; 
+    }
+
+    // Feature: Kamera stabilizasyon kontrolü
+    async function waitForStableCamera(timeoutMs = 3000) {
+        return new Promise((resolve) => {
+            const readings = [];
+            const STABLE_THRESHOLD = 0.02; // 2cm altında hareket = stabil
+            const MIN_READINGS = 8;
+            
+            let rafId;
+            const check = () => {
+                const cam = _dom.cam().object3D;
+                const pos = new THREE.Vector3();
+                cam.getWorldPosition(pos);
+                readings.push({ x: pos.x, z: pos.z, t: performance.now() });
+                
+                if (readings.length >= MIN_READINGS) {
+                    const last5 = readings.slice(-5);
+                    const dx = Math.max(...last5.map(r => r.x)) - Math.min(...last5.map(r => r.x));
+                    const dz = Math.max(...last5.map(r => r.z)) - Math.min(...last5.map(r => r.z));
+                    if (dx < STABLE_THRESHOLD && dz < STABLE_THRESHOLD) {
+                        resolve(pos);
+                        return;
+                    }
+                }
+                
+                if (readings.length > 0 && performance.now() - readings[0].t > timeoutMs) {
+                    // Timeout — son okumayı kullan
+                    resolve(pos);
+                    return;
+                }
+                rafId = requestAnimationFrame(check);
+            };
+            rafId = requestAnimationFrame(check);
+        });
     }
 
     function getDOM() {
@@ -97,6 +130,7 @@ const ARCore = (function() {
         init,
         updateGroundY,
         getGroundY,
-        getDOM
+        getDOM,
+        waitForStableCamera
     };
 })();

@@ -142,11 +142,15 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    // Fix #1: Kamera sabitlendikten sonra offset hesaplamak için 1.5s bekle
+    // Feature: Kamera stabilizasyon kontrolü
     setTimeout(() => {
         if (!AppState.arActive) return;
-        _drawCurrentLegPath();
-    }, 1500);
+        ARCore.waitForStableCamera(3000).then(stableCamPos => {
+            if (!AppState.arActive) return;
+            AppState.arOriginOffset = { x: stableCamPos.x, z: stableCamPos.z };
+            _drawCurrentLegPath();
+        });
+    }, 500);
 
     _lastTickTime = 0;
     AppState.tickRafId = requestAnimationFrame(_tick);
@@ -168,7 +172,7 @@ function _onExitARCallback() {
     dom.turnOverlay().classList.remove('visible');
     document.getElementById('ar-hud-arrow').style.display = 'none';
 
-    // Clear Path from Scene directly (Fix #1)
+    // Clear Path from Scene directly
     const arrowsObj = dom.arrows().object3D;
     ARRenderer.clearPath(arrowsObj);
 
@@ -251,16 +255,15 @@ function _drawCurrentLegPath() {
 
     const dom = ARCore.getDOM();
     const cam = dom.cam().object3D;
-    cam.getWorldPosition(_camPosCache);
-
-    const originOffset = { x: _camPosCache.x, z: _camPosCache.z };
-
-    // Bug #3 Fix: originOffset'i AppState'e yaz — tick içindeki mesafe
-    // hesabı da aynı referansı kullansın (null kalmaması için kritik).
-    AppState.arOriginOffset = originOffset;
+    
+    // Zaten arOriginOffset varsa onu kullan, yoksa fallback olarak mevcudu al
+    if (!AppState.arOriginOffset) {
+        cam.getWorldPosition(_camPosCache);
+        AppState.arOriginOffset = { x: _camPosCache.x, z: _camPosCache.z };
+    }
 
     const arrowsObj = dom.arrows().object3D;
-    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), originOffset);
+    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), AppState.arOriginOffset);
 }
 
 /* ════════════════════════════════════════════════════
@@ -377,31 +380,30 @@ function _showInfoScreen(leg) {
 function advanceLeg() {
     vibrate([30, 50, 30]);
     AppState.legIdx++;
+    
+    //  Her yeni bacak için AR oturumunu kapatıp yeniden açarak kamerayı sıfırla.
+    cancelAnimationFrame(AppState.tickRafId);
+    ARCore.getDOM().scene().exitVR();
+
     if (AppState.legIdx >= AppState.arLegs.length) {
-        cancelAnimationFrame(AppState.tickRafId);
-        ARCore.getDOM().scene().exitVR();
         _showDone();
         return;
     }
 
     const nLeg = AppState.arLegs[AppState.legIdx];
     if (nLeg.type === 'info') {
-        cancelAnimationFrame(AppState.tickRafId);
-        ARCore.getDOM().scene().exitVR();
         _showInfoScreen(nLeg);
     } else {
-        // Bug #3 Fix: Yeni bir ribbon çizilmeden önce 300ms bekle.
-        // Bu, WebXR kamera pozisyonunun yeni bölüme göre stabilize olmasını
-        // sağlar ve originOffset hatasını önler.
         _updateHUDInfo();
         _updateArrivedBtn();
         ARNavigation.reset();
+        
+        // Eski originOffset'i temizle, yeni girişle birlikte tekrar hesaplanacak
+        AppState.arOriginOffset = null;
 
         setTimeout(() => {
-            if (!AppState.arActive) return;
-            // originOffset burada _drawCurrentLegPath içinde yenilenecek
-            _drawCurrentLegPath();
-        }, 300);
+            _enterAR();
+        }, 500); // Kamera sıfırlanması için kısa bekleme
     }
 }
 
@@ -446,26 +448,10 @@ function exitARToRoutes() {
     showScreen('s-routes');
 }
 
-/* ════════════════════════════════════════════════════
-   GLOBAL WRAPPERS (HTML onclick bağlantıları)
-   Bug #3 Fix: index.html'deki onclick="onArrived()" ve
-   onclick="onInfoContinue()" global scope'da tanımlı olmalı.
-════════════════════════════════════════════════════ */
-
-/**
- * onArrived — "Sonraki Bölüm" / "Hedefe Vardım" butonu.
- * index.html: <button onclick="onArrived()">.
- */
 function onArrived() {
     advanceLeg();
 }
 
-/**
- * onInfoContinue — Bilgi Ekranı "Devam Et" butonu.
- * index.html: <button onclick="onInfoContinue()">.
- * _showInfoScreen() içinde #btn-info-next.onclick da set ediliyor;
- * bu wrapper HTML inline handler ile uyumu sağlar.
- */
 function onInfoContinue() {
     const nextBtn = document.getElementById('btn-info-next');
     if (nextBtn) {
