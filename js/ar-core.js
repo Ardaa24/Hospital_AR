@@ -80,42 +80,57 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
+        // local-floor: zemin Y=0. Kamera Y'si kullanıcı boyu (~1.6m).
+        // Ribbon ve ayak izleri için zemin her zaman 0.
         _groundY = 0;
     }
 
     function getGroundY() {
-        return _groundY; 
+        return _groundY;
     }
 
-    // Feature: Kamera stabilizasyon kontrolü
-    async function waitForStableCamera(timeoutMs = 3000) {
+    // Kamera stabilizasyon kontrolü (Bug 3 + Bug 2 Fix)
+    // local-floor + A-Frame: enter-vr sonrası kamera önce (0, ~0, 0) veya (0, 1.6, 0)
+    // A-Frame default pozisyonunda bekliyor. XR tracking devralınca kamera Y
+    // gerçek kullanıcı boyuna yükseliç (>0.3m). 
+    // Fix: XR tracking aktif olduktan sonra 3 frame oku, ortalamasını al.
+    // Kullanıcı hareket ediyor olabilir (ikinci ayağın başında yürüyor),
+    // bu yüzden XZ stabilite BEKLEME — sadece tracking var mı kontrol et.
+    async function waitForStableCamera(timeoutMs = 4000) {
         return new Promise((resolve) => {
-            const readings = [];
-            const STABLE_THRESHOLD = 0.02; // 2cm altında hareket = stabil
-            const MIN_READINGS = 8;
-            
+            const MIN_CAMERA_Y = 0.3; // XR tracking aktif eşiği
+            const SAMPLE_FRAMES = 3;  // Tracking aktifken kaç frame topla
+            const startTime = performance.now();
+            const samples = [];
+
             let rafId;
             const check = () => {
                 const cam = _dom.cam().object3D;
                 const pos = new THREE.Vector3();
                 cam.getWorldPosition(pos);
-                readings.push({ x: pos.x, z: pos.z, t: performance.now() });
-                
-                if (readings.length >= MIN_READINGS) {
-                    const last5 = readings.slice(-5);
-                    const dx = Math.max(...last5.map(r => r.x)) - Math.min(...last5.map(r => r.x));
-                    const dz = Math.max(...last5.map(r => r.z)) - Math.min(...last5.map(r => r.z));
-                    if (dx < STABLE_THRESHOLD && dz < STABLE_THRESHOLD) {
-                        resolve(pos);
+
+                if (pos.y >= MIN_CAMERA_Y) {
+                    // XR tracking aktif — bu frame'i say
+                    samples.push({ x: pos.x, y: pos.y, z: pos.z });
+                    if (samples.length >= SAMPLE_FRAMES) {
+                        // SAMPLE_FRAMES frame'in ortalamasını al
+                        const avgX = samples.reduce((s, r) => s + r.x, 0) / samples.length;
+                        const avgZ = samples.reduce((s, r) => s + r.z, 0) / samples.length;
+                        const avgY = samples.reduce((s, r) => s + r.y, 0) / samples.length;
+                        resolve(new THREE.Vector3(avgX, avgY, avgZ));
                         return;
                     }
                 }
-                
-                if (readings.length > 0 && performance.now() - readings[0].t > timeoutMs) {
-                    // Timeout — son okumayı kullan
-                    resolve(pos);
+
+                if (performance.now() - startTime > timeoutMs) {
+                    // Timeout: kameradan anlık pozisyon oku (samples boş olsa bile)
+                    const cam2 = _dom.cam().object3D;
+                    const fallback = new THREE.Vector3();
+                    cam2.getWorldPosition(fallback);
+                    resolve(fallback);
                     return;
                 }
+
                 rafId = requestAnimationFrame(check);
             };
             rafId = requestAnimationFrame(check);

@@ -142,15 +142,15 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    // Feature: Kamera stabilizasyon kontrolü
-    setTimeout(() => {
+    // Bug 3 + Bug 2 Fix: Kamera stabilizasyon kontrolü.
+    // waitForStableCamera XR tracking aktif olana kadar (Y>0.3m) bekler,
+    // sonra 3 frame ortalamasıyla kesin origin alır.
+    // Dış wrapper timeout'u kaldırıldı — zaten iç mekanizma yönetiyor.
+    ARCore.waitForStableCamera(4000).then(stableCamPos => {
         if (!AppState.arActive) return;
-        ARCore.waitForStableCamera(3000).then(stableCamPos => {
-            if (!AppState.arActive) return;
-            AppState.arOriginOffset = { x: stableCamPos.x, z: stableCamPos.z };
-            _drawCurrentLegPath();
-        });
-    }, 500);
+        AppState.arOriginOffset = { x: stableCamPos.x, z: stableCamPos.z };
+        _drawCurrentLegPath();
+    });
 
     _lastTickTime = 0;
     AppState.tickRafId = requestAnimationFrame(_tick);
@@ -289,6 +289,32 @@ function _tick(time) {
     // Animasyonlar
     ARRenderer.updateUniforms(time);
     ARRenderer.updateAnimations();
+
+    // Bug 1 Fix: Zemine oturma — local-floor kalibrasyonu.
+    // Kamera Y ≈ 1.6m (gerçek kullanıcı boyu, local-floor origin'i zemin).
+    // ar-arrows entity kendi local pozisyonunda Y=0'da duruyor,
+    // ama A-Frame parent sahne kökü de Y=0 olduğundan ribbon
+    // dünya Y=0.01'de çiziliyor — teorik olarak zemin seviyesi.
+    // Eğer ribbon hava da görünüyorsa ARCore'un zemin tahmini
+    // hatırlıyorsa (<5cm sapma) — bunu adresliyoruz:
+    // ar-arrows'un Y'sini her frame kamera Y'den hesaplanan
+    // gerçek zemin offset'iyle güncelle.
+    const arrowsObj = dom.arrows().object3D;
+    // Zemin Y = kamera Y - tahmini kullanıcı boyu.
+    // local-floor'da zemin Y=0 olmalı, kamera Y = kullanıcı boyu.
+    // Ribbon zaten groundY=0'da çiziliyor ama ar-arrows entity'sinin
+    // dünya Y'si de 0 — bu senkron. Eğer ARCore zemin tahmini
+    // sapkınsa, kamera Y üzerinden düzelt:
+    // Y_floor_error = camY - expected_cam_height
+    // ar-arrows.position.y = -Y_floor_error
+    const estimatedUserHeight = 1.6; // metre
+    const floorError = _camPosCache.y - estimatedUserHeight;
+    // Sadece hatırlı sapma varsa düzelt (>2cm), çok büyük sapma varsa yoksay
+    if (Math.abs(floorError) > 0.02 && Math.abs(floorError) < 0.5) {
+        arrowsObj.position.y = -floorError;
+    } else if (Math.abs(floorError) >= 0.5) {
+        arrowsObj.position.y = 0; // Çok fazla sapma — cihaz kalibrasyonu sorunu, dokunma
+    }
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
