@@ -142,10 +142,6 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    // Bug 3 + Bug 2 Fix: Kamera stabilizasyon kontrolü.
-    // waitForStableCamera XR tracking aktif olana kadar (Y>0.3m) bekler,
-    // sonra 3 frame ortalamasıyla kesin origin alır.
-    // Dış wrapper timeout'u kaldırıldı — zaten iç mekanizma yönetiyor.
     ARCore.waitForStableCamera(4000).then(stableCamPos => {
         if (!AppState.arActive) return;
         AppState.arOriginOffset = { x: stableCamPos.x, z: stableCamPos.z };
