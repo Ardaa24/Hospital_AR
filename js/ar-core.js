@@ -89,13 +89,7 @@ const ARCore = (function() {
         return _groundY;
     }
 
-    // Kamera stabilizasyon kontrolü (Bug 3 + Bug 2 Fix)
-    // local-floor + A-Frame: enter-vr sonrası kamera önce (0, ~0, 0) veya (0, 1.6, 0)
-    // A-Frame default pozisyonunda bekliyor. XR tracking devralınca kamera Y
-    // gerçek kullanıcı boyuna yükseliç (>0.3m). 
-    // Fix: XR tracking aktif olduktan sonra 3 frame oku, ortalamasını al.
-    // Kullanıcı hareket ediyor olabilir (ikinci ayağın başında yürüyor),
-    // bu yüzden XZ stabilite BEKLEME — sadece tracking var mı kontrol et.
+    
     async function waitForStableCamera(timeoutMs = 4000) {
         return new Promise((resolve) => {
             const MIN_CAMERA_Y = 0.3; // XR tracking aktif eşiği
