@@ -16,6 +16,7 @@ const ARRenderer = (function() {
     const _footstepMeshPool     = [];
     const _activeFootstepAnims  = [];
     let _footstepSpawnTimers    = [];
+    let _footstepWaveTimer      = null;
 
     let _holoPathMesh    = null;
     let _holoMaterial    = null;
@@ -183,47 +184,58 @@ const ARRenderer = (function() {
         const DELAY_PER_STEP_MS = 340;
         const STEP_DURATION_MS  = 2600;
 
-        let delay  = 0;
-        let isLeft = true;
+        function spawnWave() {
+            let delay  = 0;
+            let isLeft = true;
 
-        for (let i = 1; i < parsedPath.length; i++) {
-            const a = parsedPath[i - 1];
-            const b = parsedPath[i];
-            const dx = b.x - a.x;
-            const dz = b.z - a.z;
-            const segLen = Math.hypot(dx, dz);
-            if (segLen < 1e-6) continue;
+            for (let i = 1; i < parsedPath.length; i++) {
+                const a = parsedPath[i - 1];
+                const b = parsedPath[i];
+                const dx = b.x - a.x;
+                const dz = b.z - a.z;
+                const segLen = Math.hypot(dx, dz);
+                if (segLen < 1e-6) continue;
 
-            const angleDeg = THREE.MathUtils.radToDeg(Math.atan2(dx, dz));
-            const ux = dx / segLen;
-            const uz = dz / segLen;
+                const angleDeg = THREE.MathUtils.radToDeg(Math.atan2(dx, dz));
+                const ux = dx / segLen;
+                const uz = dz / segLen;
 
-            let dist = 0;
-            while (dist < segLen) {
-                const ratio = dist / segLen;
-                const px = (a.x + dx * ratio) + originOffset.x;
-                const pz = (a.z + dz * ratio) + originOffset.z;
+                let dist = 0;
+                while (dist < segLen) {
+                    const ratio = dist / segLen;
+                    const px = (a.x + dx * ratio) + originOffset.x;
+                    const pz = (a.z + dz * ratio) + originOffset.z;
 
-                const side  = isLeft ? -1 : 1;
-                const perpX = -uz * SIDE_OFFSET_M * side;
-                const perpZ =  ux * SIDE_OFFSET_M * side;
+                    const side  = isLeft ? -1 : 1;
+                    const perpX = -uz * SIDE_OFFSET_M * side;
+                    const perpZ =  ux * SIDE_OFFSET_M * side;
 
-                (function capture(sx, sz, ang, d) {
-                    const timerId = setTimeout(() => {
-                        if (typeof AppState !== 'undefined' && !AppState.arActive) return;
-                        _spawnFootstep(parent, sx, sz, ang, groundY, STEP_DURATION_MS);
-                    }, d);
-                    _footstepSpawnTimers.push(timerId);
-                })(px + perpX, pz + perpZ, angleDeg, delay);
+                    (function capture(sx, sz, ang, d) {
+                        const timerId = setTimeout(() => {
+                            if (typeof AppState !== 'undefined' && !AppState.arActive) return;
+                            const currentGroundY = typeof ARCore !== 'undefined' ? ARCore.getGroundY() : groundY;
+                            _spawnFootstep(parent, sx, sz, ang, currentGroundY, STEP_DURATION_MS);
+                        }, d);
+                        _footstepSpawnTimers.push(timerId);
+                    })(px + perpX, pz + perpZ, angleDeg, delay);
 
-                dist  += STEP_INTERVAL_M;
-                delay += DELAY_PER_STEP_MS;
-                isLeft = !isLeft;
+                    dist  += STEP_INTERVAL_M;
+                    delay += DELAY_PER_STEP_MS;
+                    isLeft = !isLeft;
+                }
             }
+            return delay;
         }
+
+        const waveDuration = spawnWave();
+        _footstepWaveTimer = setInterval(spawnWave, Math.max(3000, waveDuration + 1000));
     }
 
     function _cancelFootstepTimers() {
+        if (_footstepWaveTimer) {
+            clearInterval(_footstepWaveTimer);
+            _footstepWaveTimer = null;
+        }
         _footstepSpawnTimers.forEach(id => clearTimeout(id));
         _footstepSpawnTimers = [];
     }
@@ -395,3 +407,5 @@ const ARRenderer = (function() {
         updateGroundY
     };
 })();
+
+

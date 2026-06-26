@@ -111,7 +111,7 @@ const ARDebug = (function() {
 
             // HUD elementlerine dokunulursa kopyalama yapma
             const target = e.target;
-            const isHudElement = target.closest('#ar-top-hud, #ar-bottom, #ar-turn, #settings-drawer');
+            const isHudElement = target.closest('#ar-top-hud, #ar-bottom, #ar-turn, #settings-drawer, #ar-done');
             if (isHudElement) return;
 
             captureCurrentPose();

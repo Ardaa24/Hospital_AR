@@ -404,7 +404,21 @@ function advanceLeg() {
 function _showDone() {
     AppState.arActive = false;
     const route = AppState.activeRoute;
-    document.getElementById('done-dest-name').textContent = route.name;
+    document.getElementById('done-route-name').textContent = route.name;
+
+    const headSub = document.getElementById('done-head-sub');
+    if (headSub) {
+        headSub.textContent = route.block ? `${route.block}${route.floor ? ', ' + route.floor : ''}` : 'Navigasyon tamamlandı';
+    }
+
+    const locEl = document.getElementById('done-route-loc');
+    if (locEl) locEl.textContent = route.desc || '';
+
+    const distEl = document.getElementById('done-dist');
+    if (distEl) {
+        const totalDist = AppState.arLegs.reduce((acc, l) => acc + (l.path ? l.path.length : 0), 0);
+        distEl.textContent = `${totalDist}m`;
+    }
 
     if (AppState.arStartTime) {
         const elapsed = Math.round((Date.now() - AppState.arStartTime) / 1000);

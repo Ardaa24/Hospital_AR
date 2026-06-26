@@ -52,14 +52,11 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local').then(rs => {
+            xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
-            });
-            xrSession.requestReferenceSpace('viewer').then(rs => {
-                _xrViewerSpace = rs;
-                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
-                    _hitTestSource = source;
-                }).catch(err => console.log('[AR] Hit-test not supported:', err));
+            }).catch(() => {
+                // Fallback to local if local-floor is unsupported on this device
+                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
             });
         }
 
@@ -76,30 +73,11 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // As long as we haven't found the real floor via hit-test,
-        // use a dynamic fallback: 1.5m below the current camera height.
-        if (_hitTestSource) {
-             _groundY = camY - 1.5;
-        }
-
-        if (scene.is('ar-mode') && _hitTestSource) {
-            const frame = scene.frame;
-            if (frame) {
-                const results = frame.getHitTestResults(_hitTestSource);
-                if (results.length > 0) {
-                    const pose = results[0].getPose(_xrRefSpace);
-                    if (pose) {
-                        _groundY = pose.transform.position.y;
-                        try { _hitTestSource.cancel(); } catch (_) {}
-                        _hitTestSource = null;
-                    }
-                }
-            }
-        }
+        // Automatically handled by ARCore in local-floor space. No hit-test required.
     }
 
     function getGroundY() {
-        return _groundY;
+        return 0; // In local-floor, Y=0 is always the physical ground.
     }
 
     
