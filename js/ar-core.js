@@ -20,6 +20,8 @@ const ARCore = (function() {
     };
 
     let _xrRefSpace = null;
+    let _xrViewerSpace = null;
+    let _hitTestSource = null;
     let _isLocalFloor = false;
     let _groundLocked = false;
     
@@ -54,26 +56,46 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            _isLocalFloor = false;
-            _groundLocked = true;
-            xrSession.requestReferenceSpace('local').then(rs => {
+            xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
-                _groundY = 0; // Local space has camera rig starting at 1.7m, floor is always 0
+            }).catch(() => {
+                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
+            });
+            xrSession.requestReferenceSpace('viewer').then(rs => {
+                _xrViewerSpace = rs;
+                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
+                    _hitTestSource = source;
+                }).catch(err => console.log('[AR] Hit-test error:', err));
             });
         }
         if (_onEnterCallback) _onEnterCallback();
     }
 
     function _handleExitAR() {
+        if (_hitTestSource) {
+            try { _hitTestSource.cancel(); } catch (_) {}
+            _hitTestSource = null;
+        }
         if (_onExitCallback) _onExitCallback();
     }
 
-    /**
-     * Her tick'te cagrilan zemin yuksekligi guncelleyici.
-     * Local uzayda zemin daima 0'dir (A-Frame varsayılan kamera rig zemin koordinatı).
-     */
     function updateGroundY(scene, camY) {
-        _groundY = 0;
+        if (scene.is('ar-mode') && _hitTestSource) {
+            const frame = scene.frame;
+            if (frame) {
+                const results = frame.getHitTestResults(_hitTestSource);
+                if (results.length > 0) {
+                    const pose = results[0].getPose(_xrRefSpace);
+                    if (pose) {
+                        _groundY = pose.transform.position.y;
+                        try { _hitTestSource.cancel(); } catch (_) {}
+                        _hitTestSource = null;
+                    }
+                }
+            }
+        } else if (camY !== 0) {
+            _groundY = camY - 1.5;
+        }
     }
 
     function getGroundY() {
@@ -130,7 +152,7 @@ const ARCore = (function() {
         getDOM,
         waitForStableCamera,
         // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
-        resetGroundLock: () => { _groundLocked = true; _groundY = 0; },
-        isGroundLocked: () => _groundLocked
+        resetGroundLock: () => { _groundY = -EYE_HEIGHT_M; },
+        isGroundLocked: () => false
     };
 })();
