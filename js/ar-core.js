@@ -54,15 +54,11 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local-floor').then(rs => {
+            _isLocalFloor = false;
+            _groundLocked = true;
+            xrSession.requestReferenceSpace('local').then(rs => {
                 _xrRefSpace = rs;
-                _isLocalFloor = true;
-                _groundY = 0;
-                _groundLocked = true;
-            }).catch(() => {
-                _isLocalFloor = false;
-                _groundLocked = false;
-                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
+                _groundY = 0; // Local space has camera rig starting at 1.7m, floor is always 0
             });
         }
         if (_onEnterCallback) _onEnterCallback();
@@ -74,20 +70,10 @@ const ARCore = (function() {
 
     /**
      * Her tick'te cagrilan zemin yuksekligi guncelleyici.
-     * Sadece local-floor desteklenmeyen cihazlarda fallback olarak (local) calisir.
+     * Local uzayda zemin daima 0'dir (A-Frame varsayılan kamera rig zemin koordinatı).
      */
     function updateGroundY(scene, camY) {
-        if (_isLocalFloor) {
-            _groundY = 0;
-            return;
-        }
-
-        if (_groundLocked) return;
-
-        if (camY !== 0 && Math.abs(camY) > 0.01) {
-            _groundY = camY - EYE_HEIGHT_M;
-            _groundLocked = true;
-        }
+        _groundY = 0;
     }
 
     function getGroundY() {
@@ -144,7 +130,7 @@ const ARCore = (function() {
         getDOM,
         waitForStableCamera,
         // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
-        resetGroundLock: () => { _groundLocked = false; _groundY = _isLocalFloor ? 0 : -EYE_HEIGHT_M; },
+        resetGroundLock: () => { _groundLocked = true; _groundY = 0; },
         isGroundLocked: () => _groundLocked
     };
 })();

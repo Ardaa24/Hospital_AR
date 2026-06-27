@@ -178,8 +178,59 @@ const ARRenderer = (function() {
         });
     }
 
-    function _scheduleFootsteps(parsedPath, parent, groundY, originOffset) {
-        // Ayak izleri kaldirildi
+    function _scheduleFootsteps(parsedPath, parent, groundY) {
+        const STEP_INTERVAL_M   = 0.45;
+        const SIDE_OFFSET_M     = 0.17;
+        const DELAY_PER_STEP_MS = 340;
+        const STEP_DURATION_MS  = 2600;
+
+        function spawnWave() {
+            let delay  = 0;
+            let isLeft = true;
+
+            const startPt = parsedPath[0];
+            for (let i = 1; i < parsedPath.length; i++) {
+                const a = parsedPath[i - 1];
+                const b = parsedPath[i];
+                const dx = b.x - a.x;
+                const dz = b.z - a.z;
+                const segLen = Math.hypot(dx, dz);
+                if (segLen < 1e-6) continue;
+
+                const angleDeg = THREE.MathUtils.radToDeg(Math.atan2(dx, dz));
+                const ux = dx / segLen;
+                const uz = dz / segLen;
+
+                let dist = 0;
+                while (dist < segLen) {
+                    const ratio = dist / segLen;
+                    // Rota normalize edildigi için baslangic noktasini cikarmaliyiz
+                    const px = (a.x + dx * ratio) - startPt.x;
+                    const pz = (a.z + dz * ratio) - startPt.z;
+
+                    const side  = isLeft ? -1 : 1;
+                    const perpX = -uz * SIDE_OFFSET_M * side;
+                    const perpZ =  ux * SIDE_OFFSET_M * side;
+
+                    (function capture(sx, sz, ang, d) {
+                        const timerId = setTimeout(() => {
+                            if (typeof AppState !== 'undefined' && !AppState.arActive) return;
+                            const currentGroundY = typeof ARCore !== 'undefined' ? ARCore.getGroundY() : groundY;
+                            _spawnFootstep(parent, sx, sz, ang, currentGroundY, STEP_DURATION_MS);
+                        }, d);
+                        _footstepSpawnTimers.push(timerId);
+                    })(px + perpX, pz + perpZ, angleDeg, delay);
+
+                    dist  += STEP_INTERVAL_M;
+                    delay += DELAY_PER_STEP_MS;
+                    isLeft = !isLeft;
+                }
+            }
+            return delay;
+        }
+
+        const waveDuration = spawnWave();
+        _footstepWaveTimer = setInterval(spawnWave, Math.max(3000, waveDuration + 1000));
     }
 
     function _cancelFootstepTimers() {
@@ -319,7 +370,7 @@ const ARRenderer = (function() {
         _holoPathMesh.position.y = groundY + 0.01;
         parent.add(_holoPathMesh);
 
-        _scheduleFootsteps(parsedPath, parent, groundY, originOffset);
+        _scheduleFootsteps(parsedPath, parent, groundY);
     }
 
     /**
