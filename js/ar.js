@@ -154,24 +154,10 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    // In local space, starting a new XR session automatically places the origin (0,0,0)
-    // at the user's current physical position. We don't need any offset!
-    AppState.arOriginOffset = { x: 0, z: 0 };
-
-    if (AppState.freshEnter) {
-        AppState.freshEnter = false;
-        // Ilk acilista jiroskop ve kamera kalibrasyonu icin 1.5 saniye bekle
-        setTimeout(() => {
-            _drawCurrentLegPath();
-            _lastTickTime = 0;
-            AppState.tickRafId = requestAnimationFrame(_tick);
-        }, 1500);
-    } else {
-        // Zaten AR modundaysak (ikinci bacak) beklemeden aninda ciz
-        _drawCurrentLegPath();
+    _drawCurrentLegPath().then(() => {
         _lastTickTime = 0;
         AppState.tickRafId = requestAnimationFrame(_tick);
-    }
+    });
 }
 
 function _onExitARCallback() {
@@ -267,21 +253,43 @@ function _setArrivedBtnLocked(locked) {
    RENDER & ÇİZİM
 ════════════════════════════════════════════════════ */
 
-function _drawCurrentLegPath() {
+async function _drawCurrentLegPath() {
     const leg = AppState.arLegs[AppState.legIdx];
-    if (!leg?.path) return;
+    if (!leg?.path || leg.path.length < 2) return;
 
     const dom = ARCore.getDOM();
-    const cam = dom.cam().object3D;
     
-    // Zaten arOriginOffset varsa onu kullan, yoksa fallback olarak mevcudu al
-    if (!AppState.arOriginOffset) {
-        cam.getWorldPosition(_camPosCache);
-        AppState.arOriginOffset = { x: _camPosCache.x, z: _camPosCache.z };
-    }
+    // Kullaniciya rotanin cizilmesi icin yone bakmasini soyle
+    showToast("Lütfen ilerleyeceğiniz yöne doğru bakın...");
+    
+    // Kameranin stabil olmasini ve kullanicinin yonunu ayarlamasini bekle
+    const { pos: camPos, rotY: camRotY } = await ARCore.waitForStableCamera(1500);
 
-    const arrowsObj = dom.arrows().object3D;
-    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), AppState.arOriginOffset);
+    // Rotanin ilk parcasinin (segmentinin) yonunu bulalim
+    const [x0, y0, z0] = leg.path[0].pos.split(' ').map(Number);
+    const [x1, y1, z1] = leg.path[1].pos.split(' ').map(Number);
+    const dx = x1 - x0;
+    const dz = z1 - z0;
+    
+    // Haritadaki rotanin mutlak acisi (X-Z duzleminde)
+    const mapAngle = Math.atan2(dx, dz);
+    
+    // Bizim container'i oyle dondurmeliyiz ki, rotanin ilk parcasi
+    // kullanicinin su an baktigi yone (camRotY) hizalansin.
+    // Three.js'de -Z ileriyi gosterir. Duzeltme acisi:
+    const containerRotY = camRotY - mapAngle + Math.PI;
+
+    const arrowsEl = dom.arrows();
+    
+    // Container'i kullanicinin ayakucuna getir
+    arrowsEl.setAttribute('position', `${camPos.x} 0 ${camPos.z}`);
+    
+    // Container'i dondur, boylece rota tam karsidan baslasin
+    arrowsEl.setAttribute('rotation', `0 ${THREE.MathUtils.radToDeg(containerRotY)} 0`);
+
+    // Rotayi 0,0 merkezinden ciz (ARRenderer path'i normalize eder)
+    const arrowsObj = arrowsEl.object3D;
+    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY());
 }
 
 /* ════════════════════════════════════════════════════
@@ -324,15 +332,19 @@ function _tick(time) {
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
 
-    // Pusula 
+    const localCamPos = _camPosCache.clone();
+    arrowsObj.worldToLocal(localCamPos);
+
+    // Pusula (Dünya uzayına çevrilmiş rotayla)
     const arrowEl = document.getElementById('ar-hud-arrow');
-    ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg);
+    ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg, arrowsObj);
 
     let distToTurn = Infinity;
     if (curLeg?.path?.length > 0) {
         const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
-        // Origin offset ile düzeltilmiş hedef pozisyon
-        const fp = { x: fpRaw[0], z: fpRaw[2] };
+        // Hedef pozisyon (Normalized rotanın sonu)
+        const fp = { x: fpRaw[0] - curLeg.path[0].pos.split(' ').map(Number)[0], 
+                     z: fpRaw[2] - curLeg.path[0].pos.split(' ').map(Number)[2] };
     }
     
     // Mesafe ve İlerleme
@@ -340,14 +352,6 @@ function _tick(time) {
     if (curLeg?.path) {
         const totalDist = ARNavigation.calcLegDistance(curLeg.path);
       
-        if (!AppState.arOriginOffset) AppState.arOriginOffset = { x: 0, z: 0 };
-
-        const localCamPos = new THREE.Vector3(
-            _camPosCache.x - AppState.arOriginOffset.x,
-            _camPosCache.y,
-            _camPosCache.z - AppState.arOriginOffset.z
-        );
-
         const covered = ARNavigation.getProgress(localCamPos, curLeg.path);
         remain = Math.max(0, totalDist - covered);
         
@@ -420,9 +424,6 @@ function advanceLeg() {
         _updateArrivedBtn();
         ARNavigation.reset();
         
-        // Eski originOffset'i temizle, yeni girişle birlikte tekrar hesaplanacak
-        AppState.arOriginOffset = null;
-
         setTimeout(() => {
             _enterAR();
         }, 500); // Kamera sıfırlanması için kısa bekleme

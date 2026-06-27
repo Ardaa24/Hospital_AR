@@ -89,18 +89,29 @@ const ARCompass = (function() {
      * HUD pusula okunu günceller ve pürüzsüzleştirir.
      * @param {HTMLElement} arrowEl 
      * @param {THREE.Vector3} camPos 
-     * @param {THREE.Object3D} cam 
+     * @param {THREE.Object3D} camObj 
      * @param {Object} curLeg 
      */
-    function updateHUD(arrowEl, camPos, cam, curLeg) {
-        if (!arrowEl || !curLeg?.path || curLeg.path.length < 2) return;
-
-        const parsedPath = curLeg.path.map(pt => {
+    function updateHUD(arrowEl, camPos, camObj, curLeg, arrowsObj) {
+        if (!arrowEl || !curLeg?.path) return;
+        
+        const rawPath = curLeg.path.map(pt => {
             const [x, y, z] = pt.pos.split(' ').map(Number);
-            return { x: x || 0, y: y || 0, z: z || 0 };
+            return { x: x||0, y: y||0, z: z||0 };
+        });
+        
+        const startPt = rawPath[0];
+        
+        // Rotayı önce lokale çevir, sonra container'ın rotation/position'una göre dünya uzayına al
+        const parsedPath = rawPath.map(p => {
+            const localPt = new THREE.Vector3(p.x - startPt.x, p.y - startPt.y, p.z - startPt.z);
+            if (arrowsObj) {
+                arrowsObj.localToWorld(localPt);
+            }
+            return { x: localPt.x, y: localPt.y, z: localPt.z };
         });
 
-        const rawRelAngle = computePathBearingDeg(camPos, cam, parsedPath);
+        const rawRelAngle = computePathBearingDeg(camPos, camObj, parsedPath);
         
         // Pürüzsüzleştirme uygula
         _smoothedCompassDeg = _lerpAngleDeg(_smoothedCompassDeg, rawRelAngle, COMPASS_EMA_ALPHA);
