@@ -51,8 +51,10 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local').then(rs => {
+            xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
+            }).catch(() => {
+                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
             });
             xrSession.requestReferenceSpace('viewer').then(rs => {
                 _xrViewerSpace = rs;
@@ -75,23 +77,21 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        if (_hitTestSource) {
-            _groundY = camY - 1.5;
-        }
-
         if (scene.is('ar-mode') && _hitTestSource) {
             const frame = scene.frame;
             if (frame) {
                 const results = frame.getHitTestResults(_hitTestSource);
                 if (results.length > 0) {
                     const pose = results[0].getPose(_xrRefSpace);
-                    if (pose && pose.transform.position.y < camY - 0.4) {
+                    if (pose) {
                         _groundY = pose.transform.position.y;
                         try { _hitTestSource.cancel(); } catch (_) {}
                         _hitTestSource = null;
                     }
                 }
             }
+        } else if (camY !== 0) {
+            _groundY = camY - 1.5;
         }
     }
 
