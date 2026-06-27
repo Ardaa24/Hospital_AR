@@ -172,7 +172,7 @@
 
 <a-scene id="ar-scene"
          xr-mode-ui="enabled: false"
-         webxr="optionalFeatures: dom-overlay, hit-test; overlayElement: #ar-overlay"
+         webxr="referenceSpaceType: local; optionalFeatures: dom-overlay; overlayElement: #ar-overlay"
          device-orientation-permission-ui="enabled: false"
          renderer="antialias: true; alpha: true; colorManagement: true"
          background="transparent: true"
@@ -180,7 +180,7 @@
          aria-hidden="true">
     <a-entity id="ar-cam"
               camera
-              position="0 1.6 0"
+              position="0 1.7 0"
               look-controls="pointerLockEnabled: false">
     </a-entity>
     <!-- Holographic path & footstep container -->
@@ -394,7 +394,7 @@
             </li>
             <li>
                 <i data-lucide="footprints" width="18" height="18"></i>
-                <span>Lütfen kamerayı açtıktan sonra etrafınıza dikkat ederek yürüyün.</span>
+                <span>Lütfen navigasyonu ayakta başlatın ve dikkat ederek yürüyün.</span>
             </li>
         </ul>
 

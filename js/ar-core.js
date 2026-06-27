@@ -49,24 +49,15 @@ const ARCore = (function() {
     }
 
     function _handleEnterAR() {
-        _isGroundLocked = false;
+        _isGroundLocked = true;
         const scene = _dom.scene();
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local-floor').then(rs => {
+            _isLocalFloor = false;
+            xrSession.requestReferenceSpace('local').then(rs => {
                 _xrRefSpace = rs;
-                _isLocalFloor = true;
-                _groundY = 0; // In local-floor, floor is always exactly 0
-            }).catch(() => {
-                _isLocalFloor = false;
-                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
-            });
-            xrSession.requestReferenceSpace('viewer').then(rs => {
-                _xrViewerSpace = rs;
-                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
-                    _hitTestSource = source;
-                }).catch(err => console.log('[AR] Hit-test error:', err));
+                _groundY = 0; // Local uzayda kamera rig'i 1.6m offsetli baslar, zemin daima 0'dir
             });
         }
 
@@ -74,42 +65,11 @@ const ARCore = (function() {
     }
 
     function _handleExitAR() {
-        if (_hitTestSource) {
-            try { _hitTestSource.cancel(); } catch (_) {}
-            _hitTestSource = null;
-        }
-        
         if (_onExitCallback) _onExitCallback();
     }
 
     function updateGroundY(scene, camY) {
-        // Lazer (hit-test) aktifse daima gercek fiziksel zemini ara (yukseklik kaymasini/drifti onler)
-        if (scene.is('ar-mode') && _hitTestSource) {
-            const frame = scene.frame;
-            if (frame) {
-                const results = frame.getHitTestResults(_hitTestSource);
-                if (results.length > 0) {
-                    const pose = results[0].getPose(_xrRefSpace);
-                    // Kamera hizasindan en az 40cm asagisini zemin kabul et (duvar kilidini onler)
-                    if (pose && pose.transform.position.y < camY - 0.4) {
-                        _groundY = pose.transform.position.y;
-                        try { _hitTestSource.cancel(); } catch (_) {}
-                        _hitTestSource = null;
-                        _isGroundLocked = true;
-                        return;
-                    }
-                }
-            }
-        }
-        
-        // Lazer henuz kilitlenmediyse veya desteklenmiyorsa gecici fallback kullan
-        if (!_isGroundLocked) {
-            if (_isLocalFloor) {
-                _groundY = 0; // Local-floor icin gecici varsayilan zemin
-            } else {
-                _groundY = camY - 1.5; // Göz hizasi icin gecici varsayilan zemin
-            }
-        }
+        _groundY = 0; // Daima sabit 0.0 (A-Frame default kamera rig zemin koordinati)
     }
 
     function getGroundY() {
