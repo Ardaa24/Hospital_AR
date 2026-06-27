@@ -101,6 +101,13 @@ function _enterAR() {
     }
 
     try {
+        // Eger zaten AR modundaysak (ikinci bacakta oldugu gibi), enterVR event'i tetiklenmez.
+        // Bu yuzden callback'i dogrudan kendimiz cagirarak yeni rotayi aninda cizdiriyoruz.
+        if (scene.is('ar-mode')) {
+            _onEnterARCallback();
+            return;
+        }
+
         const p = scene.enterAR();
         if (p?.catch) {
             p.catch(err => {
