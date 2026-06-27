@@ -293,6 +293,11 @@ function _tick(time) {
         ARRenderer.updateGroundY(newGroundY);
     }
 
+    const debugEl = document.getElementById('ar-debug-heights');
+    if (debugEl) {
+        debugEl.textContent = `camY: ${_camPosCache.y.toFixed(2)} | groundY: ${newGroundY.toFixed(2)} | L-Floor: ${ARCore.isLocalFloor()} | Locked: ${ARCore.isGroundLocked()}`;
+    }
+
     // Animasyonlar
     ARRenderer.updateUniforms(time);
     ARRenderer.updateAnimations();

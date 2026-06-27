@@ -162,6 +162,8 @@ const ARCore = (function() {
         updateGroundY,
         getGroundY,
         getDOM,
-        waitForStableCamera
+        waitForStableCamera,
+        isLocalFloor: () => _isLocalFloor,
+        isGroundLocked: () => _isGroundLocked
     };
 })();
