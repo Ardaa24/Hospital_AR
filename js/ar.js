@@ -335,8 +335,9 @@ function _tick(time) {
     }
 
     if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {
+        // Bitis ekranina gecerken AR'dan cikmiyoruz, overlay uzerinden gosteriyoruz
         cancelAnimationFrame(AppState.tickRafId);
-        dom.scene().exitVR();
+        // dom.scene().exitVR();
         _showDone();
         return;
     }
@@ -350,8 +351,9 @@ function _tick(time) {
 
 function _showInfoScreen(leg) {
     const dom = ARCore.getDOM();
-    dom.scene().classList.remove('ar-active');
-    dom.overlay().classList.remove('ar-active');
+    if (!dom.overlay().contains(dom.infoScreen())) {
+        dom.overlay().appendChild(dom.infoScreen());
+    }
 
     document.getElementById('ar-info-title').textContent = leg.title || 'Bilgi';
     document.getElementById('ar-info-desc').innerHTML    = leg.desc  || '';
@@ -375,9 +377,7 @@ function advanceLeg() {
     vibrate([30, 50, 30]);
     AppState.legIdx++;
     
-    //  Her yeni bacak için AR oturumunu kapatıp yeniden açarak kamerayı sıfırla.
-    cancelAnimationFrame(AppState.tickRafId);
-    ARCore.getDOM().scene().exitVR();
+    // Ikinci bacakta WebXR buglarini onlemek icin exitVR KALDIRILDI.
 
     if (AppState.legIdx >= AppState.arLegs.length) {
         _showDone();
@@ -402,6 +402,10 @@ function advanceLeg() {
 }
 
 function _showDone() {
+    const dom = ARCore.getDOM();
+    if (!dom.overlay().contains(dom.doneScreen())) {
+        dom.overlay().appendChild(dom.doneScreen());
+    }
     AppState.arActive = false;
     const route = AppState.activeRoute;
     document.getElementById('done-route-name').textContent = route.name;
@@ -444,16 +448,15 @@ function _showDone() {
 
 function returnToRoutes() {
     ARCore.getDOM().doneScreen().classList.remove('visible');
-    renderList();
-    showScreen('s-routes');
+    try { ARCore.getDOM().scene().exitVR(); } catch(e) {}
+    window.location.reload();
 }
 
 function exitARToRoutes() {
     cancelAnimationFrame(AppState.tickRafId);
-    ARCore.getDOM().scene().exitVR();
+    try { ARCore.getDOM().scene().exitVR(); } catch(e) {}
     ARCore.getDOM().infoScreen().classList.remove('visible');
-    renderList();
-    showScreen('s-routes');
+    window.location.reload();
 }
 
 function onArrived() {
