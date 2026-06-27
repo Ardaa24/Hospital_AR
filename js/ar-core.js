@@ -21,6 +21,8 @@ const ARCore = (function() {
 
     let _hitTestSource = null;
     let _xrRefSpace = null;
+    let _isLocalFloor = false;
+    let _isGroundLocked = false;
     let _xrViewerSpace = null;
     let _groundY = -1.5; 
 
@@ -47,13 +49,17 @@ const ARCore = (function() {
     }
 
     function _handleEnterAR() {
+        _isGroundLocked = false;
         const scene = _dom.scene();
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
             xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
+                _isLocalFloor = true;
+                _groundY = 0; // In local-floor, floor is always exactly 0
             }).catch(() => {
+                _isLocalFloor = false;
                 xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
             });
             xrSession.requestReferenceSpace('viewer').then(rs => {
@@ -77,20 +83,33 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
+        // Cihaz native local-floor destekliyorsa, zemin daima kusursuz sekilde 0'dir.
+        if (_isLocalFloor) {
+            _groundY = 0;
+            return;
+        }
+
+        // Desteklemiyorsa (local uzaya dustuyse) lazer ile zemini arariz
         if (scene.is('ar-mode') && _hitTestSource) {
             const frame = scene.frame;
             if (frame) {
                 const results = frame.getHitTestResults(_hitTestSource);
                 if (results.length > 0) {
                     const pose = results[0].getPose(_xrRefSpace);
-                    if (pose) {
+                    // Lazer duvara carpip kilitlenmesin diye kamera hizasindan en az 40cm asagisini kabul et
+                    if (pose && pose.transform.position.y < camY - 0.4) {
                         _groundY = pose.transform.position.y;
                         try { _hitTestSource.cancel(); } catch (_) {}
                         _hitTestSource = null;
+                        _isGroundLocked = true;
+                        return; // Gercek zemin bulundu ve kilitlendi
                     }
                 }
             }
-        } else if (camY !== 0) {
+        }
+        
+        // Eger lazer henuz zemini bulamadiysa, kamera yuksekliginden 1.5m asagisini zemin varsay (fallback)
+        if (!_isGroundLocked) {
             _groundY = camY - 1.5;
         }
     }
