@@ -56,46 +56,21 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            xrSession.requestReferenceSpace('local-floor').then(rs => {
+            _isLocalFloor = false;
+            xrSession.requestReferenceSpace('local').then(rs => {
                 _xrRefSpace = rs;
-            }).catch(() => {
-                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
-            });
-            xrSession.requestReferenceSpace('viewer').then(rs => {
-                _xrViewerSpace = rs;
-                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
-                    _hitTestSource = source;
-                }).catch(err => console.log('[AR] Hit-test error:', err));
+                _groundY = -1.65;
             });
         }
         if (_onEnterCallback) _onEnterCallback();
     }
 
     function _handleExitAR() {
-        if (_hitTestSource) {
-            try { _hitTestSource.cancel(); } catch (_) {}
-            _hitTestSource = null;
-        }
         if (_onExitCallback) _onExitCallback();
     }
 
     function updateGroundY(scene, camY) {
-        if (scene.is('ar-mode') && _hitTestSource) {
-            const frame = scene.frame;
-            if (frame) {
-                const results = frame.getHitTestResults(_hitTestSource);
-                if (results.length > 0) {
-                    const pose = results[0].getPose(_xrRefSpace);
-                    if (pose) {
-                        _groundY = pose.transform.position.y;
-                        try { _hitTestSource.cancel(); } catch (_) {}
-                        _hitTestSource = null;
-                    }
-                }
-            }
-        } else if (camY !== 0) {
-            _groundY = camY - 1.5;
-        }
+        _groundY = -1.65;
     }
 
     function getGroundY() {
@@ -152,7 +127,7 @@ const ARCore = (function() {
         getDOM,
         waitForStableCamera,
         // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
-        resetGroundLock: () => { _groundY = -EYE_HEIGHT_M; },
+        resetGroundLock: () => { _groundY = -1.65; },
         isGroundLocked: () => false
     };
 })();
