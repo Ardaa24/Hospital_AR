@@ -83,34 +83,32 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        // Cihaz native local-floor destekliyorsa, zemin daima kusursuz sekilde 0'dir.
-        if (_isLocalFloor) {
-            _groundY = 0;
-            return;
-        }
-
-        // Desteklemiyorsa (local uzaya dustuyse) lazer ile zemini arariz
+        // Lazer (hit-test) aktifse daima gercek fiziksel zemini ara (yukseklik kaymasini/drifti onler)
         if (scene.is('ar-mode') && _hitTestSource) {
             const frame = scene.frame;
             if (frame) {
                 const results = frame.getHitTestResults(_hitTestSource);
                 if (results.length > 0) {
                     const pose = results[0].getPose(_xrRefSpace);
-                    // Lazer duvara carpip kilitlenmesin diye kamera hizasindan en az 40cm asagisini kabul et
+                    // Kamera hizasindan en az 40cm asagisini zemin kabul et (duvar kilidini onler)
                     if (pose && pose.transform.position.y < camY - 0.4) {
                         _groundY = pose.transform.position.y;
                         try { _hitTestSource.cancel(); } catch (_) {}
                         _hitTestSource = null;
                         _isGroundLocked = true;
-                        return; // Gercek zemin bulundu ve kilitlendi
+                        return;
                     }
                 }
             }
         }
         
-        // Eger lazer henuz zemini bulamadiysa, kamera yuksekliginden 1.5m asagisini zemin varsay (fallback)
+        // Lazer henuz kilitlenmediyse veya desteklenmiyorsa gecici fallback kullan
         if (!_isGroundLocked) {
-            _groundY = camY - 1.5;
+            if (_isLocalFloor) {
+                _groundY = 0; // Local-floor icin gecici varsayilan zemin
+            } else {
+                _groundY = camY - 1.5; // Göz hizasi icin gecici varsayilan zemin
+            }
         }
     }
 
@@ -163,6 +161,7 @@ const ARCore = (function() {
         getGroundY,
         getDOM,
         waitForStableCamera,
+        resetGroundLock: () => { _isGroundLocked = false; },
         isLocalFloor: () => _isLocalFloor,
         isGroundLocked: () => _isGroundLocked
     };

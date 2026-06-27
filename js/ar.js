@@ -71,6 +71,7 @@ function _doStartAR(route) {
     AppState.arLegs      = route.legs || [];
     AppState.legIdx      = 0;
     AppState.arActive    = false;
+    AppState.freshEnter   = true;
     AppState.arStartTime = null;
     
     // Toplam mesafe hesaplama (ARNavigation)
@@ -104,6 +105,7 @@ function _enterAR() {
         // Eger zaten AR modundaysak (ikinci bacakta oldugu gibi), enterVR event'i tetiklenmez.
         // Bu yuzden callback'i dogrudan kendimiz cagirarak yeni rotayi aninda cizdiriyoruz.
         if (scene.is('ar-mode')) {
+            AppState.freshEnter = false; // Zaten AR modundayiz
             _onEnterARCallback();
             return;
         }
@@ -149,13 +151,29 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
+    // Yeni bacak baslarken zemin kilidini sifirla ki tekrar taze tarama yapsin
+    if (typeof ARCore !== 'undefined' && ARCore.resetGroundLock) {
+        ARCore.resetGroundLock();
+    }
+
     // In local space, starting a new XR session automatically places the origin (0,0,0)
     // at the user's current physical position. We don't need any offset!
     AppState.arOriginOffset = { x: 0, z: 0 };
-    _drawCurrentLegPath();
 
-    _lastTickTime = 0;
-    AppState.tickRafId = requestAnimationFrame(_tick);
+    if (AppState.freshEnter) {
+        AppState.freshEnter = false;
+        // Ilk acilista jiroskop ve kamera kalibrasyonu icin 1.5 saniye bekle
+        setTimeout(() => {
+            _drawCurrentLegPath();
+            _lastTickTime = 0;
+            AppState.tickRafId = requestAnimationFrame(_tick);
+        }, 1500);
+    } else {
+        // Zaten AR modundaysak (ikinci bacak) beklemeden aninda ciz
+        _drawCurrentLegPath();
+        _lastTickTime = 0;
+        AppState.tickRafId = requestAnimationFrame(_tick);
+    }
 }
 
 function _onExitARCallback() {

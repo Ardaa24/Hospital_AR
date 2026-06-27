@@ -28,23 +28,32 @@ const ARCompass = (function() {
      * @param {Array<{x,y,z}>} parsedPath 
      * @returns {THREE.Vector3} birim vektör
      */
-    function _getNearestSegmentDirection(camPos, parsedPath) {
+    function _getTargetDirection(camPos, parsedPath) {
         let bestDist = Infinity;
-        let bestDir  = new THREE.Vector3(0, 0, -1);
+        let closestIdx = 0;
 
-        for (let i = 1; i < parsedPath.length; i++) {
-            const a  = parsedPath[i - 1];
-            const b  = parsedPath[i];
-            const mx = (a.x + b.x) / 2;
-            const mz = (a.z + b.z) / 2;
-            const d  = Math.hypot(camPos.x - mx, camPos.z - mz);
-
+        // En yakin waypoint'i bul
+        for (let i = 0; i < parsedPath.length; i++) {
+            const pt = parsedPath[i];
+            const d = Math.hypot(camPos.x - pt.x, camPos.z - pt.z);
             if (d < bestDist) {
                 bestDist = d;
-                bestDir  = new THREE.Vector3(b.x - a.x, 0, b.z - a.z).normalize();
+                closestIdx = i;
             }
         }
-        return bestDir;
+
+        // Hedefimiz en yakin waypoint'ten bir sonraki (ilerideki) waypoint olmali
+        const targetIdx = Math.min(closestIdx + 1, parsedPath.length - 1);
+        const targetPt = parsedPath[targetIdx];
+        
+        const dir = new THREE.Vector3(targetPt.x - camPos.x, 0, targetPt.z - camPos.z);
+        if (dir.length() < 0.25 && targetIdx < parsedPath.length - 1) {
+            // Eger o waypoint'e cok yakinsak (25cm icindeysek), bir sonrakine yönel
+            const nextPt = parsedPath[targetIdx + 1];
+            dir.set(nextPt.x - camPos.x, 0, nextPt.z - camPos.z);
+        }
+        
+        return dir.normalize();
     }
 
     /**
@@ -63,7 +72,7 @@ const ARCompass = (function() {
         forward.normalize();
 
         // En yakın waypoint'e yön vektörü
-        const target = _getNearestSegmentDirection(camPos, parsedPath);
+        const target = _getTargetDirection(camPos, parsedPath);
 
         // İşaretli açı (dot ve cross product kullanarak)
         const dot   = forward.x * target.x + forward.z * target.z;
