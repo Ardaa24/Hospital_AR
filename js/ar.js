@@ -74,6 +74,9 @@ function _doStartAR(route) {
     AppState.freshEnter   = true;
     AppState.arStartTime = null;
     
+    // Yeni rota başlangıcında zemin kilidini sıfırla ki taze ölçüm yapılsın
+    ARCore.resetGroundLock();
+    
     // Toplam mesafe hesaplama (ARNavigation)
     AppState.totalDist = AppState.arLegs.reduce(
         (acc, l) => acc + ARNavigation.calcLegDistance(l.path), 0
@@ -150,11 +153,6 @@ function _onEnterARCallback() {
     _updateHUDInfo();
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
-
-    // Yeni bacak baslarken zemin kilidini sifirla ki tekrar taze tarama yapsin
-    if (typeof ARCore !== 'undefined' && ARCore.resetGroundLock) {
-        ARCore.resetGroundLock();
-    }
 
     // In local space, starting a new XR session automatically places the origin (0,0,0)
     // at the user's current physical position. We don't need any offset!
@@ -313,7 +311,7 @@ function _tick(time) {
 
     const debugEl = document.getElementById('ar-debug-heights');
     if (debugEl) {
-        debugEl.textContent = `camY: ${_camPosCache.y.toFixed(2)} | groundY: ${newGroundY.toFixed(2)} | L-Floor: ${ARCore.isLocalFloor()} | Locked: ${ARCore.isGroundLocked()}`;
+        debugEl.textContent = `camY: ${_camPosCache.y.toFixed(2)} | groundY: ${newGroundY.toFixed(2)} | Locked: ${ARCore.isGroundLocked()}`;
     }
 
     // Animasyonlar

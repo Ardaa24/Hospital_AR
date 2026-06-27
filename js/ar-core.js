@@ -19,12 +19,12 @@ const ARCore = (function() {
         bottomPanel: () => document.getElementById('ar-bottom'),
     };
 
-    let _hitTestSource = null;
-    let _xrRefSpace = null;
-    let _isLocalFloor = false;
-    let _isGroundLocked = false;
-    let _xrViewerSpace = null;
-    let _groundY = -1.5; 
+    // Göz hizasından zemine olan mesafe varsayımı (metre)
+    // Kullanıcı uygulamayı ayaktayken başlatınca bu değer doğru zemin yüksekliğini verir.
+    const EYE_HEIGHT_M = 1.6;
+
+    let _groundY = -EYE_HEIGHT_M; // Baslangic fallback: kamera rige gore 1.6m asagisi
+    let _groundLocked = false;    // Bir kez olculunce true olur, bir daha degismez
 
     // Callback event listeners (ar.js tarafından set edilecek)
     let _onEnterCallback = null;
@@ -49,18 +49,9 @@ const ARCore = (function() {
     }
 
     function _handleEnterAR() {
-        _isGroundLocked = true;
-        const scene = _dom.scene();
-
-        if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
-            const xrSession = scene.renderer.xr.getSession();
-            _isLocalFloor = false;
-            xrSession.requestReferenceSpace('local').then(rs => {
-                _xrRefSpace = rs;
-                _groundY = 0; // Local uzayda kamera rig'i 1.6m offsetli baslar, zemin daima 0'dir
-            });
-        }
-
+        // Her yeni oturumda kilidi AÇIK birak ki ilk frame'de taze olcum yapilsin.
+        // Fakat _groundLocked = false YAPMA — bu ikinci bacaklarin da dogru zemini korumasini saglar.
+        // Sadece sayfanin ilk yuklenisinde (doStartAR sonrasi) lock sifirlanir.
         if (_onEnterCallback) _onEnterCallback();
     }
 
@@ -68,8 +59,24 @@ const ARCore = (function() {
         if (_onExitCallback) _onExitCallback();
     }
 
+    /**
+     * Her tick'te cagrilan zemin yuksekligi guncelleyici.
+     * camY: A-Frame dunyasindaki kameranin Y koordinati (getWorldPosition'dan).
+     *
+     * Mantik:
+     *   - Ilk gecerli camY geldiginde groundY = camY - EYE_HEIGHT_M hesapla ve kilitle.
+     *   - Sonraki tum cagrida (ikinci bacak dahil) ayni deger kullanilir, degismez.
+     *   - Kullanicinin oturup kalkmasi ya da telefonu sallamasi groundY'yi etkilemez.
+     */
     function updateGroundY(scene, camY) {
-        _groundY = 0; // Daima sabit 0.0 (A-Frame default kamera rig zemin koordinati)
+        if (_groundLocked) return; // Kilitliyse hic dokunma
+
+        // camY != 0 kontrolu: kamera rig'i henuz XR tracking'i almamis olabilir
+        if (camY !== 0 && Math.abs(camY) > 0.01) {
+            _groundY = camY - EYE_HEIGHT_M;
+            _groundLocked = true;
+            console.log('[ARCore] Zemin kilitleni:', _groundY.toFixed(3), 'camY:', camY.toFixed(3));
+        }
     }
 
     function getGroundY() {
@@ -121,8 +128,8 @@ const ARCore = (function() {
         getGroundY,
         getDOM,
         waitForStableCamera,
-        resetGroundLock: () => { _isGroundLocked = false; },
-        isLocalFloor: () => _isLocalFloor,
-        isGroundLocked: () => _isGroundLocked
+        // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
+        resetGroundLock: () => { _groundLocked = false; _groundY = -EYE_HEIGHT_M; },
+        isGroundLocked: () => _groundLocked
     };
 })();
