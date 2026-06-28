@@ -18,10 +18,16 @@ const ARNavigation = (function() {
     let _turnCandidateData = null;
     let _turnStateTime = 0;
 
+    const AR_SCALE_FACTOR = 0.625;
+
     function _parsePos(pt) {
         if (!pt?.pos) return { x: 0, y: 0, z: 0 };
         const [x, y, z] = pt.pos.split(' ').map(Number);
-        return { x: x || 0, y: y || 0, z: z || 0 };
+        return { 
+            x: (x || 0) * AR_SCALE_FACTOR, 
+            y: (y || 0) * AR_SCALE_FACTOR, 
+            z: (z || 0) * AR_SCALE_FACTOR 
+        };
     }
 
     function calcLegDistance(path) {

@@ -294,12 +294,9 @@ function _tick(time) {
     cam.getWorldPosition(_camPosCache);
 
     // Hit test ve groundY güncellemesi (gerçek zemini bulma)
-    const prevGroundY = ARCore.getGroundY();
     ARCore.updateGroundY(dom.scene(), _camPosCache.y);
     const newGroundY = ARCore.getGroundY();
-    if (Math.abs(prevGroundY - newGroundY) > 0.001) {
-        ARRenderer.updateGroundY(newGroundY);
-    }
+    ARRenderer.updateGroundY(newGroundY);
 
     // Animasyonlar
     ARRenderer.updateUniforms(time);

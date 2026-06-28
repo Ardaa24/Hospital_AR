@@ -287,14 +287,6 @@ const ARRenderer = (function() {
             return { x: x || 0, y: y || 0, z: z || 0 };
         });
 
-        // Başlangıca kameraya yumuşak giriş noktası ekle
-        if (parsedPath.length > 0) {
-            const first = parsedPath[0];
-            if (Math.hypot(first.x, first.z) > 0.5) {
-                parsedPath.unshift({ x: 0, y: 0, z: -0.2 });
-            }
-        }
-
         const pts = parsedPath.map(p => new THREE.Vector3(
             p.x + originOffset.x,
             0, // Yükseklik mesh position.y ile kontrol edilecek
