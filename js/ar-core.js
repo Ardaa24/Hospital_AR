@@ -107,7 +107,8 @@ const ARCore = (function() {
                     // A-Frame kamera rotasyonu (Dünya yönü)
                     const dir = new THREE.Vector3();
                     cam.getWorldDirection(dir);
-                    let rotY = Math.atan2(dir.x, dir.z);
+
+                    let rotY = Math.atan2(-dir.x, -dir.z);
 
                     samples.push({ x: pos.x, y: pos.y, z: pos.z, rotY: rotY });
                     if (samples.length >= SAMPLE_FRAMES) {
@@ -126,7 +127,7 @@ const ARCore = (function() {
                     }
 
                     if (performance.now() - startTime > timeoutMs) {
-                        resolve({ pos, rotY: Math.atan2(dir.x, dir.z) });
+                        resolve({ pos, rotY: Math.atan2(-dir.x, -dir.z) });
                         return;
                     }
                     rafId = requestAnimationFrame(check);
