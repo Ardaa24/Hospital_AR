@@ -27,7 +27,7 @@ const ARCore = (function() {
     
     // Göz hizasından zemine olan mesafe varsayımı (metre) - local fallback için
     const EYE_HEIGHT_M = 1.6;
-    let _groundY = 0; 
+    let _groundY = -1.45; 
 
     // Callback event listeners (ar.js tarafından set edilecek)
     let _onEnterCallback = null;
@@ -70,7 +70,8 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        _groundY = -1.65;
+        const target = camY - 1.45;
+        _groundY += (target - _groundY) * 0.05; // Yumuşak geçiş ile zemini takip et
     }
 
     function getGroundY() {
@@ -92,8 +93,10 @@ const ARCore = (function() {
                     const pos = new THREE.Vector3();
                     cam.getWorldPosition(pos);
 
-                    // A-Frame kamera rotasyonu (Y ekseni etrafinda)
-                    let rotY = cam.rotation.y;
+                    // A-Frame kamera rotasyonu (Dünya yönü)
+                    const dir = new THREE.Vector3();
+                    cam.getWorldDirection(dir);
+                    let rotY = Math.atan2(dir.x, dir.z);
                     
                     samples.push({ x: pos.x, y: pos.y, z: pos.z, rotY: rotY });
                     if (samples.length >= SAMPLE_FRAMES) {

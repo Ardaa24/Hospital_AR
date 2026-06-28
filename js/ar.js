@@ -276,20 +276,19 @@ async function _drawCurrentLegPath() {
     
     // Bizim container'i oyle dondurmeliyiz ki, rotanin ilk parcasi
     // kullanicinin su an baktigi yone (camRotY) hizalansin.
-    // Three.js'de -Z ileriyi gosterir. Duzeltme acisi:
-    const containerRotY = camRotY - mapAngle + Math.PI;
+    const containerRotY = camRotY - mapAngle;
 
     const arrowsEl = dom.arrows();
     
-    // Container'i kullanicinin ayakucuna getir
-    arrowsEl.setAttribute('position', `${camPos.x} 0 ${camPos.z}`);
+    // Container'i kullanicinin ayakucuna getir (Y eksenini zemin yüksekliği yapıyoruz)
+    arrowsEl.setAttribute('position', `${camPos.x} ${ARCore.getGroundY()} ${camPos.z}`);
     
     // Container'i dondur, boylece rota tam karsidan baslasin
     arrowsEl.setAttribute('rotation', `0 ${THREE.MathUtils.radToDeg(containerRotY)} 0`);
 
     // Rotayi 0,0 merkezinden ciz (ARRenderer path'i normalize eder)
     const arrowsObj = arrowsEl.object3D;
-    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY());
+    ARRenderer.drawPath(leg, arrowsObj); // GroundY'ye gerek yok, parent hallediyor
 }
 
 /* ════════════════════════════════════════════════════
@@ -310,24 +309,13 @@ function _tick(time) {
     cam.getWorldPosition(_camPosCache);
 
     // Hit test ve groundY güncellemesi (gerçek zemini bulma)
-    const prevGroundY = ARCore.getGroundY();
     ARCore.updateGroundY(dom.scene(), _camPosCache.y);
-    const newGroundY = ARCore.getGroundY();
-    if (Math.abs(prevGroundY - newGroundY) > 0.001) {
-        ARRenderer.updateGroundY(newGroundY);
-    }
-
-    const debugEl = document.getElementById('ar-debug-heights');
-    if (debugEl) {
-        debugEl.textContent = `camY: ${_camPosCache.y.toFixed(2)} | groundY: ${newGroundY.toFixed(2)} | Locked: ${ARCore.isGroundLocked()}`;
-    }
 
     // Animasyonlar
     ARRenderer.updateUniforms(time);
-    ARRenderer.updateAnimations();
 
     const arrowsObj = dom.arrows().object3D;
-    arrowsObj.position.y = 0; // Her zaman zemin referansı 0'da kalmalı.
+    arrowsObj.position.y = ARCore.getGroundY(); // Kökten çözüm: Container zemine oturur
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
@@ -423,6 +411,7 @@ function advanceLeg() {
         _updateHUDInfo();
         _updateArrivedBtn();
         ARNavigation.reset();
+        cancelAnimationFrame(AppState.tickRafId); // Önceki döngüyü durdur
         
         setTimeout(() => {
             _enterAR();
