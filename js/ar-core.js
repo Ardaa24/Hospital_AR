@@ -62,23 +62,12 @@ const ARCore = (function() {
                 _isLocalFloor = false;
                 xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
             });
-            xrSession.requestReferenceSpace('viewer').then(rs => {
-                _xrViewerSpace = rs;
-                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
-                    _hitTestSource = source;
-                }).catch(err => console.log('[AR] Hit-test error:', err));
-            });
         }
 
         if (_onEnterCallback) _onEnterCallback();
     }
 
     function _handleExitAR() {
-        if (_hitTestSource) {
-            try { _hitTestSource.cancel(); } catch (_) {}
-            _hitTestSource = null;
-        }
-        
         if (_onExitCallback) _onExitCallback();
     }
 
@@ -89,28 +78,10 @@ const ARCore = (function() {
             return;
         }
 
-        // Desteklemiyorsa (local uzaya dustuyse) lazer ile zemini arariz
-        if (scene.is('ar-mode') && _hitTestSource) {
-            const frame = scene.frame;
-            if (frame) {
-                const results = frame.getHitTestResults(_hitTestSource);
-                if (results.length > 0) {
-                    const pose = results[0].getPose(_xrRefSpace);
-                    // Lazer duvara carpip kilitlenmesin diye kamera hizasindan en az 40cm asagisini kabul et
-                    if (pose && pose.transform.position.y < camY - 0.4) {
-                        _groundY = pose.transform.position.y;
-                        try { _hitTestSource.cancel(); } catch (_) {}
-                        _hitTestSource = null;
-                        _isGroundLocked = true;
-                        return; // Gercek zemin bulundu ve kilitlendi
-                    }
-                }
-            }
-        }
-        
-        // Eger lazer henuz zemini bulamadiysa, kamera yuksekliginden 1.5m asagisini zemin varsay (fallback)
+        // Desteklemiyorsa (local uzaya dustuyse) ilk acilistaki yuksekligi kitle
         if (!_isGroundLocked) {
-            _groundY = camY - 1.5;
+            _groundY = camY - 1.65;
+            _isGroundLocked = true;
         }
     }
 
@@ -133,17 +104,29 @@ const ARCore = (function() {
                     const pos = new THREE.Vector3();
                     cam.getWorldPosition(pos);
 
-                    samples.push({ x: pos.x, y: pos.y, z: pos.z });
+                    // A-Frame kamera rotasyonu (Dünya yönü)
+                    const dir = new THREE.Vector3();
+                    cam.getWorldDirection(dir);
+                    let rotY = Math.atan2(dir.x, dir.z);
+
+                    samples.push({ x: pos.x, y: pos.y, z: pos.z, rotY: rotY });
                     if (samples.length >= SAMPLE_FRAMES) {
                         const avgX = samples.reduce((s, r) => s + r.x, 0) / samples.length;
                         const avgZ = samples.reduce((s, r) => s + r.z, 0) / samples.length;
                         const avgY = samples.reduce((s, r) => s + r.y, 0) / samples.length;
-                        resolve(new THREE.Vector3(avgX, avgY, avgZ));
+                        let sumSin = 0;
+                        let sumCos = 0;
+                        samples.forEach(s => {
+                            sumSin += Math.sin(s.rotY);
+                            sumCos += Math.cos(s.rotY);
+                        });
+                        const avgRotY = Math.atan2(sumSin, sumCos);
+                        resolve({ pos: new THREE.Vector3(avgX, avgY, avgZ), rotY: avgRotY });
                         return;
                     }
 
                     if (performance.now() - startTime > timeoutMs) {
-                        resolve(pos);
+                        resolve({ pos, rotY: Math.atan2(dir.x, dir.z) });
                         return;
                     }
                     rafId = requestAnimationFrame(check);

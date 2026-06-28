@@ -144,7 +144,6 @@ function _onEnterARCallback() {
 
     // In local space, starting a new XR session automatically places the origin (0,0,0)
     // at the user's current physical position. We don't need any offset!
-    AppState.arOriginOffset = { x: 0, z: 0 };
     _drawCurrentLegPath();
 
     _lastTickTime = 0;
@@ -244,21 +243,37 @@ function _setArrivedBtnLocked(locked) {
    RENDER & ÇİZİM
 ════════════════════════════════════════════════════ */
 
-function _drawCurrentLegPath() {
+async function _drawCurrentLegPath() {
     const leg = AppState.arLegs[AppState.legIdx];
-    if (!leg?.path) return;
+    if (!leg?.path || leg.path.length < 2) return;
 
     const dom = ARCore.getDOM();
-    const cam = dom.cam().object3D;
-    
-    // Zaten arOriginOffset varsa onu kullan, yoksa fallback olarak mevcudu al
-    if (!AppState.arOriginOffset) {
-        cam.getWorldPosition(_camPosCache);
-        AppState.arOriginOffset = { x: _camPosCache.x, z: _camPosCache.z };
-    }
-
     const arrowsObj = dom.arrows().object3D;
-    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), AppState.arOriginOffset);
+
+    // Use stable camera exactly where the user is standing NOW
+    const { pos, rotY } = await ARCore.waitForStableCamera();
+
+    // Set origin offset
+    AppState.arOriginOffset = { x: pos.x, z: pos.z };
+
+    // Move the container to the user's current position
+    arrowsObj.position.x = pos.x;
+    arrowsObj.position.z = pos.z;
+
+    // Calculate map orientation
+    const p1 = leg.path[0].pos.split(' ').map(Number);
+    const p2 = leg.path[leg.path.length - 1].pos.split(' ').map(Number);
+    const dx = p2[0] - p1[0];
+    const dz = p2[2] - p1[2];
+    
+    const mapAngle = Math.atan2(dx, dz);
+    const containerRotY = rotY - mapAngle;
+
+    arrowsObj.rotation.y = containerRotY;
+    arrowsObj.updateMatrixWorld(true);
+
+    // Draw the path locally starting from (0,0,0)
+    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), {x: 0, z: 0});
 }
 
 /* ════════════════════════════════════════════════════
@@ -312,13 +327,9 @@ function _tick(time) {
     if (curLeg?.path) {
         const totalDist = ARNavigation.calcLegDistance(curLeg.path);
       
-        if (!AppState.arOriginOffset) AppState.arOriginOffset = { x: 0, z: 0 };
-
-        const localCamPos = new THREE.Vector3(
-            _camPosCache.x - AppState.arOriginOffset.x,
-            _camPosCache.y,
-            _camPosCache.z - AppState.arOriginOffset.z
-        );
+        // Convert world cam position to local arrowsObj space
+        const localCamPos = _camPosCache.clone();
+        arrowsObj.worldToLocal(localCamPos);
 
         const covered = ARNavigation.getProgress(localCamPos, curLeg.path);
         remain = Math.max(0, totalDist - covered);

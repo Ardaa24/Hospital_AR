@@ -58,23 +58,13 @@ const NAV_ROUTES = [
         legs: [
             {
                 type: "ar",
-                instruction: "Koridorda dümdüz 3 metre ilerleyin ⬆️",
-                path: [
-                    { pos: "0 0 -1" },
-                    { pos: "0 0 -2" },
-                    { pos: "0 0 -3" }
-                ]
+                instruction: "Koridorda dümdüz 15 metre ilerleyin ⬆️",
+                path: Array.from({length: 15}, (_, i) => ({ pos: `0 0 -${i + 1}` }))
             },
             {
                 type: "ar",
                 instruction: "Sola dönüp 5 metre ilerleyin ⬅️",
-                path: [
-                    { pos: "0 0 -1" },
-                    { pos: "0 0 -2" },
-                    { pos: "0 0 -3" },
-                    { pos: "0 0 -4" },
-                    { pos: "0 0 -5" }
-                ]
+                path: Array.from({length: 5}, (_, i) => ({ pos: `0 0 -${i + 1}` }))
             }
         ]
     },
