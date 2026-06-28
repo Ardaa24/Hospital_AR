@@ -56,10 +56,16 @@ const ARCore = (function() {
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
             const xrSession = scene.renderer.xr.getSession();
-            _isLocalFloor = false;
-            xrSession.requestReferenceSpace('local').then(rs => {
+            xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
-                _groundY = -1.65;
+                _isLocalFloor = true;
+                _groundY = 0;
+            }).catch(() => {
+                xrSession.requestReferenceSpace('local').then(rs => {
+                    _xrRefSpace = rs;
+                    _isLocalFloor = false;
+                    _groundY = -1.65;
+                });
             });
         }
         if (_onEnterCallback) _onEnterCallback();
@@ -70,8 +76,12 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        const target = camY - 1.70;
-        _groundY += (target - _groundY) * 0.05; // Yumuşak geçiş ile zemini takip et
+        if (_isLocalFloor) {
+            _groundY = 0; // Gerçek fiziksel zemin
+        } else {
+            const target = camY - 1.65;
+            _groundY += (target - _groundY) * 0.05; // Fallback: Kamerayı takip et
+        }
     }
 
     function getGroundY() {

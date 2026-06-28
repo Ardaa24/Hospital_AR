@@ -276,7 +276,7 @@ async function _drawCurrentLegPath() {
     
     // Bizim container'i oyle dondurmeliyiz ki, rotanin ilk parcasi
     // kullanicinin su an baktigi yone (camRotY) hizalansin.
-    const containerRotY = camRotY - mapAngle + Math.PI;
+    const containerRotY = camRotY - mapAngle;
 
     const arrowsEl = dom.arrows();
     
@@ -328,23 +328,21 @@ function _tick(time) {
     ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg, arrowsObj);
 
     let distToTurn = Infinity;
-    if (curLeg?.path?.length > 0) {
-        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
-        // Hedef pozisyon (Normalized rotanın sonu)
-        const fp = { x: fpRaw[0] - curLeg.path[0].pos.split(' ').map(Number)[0], 
-                     z: fpRaw[2] - curLeg.path[0].pos.split(' ').map(Number)[2] };
-    }
     
     // Mesafe ve İlerleme
     let remain = 0;
-    if (curLeg?.path) {
+    if (curLeg?.path?.length > 0) {
         const totalDist = ARNavigation.calcLegDistance(curLeg.path);
-      
         const covered = ARNavigation.getProgress(localCamPos, curLeg.path);
         remain = Math.max(0, totalDist - covered);
         
-        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
-        distToTurn = Math.hypot(localCamPos.x - fpRaw[0], localCamPos.z - fpRaw[2]);
+        // Hedef pozisyon (Normalized rotanın sonu - local uzay)
+        const startRaw = curLeg.path[0].pos.split(' ').map(Number);
+        const endRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
+        const targetLocalX = endRaw[0] - startRaw[0];
+        const targetLocalZ = endRaw[2] - startRaw[2];
+        
+        distToTurn = Math.hypot(localCamPos.x - targetLocalX, localCamPos.z - targetLocalZ);
     }
 
     ARNavigation.updateHUD(remain);
