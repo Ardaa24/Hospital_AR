@@ -19,15 +19,12 @@ const ARCore = (function() {
         bottomPanel: () => document.getElementById('ar-bottom'),
     };
 
-    let _xrRefSpace = null;
-    let _xrViewerSpace = null;
     let _hitTestSource = null;
+    let _xrRefSpace = null;
     let _isLocalFloor = false;
-    let _groundLocked = false;
-    
-    // Göz hizasından zemine olan mesafe varsayımı (metre) - local fallback için
-    const EYE_HEIGHT_M = 1.7;
-    let _groundY = -1.75; 
+    let _isGroundLocked = false;
+    let _xrViewerSpace = null;
+    let _groundY = -1.5; 
 
     // Callback event listeners (ar.js tarafından set edilecek)
     let _onEnterCallback = null;
@@ -52,6 +49,7 @@ const ARCore = (function() {
     }
 
     function _handleEnterAR() {
+        _isGroundLocked = false;
         const scene = _dom.scene();
 
         if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
@@ -59,28 +57,60 @@ const ARCore = (function() {
             xrSession.requestReferenceSpace('local-floor').then(rs => {
                 _xrRefSpace = rs;
                 _isLocalFloor = true;
-                _groundY = 0;
+                _groundY = 0; // In local-floor, floor is always exactly 0
             }).catch(() => {
-                xrSession.requestReferenceSpace('local').then(rs => {
-                    _xrRefSpace = rs;
-                    _isLocalFloor = false;
-                    _groundY = -1.65;
-                });
+                _isLocalFloor = false;
+                xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
+            });
+            xrSession.requestReferenceSpace('viewer').then(rs => {
+                _xrViewerSpace = rs;
+                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
+                    _hitTestSource = source;
+                }).catch(err => console.log('[AR] Hit-test error:', err));
             });
         }
+
         if (_onEnterCallback) _onEnterCallback();
     }
 
     function _handleExitAR() {
+        if (_hitTestSource) {
+            try { _hitTestSource.cancel(); } catch (_) {}
+            _hitTestSource = null;
+        }
+        
         if (_onExitCallback) _onExitCallback();
     }
 
     function updateGroundY(scene, camY) {
+        // Cihaz native local-floor destekliyorsa, zemin daima kusursuz sekilde 0'dir.
         if (_isLocalFloor) {
-            _groundY = 0; // Gerçek fiziksel zemin
-        } else {
-            const target = camY - 1.65;
-            _groundY += (target - _groundY) * 0.05; // Fallback: Kamerayı takip et
+            _groundY = 0;
+            return;
+        }
+
+        // Desteklemiyorsa (local uzaya dustuyse) lazer ile zemini arariz
+        if (scene.is('ar-mode') && _hitTestSource) {
+            const frame = scene.frame;
+            if (frame) {
+                const results = frame.getHitTestResults(_hitTestSource);
+                if (results.length > 0) {
+                    const pose = results[0].getPose(_xrRefSpace);
+                    // Lazer duvara carpip kilitlenmesin diye kamera hizasindan en az 40cm asagisini kabul et
+                    if (pose && pose.transform.position.y < camY - 0.4) {
+                        _groundY = pose.transform.position.y;
+                        try { _hitTestSource.cancel(); } catch (_) {}
+                        _hitTestSource = null;
+                        _isGroundLocked = true;
+                        return; // Gercek zemin bulundu ve kilitlendi
+                    }
+                }
+            }
+        }
+        
+        // Eger lazer henuz zemini bulamadiysa, kamera yuksekliginden 1.5m asagisini zemin varsay (fallback)
+        if (!_isGroundLocked) {
+            _groundY = camY - 1.5;
         }
     }
 
@@ -103,29 +133,17 @@ const ARCore = (function() {
                     const pos = new THREE.Vector3();
                     cam.getWorldPosition(pos);
 
-                    // A-Frame kamera rotasyonu (Dünya yönü)
-                    const dir = new THREE.Vector3();
-                    cam.getWorldDirection(dir);
-                    let rotY = Math.atan2(dir.x, dir.z); // GERÇEK dunya acisi (Z ekseninde PI / -PI verir)
-                    
-                    samples.push({ x: pos.x, y: pos.y, z: pos.z, rotY: rotY });
+                    samples.push({ x: pos.x, y: pos.y, z: pos.z });
                     if (samples.length >= SAMPLE_FRAMES) {
                         const avgX = samples.reduce((s, r) => s + r.x, 0) / samples.length;
                         const avgZ = samples.reduce((s, r) => s + r.z, 0) / samples.length;
                         const avgY = samples.reduce((s, r) => s + r.y, 0) / samples.length;
-                        let sumSin = 0;
-                        let sumCos = 0;
-                        samples.forEach(s => {
-                            sumSin += Math.sin(s.rotY);
-                            sumCos += Math.cos(s.rotY);
-                        });
-                        const avgRotY = Math.atan2(sumSin, sumCos);
-                        resolve({ pos: new THREE.Vector3(avgX, avgY, avgZ), rotY: avgRotY });
+                        resolve(new THREE.Vector3(avgX, avgY, avgZ));
                         return;
                     }
 
                     if (performance.now() - startTime > timeoutMs) {
-                        resolve({ pos, rotY: cam.rotation.y });
+                        resolve(pos);
                         return;
                     }
                     rafId = requestAnimationFrame(check);
@@ -144,9 +162,6 @@ const ARCore = (function() {
         updateGroundY,
         getGroundY,
         getDOM,
-        waitForStableCamera,
-        // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
-        resetGroundLock: () => { _groundY = -1.75; },
-        isGroundLocked: () => false
+        waitForStableCamera
     };
 })();

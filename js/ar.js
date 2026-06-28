@@ -71,11 +71,7 @@ function _doStartAR(route) {
     AppState.arLegs      = route.legs || [];
     AppState.legIdx      = 0;
     AppState.arActive    = false;
-    AppState.freshEnter   = true;
     AppState.arStartTime = null;
-    
-    // Yeni rota başlangıcında zemin kilidini sıfırla ki taze ölçüm yapılsın
-    ARCore.resetGroundLock();
     
     // Toplam mesafe hesaplama (ARNavigation)
     AppState.totalDist = AppState.arLegs.reduce(
@@ -105,14 +101,6 @@ function _enterAR() {
     }
 
     try {
-        // Eger zaten AR modundaysak (ikinci bacakta oldugu gibi), enterVR event'i tetiklenmez.
-        // Bu yuzden callback'i dogrudan kendimiz cagirarak yeni rotayi aninda cizdiriyoruz.
-        if (scene.is('ar-mode')) {
-            AppState.freshEnter = false; // Zaten AR modundayiz
-            _onEnterARCallback();
-            return;
-        }
-
         const p = scene.enterAR();
         if (p?.catch) {
             p.catch(err => {
@@ -154,10 +142,13 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    _drawCurrentLegPath().then(() => {
-        _lastTickTime = 0;
-        AppState.tickRafId = requestAnimationFrame(_tick);
-    });
+    // In local space, starting a new XR session automatically places the origin (0,0,0)
+    // at the user's current physical position. We don't need any offset!
+    AppState.arOriginOffset = { x: 0, z: 0 };
+    _drawCurrentLegPath();
+
+    _lastTickTime = 0;
+    AppState.tickRafId = requestAnimationFrame(_tick);
 }
 
 function _onExitARCallback() {
@@ -253,42 +244,21 @@ function _setArrivedBtnLocked(locked) {
    RENDER & ÇİZİM
 ════════════════════════════════════════════════════ */
 
-async function _drawCurrentLegPath() {
+function _drawCurrentLegPath() {
     const leg = AppState.arLegs[AppState.legIdx];
-    if (!leg?.path || leg.path.length < 2) return;
+    if (!leg?.path) return;
 
     const dom = ARCore.getDOM();
+    const cam = dom.cam().object3D;
     
-    // Kullaniciya rotanin cizilmesi icin yone bakmasini soyle
-    showToast("Lütfen ilerleyeceğiniz yöne doğru bakın...");
-    
-    // Kameranin stabil olmasini ve kullanicinin yonunu ayarlamasini bekle
-    const { pos: camPos, rotY: camRotY } = await ARCore.waitForStableCamera(1500);
+    // Zaten arOriginOffset varsa onu kullan, yoksa fallback olarak mevcudu al
+    if (!AppState.arOriginOffset) {
+        cam.getWorldPosition(_camPosCache);
+        AppState.arOriginOffset = { x: _camPosCache.x, z: _camPosCache.z };
+    }
 
-    // Rotanin ilk parcasinin (segmentinin) yonunu bulalim
-    const [x0, y0, z0] = leg.path[0].pos.split(' ').map(Number);
-    const [x1, y1, z1] = leg.path[1].pos.split(' ').map(Number);
-    const dx = x1 - x0;
-    const dz = z1 - z0;
-    
-    // Haritadaki rotanin mutlak acisi (X-Z duzleminde)
-    const mapAngle = Math.atan2(dx, dz);
-    
-    // Bizim container'i oyle dondurmeliyiz ki, rotanin ilk parcasi
-    // kullanicinin su an baktigi yone (camRotY) hizalansin.
-    const containerRotY = camRotY - mapAngle;
-
-    const arrowsEl = dom.arrows();
-    
-    // Container'i kullanicinin ayakucuna getir (Y eksenini zemin yüksekliği yapıyoruz)
-    arrowsEl.setAttribute('position', `${camPos.x} ${ARCore.getGroundY()} ${camPos.z}`);
-    
-    // Container'i dondur, boylece rota tam karsidan baslasin
-    arrowsEl.setAttribute('rotation', `0 ${THREE.MathUtils.radToDeg(containerRotY)} 0`);
-
-    // Rotayi 0,0 merkezinden ciz (ARRenderer path'i normalize eder)
-    const arrowsObj = arrowsEl.object3D;
-    ARRenderer.drawPath(leg, arrowsObj); // GroundY'ye gerek yok, parent hallediyor
+    const arrowsObj = dom.arrows().object3D;
+    ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), AppState.arOriginOffset);
 }
 
 /* ════════════════════════════════════════════════════
@@ -309,40 +279,52 @@ function _tick(time) {
     cam.getWorldPosition(_camPosCache);
 
     // Hit test ve groundY güncellemesi (gerçek zemini bulma)
+    const prevGroundY = ARCore.getGroundY();
     ARCore.updateGroundY(dom.scene(), _camPosCache.y);
+    const newGroundY = ARCore.getGroundY();
+    if (Math.abs(prevGroundY - newGroundY) > 0.001) {
+        ARRenderer.updateGroundY(newGroundY);
+    }
 
     // Animasyonlar
     ARRenderer.updateUniforms(time);
+    ARRenderer.updateAnimations();
 
     const arrowsObj = dom.arrows().object3D;
-    arrowsObj.position.y = ARCore.getGroundY(); 
+    arrowsObj.position.y = 0; // Her zaman zemin referansı 0'da kalmalı.
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
 
-    const localCamPos = _camPosCache.clone();
-    arrowsObj.worldToLocal(localCamPos);
-
-    // Pusula (Dünya uzayına çevrilmiş rotayla)
+    // Pusula 
     const arrowEl = document.getElementById('ar-hud-arrow');
-    ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg, arrowsObj);
+    ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg);
 
     let distToTurn = Infinity;
+    if (curLeg?.path?.length > 0) {
+        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
+        // Origin offset ile düzeltilmiş hedef pozisyon
+        const fp = { x: fpRaw[0], z: fpRaw[2] };
+    }
     
     // Mesafe ve İlerleme
     let remain = 0;
-    if (curLeg?.path?.length > 0) {
+    if (curLeg?.path) {
         const totalDist = ARNavigation.calcLegDistance(curLeg.path);
+      
+        if (!AppState.arOriginOffset) AppState.arOriginOffset = { x: 0, z: 0 };
+
+        const localCamPos = new THREE.Vector3(
+            _camPosCache.x - AppState.arOriginOffset.x,
+            _camPosCache.y,
+            _camPosCache.z - AppState.arOriginOffset.z
+        );
+
         const covered = ARNavigation.getProgress(localCamPos, curLeg.path);
         remain = Math.max(0, totalDist - covered);
         
-        // Hedef pozisyon (Normalized rotanın sonu - local uzay)
-        const startRaw = curLeg.path[0].pos.split(' ').map(Number);
-        const endRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
-        const targetLocalX = endRaw[0] - startRaw[0];
-        const targetLocalZ = endRaw[2] - startRaw[2];
-        
-        distToTurn = Math.hypot(localCamPos.x - targetLocalX, localCamPos.z - targetLocalZ);
+        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
+        distToTurn = Math.hypot(localCamPos.x - fpRaw[0], localCamPos.z - fpRaw[2]);
     }
 
     ARNavigation.updateHUD(remain);
@@ -353,9 +335,8 @@ function _tick(time) {
     }
 
     if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {
-        // Bitis ekranina gecerken AR'dan cikmiyoruz, overlay uzerinden gosteriyoruz
         cancelAnimationFrame(AppState.tickRafId);
-        // dom.scene().exitVR();
+        dom.scene().exitVR();
         _showDone();
         return;
     }
@@ -369,9 +350,8 @@ function _tick(time) {
 
 function _showInfoScreen(leg) {
     const dom = ARCore.getDOM();
-    if (!dom.overlay().contains(dom.infoScreen())) {
-        dom.overlay().appendChild(dom.infoScreen());
-    }
+    dom.scene().classList.remove('ar-active');
+    dom.overlay().classList.remove('ar-active');
 
     document.getElementById('ar-info-title').textContent = leg.title || 'Bilgi';
     document.getElementById('ar-info-desc').innerHTML    = leg.desc  || '';
@@ -395,6 +375,9 @@ function advanceLeg() {
     vibrate([30, 50, 30]);
     AppState.legIdx++;
     
+    //  Her yeni bacak için AR oturumunu kapatıp yeniden açarak kamerayı sıfırla.
+    cancelAnimationFrame(AppState.tickRafId);
+    ARCore.getDOM().scene().exitVR();
 
     if (AppState.legIdx >= AppState.arLegs.length) {
         _showDone();
@@ -408,8 +391,10 @@ function advanceLeg() {
         _updateHUDInfo();
         _updateArrivedBtn();
         ARNavigation.reset();
-        cancelAnimationFrame(AppState.tickRafId); // Önceki döngüyü durdur
         
+        // Eski originOffset'i temizle, yeni girişle birlikte tekrar hesaplanacak
+        AppState.arOriginOffset = null;
+
         setTimeout(() => {
             _enterAR();
         }, 500); // Kamera sıfırlanması için kısa bekleme
@@ -417,10 +402,6 @@ function advanceLeg() {
 }
 
 function _showDone() {
-    const dom = ARCore.getDOM();
-    if (!dom.overlay().contains(dom.doneScreen())) {
-        dom.overlay().appendChild(dom.doneScreen());
-    }
     AppState.arActive = false;
     const route = AppState.activeRoute;
     document.getElementById('done-route-name').textContent = route.name;
@@ -463,15 +444,16 @@ function _showDone() {
 
 function returnToRoutes() {
     ARCore.getDOM().doneScreen().classList.remove('visible');
-    try { ARCore.getDOM().scene().exitVR(); } catch(e) {}
-    window.location.reload();
+    renderList();
+    showScreen('s-routes');
 }
 
 function exitARToRoutes() {
     cancelAnimationFrame(AppState.tickRafId);
-    try { ARCore.getDOM().scene().exitVR(); } catch(e) {}
+    ARCore.getDOM().scene().exitVR();
     ARCore.getDOM().infoScreen().classList.remove('visible');
-    window.location.reload();
+    renderList();
+    showScreen('s-routes');
 }
 
 function onArrived() {

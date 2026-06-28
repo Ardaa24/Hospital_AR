@@ -40,13 +40,7 @@ const ARNavigation = (function() {
         let coveredUpTo = 0;
         let runningLen  = 0;
 
-        const rawParsed = pathPoints.map(_parsePos);
-        const startPt = rawParsed[0] || { x: 0, y: 0, z: 0 };
-        const parsed = rawParsed.map(p => ({
-            x: p.x - startPt.x,
-            y: p.y - startPt.y,
-            z: p.z - startPt.z
-        }));
+        const parsed = pathPoints.map(_parsePos);
 
         for (let i = 1; i < parsed.length; i++) {
             const a = parsed[i - 1];
