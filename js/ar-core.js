@@ -106,14 +106,20 @@ const ARCore = (function() {
                     // A-Frame kamera rotasyonu (Dünya yönü)
                     const dir = new THREE.Vector3();
                     cam.getWorldDirection(dir);
-                    let rotY = Math.atan2(dir.x, dir.z);
+                    let rotY = Math.atan2(dir.x, dir.z); // GERÇEK dunya acisi (Z ekseninde PI / -PI verir)
                     
                     samples.push({ x: pos.x, y: pos.y, z: pos.z, rotY: rotY });
                     if (samples.length >= SAMPLE_FRAMES) {
                         const avgX = samples.reduce((s, r) => s + r.x, 0) / samples.length;
                         const avgZ = samples.reduce((s, r) => s + r.z, 0) / samples.length;
                         const avgY = samples.reduce((s, r) => s + r.y, 0) / samples.length;
-                        const avgRotY = samples.reduce((s, r) => s + r.rotY, 0) / samples.length;
+                        let sumSin = 0;
+                        let sumCos = 0;
+                        samples.forEach(s => {
+                            sumSin += Math.sin(s.rotY);
+                            sumCos += Math.cos(s.rotY);
+                        });
+                        const avgRotY = Math.atan2(sumSin, sumCos);
                         resolve({ pos: new THREE.Vector3(avgX, avgY, avgZ), rotY: avgRotY });
                         return;
                     }
