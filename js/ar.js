@@ -276,7 +276,7 @@ async function _drawCurrentLegPath() {
     
     // Bizim container'i oyle dondurmeliyiz ki, rotanin ilk parcasi
     // kullanicinin su an baktigi yone (camRotY) hizalansin.
-    const containerRotY = camRotY - mapAngle;
+    const containerRotY = camRotY - mapAngle + Math.PI;
 
     const arrowsEl = dom.arrows();
     
@@ -315,7 +315,7 @@ function _tick(time) {
     ARRenderer.updateUniforms(time);
 
     const arrowsObj = dom.arrows().object3D;
-    arrowsObj.position.y = ARCore.getGroundY(); // Kökten çözüm: Container zemine oturur
+    arrowsObj.position.y = ARCore.getGroundY(); 
 
     const inGrace = AppState.arStartTime ? (Date.now() - AppState.arStartTime) < GRACE_PERIOD_MS : true;
     const curLeg = AppState.arLegs[AppState.legIdx];
@@ -397,7 +397,6 @@ function advanceLeg() {
     vibrate([30, 50, 30]);
     AppState.legIdx++;
     
-    // Ikinci bacakta WebXR buglarini onlemek icin exitVR KALDIRILDI.
 
     if (AppState.legIdx >= AppState.arLegs.length) {
         _showDone();

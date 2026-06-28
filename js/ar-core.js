@@ -26,8 +26,8 @@ const ARCore = (function() {
     let _groundLocked = false;
     
     // Göz hizasından zemine olan mesafe varsayımı (metre) - local fallback için
-    const EYE_HEIGHT_M = 1.6;
-    let _groundY = -1.45; 
+    const EYE_HEIGHT_M = 1.7;
+    let _groundY = -1.75; 
 
     // Callback event listeners (ar.js tarafından set edilecek)
     let _onEnterCallback = null;
@@ -70,7 +70,7 @@ const ARCore = (function() {
     }
 
     function updateGroundY(scene, camY) {
-        const target = camY - 1.45;
+        const target = camY - 1.70;
         _groundY += (target - _groundY) * 0.05; // Yumuşak geçiş ile zemini takip et
     }
 
@@ -130,7 +130,7 @@ const ARCore = (function() {
         getDOM,
         waitForStableCamera,
         // Yeni oturum baslarken (doStartAR) groundLock'u sifirla ki taze olcum yapilsin
-        resetGroundLock: () => { _groundY = -1.65; },
+        resetGroundLock: () => { _groundY = -1.75; },
         isGroundLocked: () => false
     };
 })();
