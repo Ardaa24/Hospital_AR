@@ -19,7 +19,7 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M          = 0.4;   // Ok arası mesafe (metre)
+const ARROW_SPACING_M          = 1.2;   // GLB ok arası mesafe (metre)
 const ARRIVAL_THRESHOLD        = 0.5;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2000;  // AR açıldıktan sonra varış sayılmaz
@@ -287,31 +287,13 @@ function _setArrivedBtnLocked(locked) {
 ════════════════════════════════════════════════════ */
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
-    const yPos = _groundY + 0.05;
+    const yPos = _groundY; 
+    
     el.setAttribute('position', `${px} ${yPos} ${pz}`);
-    // A-Frame kamerası -Z yönüne bakar, bu yüzden oku ileri (+Z) bakıyorsa çevirmek için +180 ekliyoruz
-    el.setAttribute('rotation', `0 ${angleDeg + 180} 0`);
-
-    // Sol kanat (daha uzun ve keskin açı)
-    const left = document.createElement('a-box');
-    left.setAttribute('position', '-0.12 0 0.15');
-    left.setAttribute('rotation', '0 35 0');
-    left.setAttribute('width', '0.45');
-    left.setAttribute('height', '0.015');
-    left.setAttribute('depth', '0.05');
-    left.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
-
-    // Sağ kanat
-    const right = document.createElement('a-box');
-    right.setAttribute('position', '0.12 0 0.15');
-    right.setAttribute('rotation', '0 -35 0');
-    right.setAttribute('width', '0.45');
-    right.setAttribute('height', '0.015');
-    right.setAttribute('depth', '0.05');
-    right.setAttribute('material', 'shader: flat; color: #0A7AFF; transparent: true; opacity: 0.9');
-
-    el.appendChild(left);
-    el.appendChild(right);
+    el.setAttribute('gltf-model', 'url(Assets/Blue_Arrow_0629181858_texture.glb)');
+    el.setAttribute('rotation', `0 ${angleDeg} 0`);
+    el.setAttribute('scale', '1 1 1'); 
+    el.setAttribute('shadow', 'receive: false');
 
     return { el, baseY: yPos, index: indexOffset };
 }
@@ -338,10 +320,9 @@ function _drawArrows() {
         if (segLen < 0.001) continue;
 
         const angleRad = Math.atan2(dx, dz);
-        const angleDeg = THREE.MathUtils.radToDeg(angleRad);
+        const angleDeg = THREE.MathUtils.radToDeg(angleRad) + 180;
         const steps    = Math.max(1, Math.round(segLen / ARROW_SPACING_M));
 
-        // Noktaları tam hedefe oturtmak için t=1'e kadar gidiyoruz. i>1 ise j=1'den başla ki üst üste binmesin.
         const startJ = (i === 1) ? 0 : 1;
         for (let j = startJ; j <= steps; j++) {
             const t = j / steps;
@@ -400,46 +381,39 @@ function _tick(time) {
     const camPos = new THREE.Vector3();
     cam.getWorldPosition(camPos);
     
-    // 1. WebXR Hit Test
+    // 1. Sürekli WebXR Hit Test (Drift Düzeltmesi)
     const scene = _dom.scene();
     if (_hitTestSource && scene.frame && _xrRefSpace) {
         const hitTestResults = scene.frame.getHitTestResults(_hitTestSource);
         if (hitTestResults.length > 0) {
             const pose = hitTestResults[0].getPose(_xrRefSpace);
-            if (pose) {
-                _groundY = pose.transform.position.y;
-                _hitTestSource.cancel();
-                _hitTestSource = null;
-                // Oklari guncelle
-                _activeArrows.forEach(arr => {
-                    arr.baseY = _groundY + 0.05;
-                });
+            // Duvara kitlenmesini önlemek için kameradan biraz aşağıda olmasını teyit et
+            if (pose && pose.transform.position.y < camPos.y - 0.4) {
+                const targetY = pose.transform.position.y;
+                if (_groundY === -1.5) {
+                    _groundY = targetY; // İlk vuruşta anında otur
+                } else {
+                    _groundY += (targetY - _groundY) * 0.1; // Smooth lerping (Sürekli Takip)
+                }
             }
         }
-    } else if (camPos.y !== 0) {
+    } else if (camPos.y !== 0 && _groundY === -1.5) {
         // Fallback: camera Y - 1.5m
         _groundY = camPos.y - 1.5;
     }
     
 
-    /* Three.js Optimizasyonu: Wave (Dalga) animasyonları */
+    /* Three.js Optimizasyonu: Zemin Takibi ve Wave (Dalga) animasyonları */
     const now = Date.now();
     for (let i = 0; i < _activeArrows.length; i++) {
         const arrow = _activeArrows[i];
         if (arrow.el.object3D) {
-            // Dalga efekti: ardışık oklar sırayla parlar ve süzülür
+            // Dalga efekti
             const wave = Math.sin((now * 0.005) - (arrow.index * 0.4));
-
-            // Opaklık (0.3 ile 0.9 arası gidip gelir)
-            const op = 0.6 + (wave * 0.3);
-            if (arrow.el.object3D.children) {
-                arrow.el.object3D.children.forEach(c => {
-                    if (c.material) c.material.opacity = op;
-                });
-            }
-
-            // Yukarı aşağı hafif zıplama
-            arrow.el.object3D.position.y = arrow.baseY + (wave * 0.04);
+            
+            // GLB modelin görünürlüğü (Hover animasyonu ve zemin entegrasyonu)
+            const floatY = Math.max(0, wave * 0.02); // 0 ila 2 cm süzülme
+            arrow.el.object3D.position.y = _groundY + floatY;
 
             // Frustum Culling
             const dist = Math.hypot(camPos.x - arrow.el.object3D.position.x, camPos.z - arrow.el.object3D.position.z);
@@ -455,15 +429,18 @@ function _tick(time) {
         const nextPt = _parsePos(curLeg.path[Math.min(1, curLeg.path.length - 1)]);
         const dx = nextPt.x - camPos.x;
         const dz = nextPt.z - camPos.z;
-        const targetAngleRad = Math.atan2(dx, dz);
         
-        let camRotY = cam.rotation.y;
-        // Kamera sağa/sola döndüğünde pusulanın ters dönme hatasını düzeltmek için işareti + yaptık.
-        let relativeAngle = targetAngleRad + camRotY;
-        let deg = THREE.MathUtils.radToDeg(relativeAngle);
+        // Pusula Yön Matematiği
+        const targetAngleRad = Math.atan2(dx, -dz);
+        const dir = new THREE.Vector3();
+        cam.getWorldDirection(dir);
+        const camRotY = Math.atan2(dir.x, -dir.z); 
+
+        const relativeAngle = targetAngleRad - camRotY;
+        const deg = THREE.MathUtils.radToDeg(relativeAngle);
         
         const arrowEl = document.getElementById('ar-hud-arrow');
-        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 180 - 45}deg)`; // +180 due to -Z forward, -45 for lucide default icon angle
+        if (arrowEl) arrowEl.style.transform = `rotate(${deg - 45}deg)`; 
     }
 
     /* Gerçek hedefe olan (bacak bitişi) uzaklık */
