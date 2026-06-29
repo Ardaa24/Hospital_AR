@@ -19,7 +19,7 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M          = 0.6;   // Native geometriler için ideal aralık
+const ARROW_SPACING_M          = 1.0;   // Yerdeki holografik şeritler için ideal aralık
 const ARRIVAL_THRESHOLD        = 0.5;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2000;  // AR açıldıktan sonra varış sayılmaz
@@ -287,32 +287,19 @@ function _setArrivedBtnLocked(locked) {
 ════════════════════════════════════════════════════ */
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
-    const yPos = _groundY + 0.05; 
+    const yPos = _groundY + 0.01; // Zemine tam yapışık (Z-fighting'i önlemek için +1cm)
     
     el.setAttribute('position', `${px} ${yPos} ${pz}`);
-    // angleDeg zaten tam ileriye bakacak şekilde hesaplandı
-    el.setAttribute('rotation', `0 ${angleDeg} 0`);
+    // SVG ucu yukarı baktığı için X ekseninde -90 çevirerek yere yatırırız, Y rotasyonu da hedefi bulur.
+    el.setAttribute('rotation', `-90 ${angleDeg} 0`);
 
-    // Sol kanat (Google Maps tarzı kalın, dolgulu ve etli)
-    const left = document.createElement('a-box');
-    left.setAttribute('position', '-0.15 0 0.15');
-    left.setAttribute('rotation', '0 35 0');
-    left.setAttribute('width', '0.5');
-    left.setAttribute('height', '0.02');
-    left.setAttribute('depth', '0.1');
-    left.setAttribute('material', 'shader: flat; color: #1a73e8; transparent: true; opacity: 0.9');
+    // Holografik Zemin Şeridi (Google Maps Style)
+    const plane = document.createElement('a-plane');
+    plane.setAttribute('width', '1.0');
+    plane.setAttribute('height', '1.0');
+    plane.setAttribute('material', 'src: url(Assets/arrow.svg); transparent: true; alphaTest: 0.05; opacity: 0.9');
 
-    // Sağ kanat
-    const right = document.createElement('a-box');
-    right.setAttribute('position', '0.15 0 0.15');
-    right.setAttribute('rotation', '0 -35 0');
-    right.setAttribute('width', '0.5');
-    right.setAttribute('height', '0.02');
-    right.setAttribute('depth', '0.1');
-    right.setAttribute('material', 'shader: flat; color: #1a73e8; transparent: true; opacity: 0.9');
-
-    el.appendChild(left);
-    el.appendChild(right);
+    el.appendChild(plane);
 
     return { el, baseY: yPos, index: indexOffset };
 }
@@ -411,8 +398,9 @@ function _tick(time) {
                 const targetY = pose.transform.position.y;
                 if (_groundY === -1.5) {
                     _groundY = targetY; // İlk vuruşta anında otur
-                } else {
-                    _groundY += (targetY - _groundY) * 0.1; // Smooth lerping (Sürekli Takip)
+                } else if (Date.now() - AppState.arStartTime < 3000) {
+                    // TİTREMEYİ ÖNLEMEK İÇİN: Sadece ilk 3 saniye yeri kalibre et, sonra ZEMİNİ KİLİTLE
+                    _groundY += (targetY - _groundY) * 0.1;
                 }
             }
         }
@@ -427,12 +415,17 @@ function _tick(time) {
     for (let i = 0; i < _activeArrows.length; i++) {
         const arrow = _activeArrows[i];
         if (arrow.el.object3D) {
-            // Dalga efekti
+            // SADECE Nefes Alma (Opacity) dalgası, Zıplama İptal
             const wave = Math.sin((now * 0.005) - (arrow.index * 0.4));
+            const op = 0.6 + (wave * 0.4);
             
-            // GLB modelin görünürlüğü (Hover animasyonu ve zemin entegrasyonu)
-            const floatY = Math.max(0, wave * 0.02); // 0 ila 2 cm süzülme
-            arrow.el.object3D.position.y = _groundY + floatY;
+            if (arrow.el.object3D.children && arrow.el.object3D.children[0]) {
+                const planeMat = arrow.el.object3D.children[0].material;
+                if (planeMat) planeMat.opacity = op;
+            }
+            
+            // Jitter'ı engellemek için okları dümdüz _groundY'ye çak
+            arrow.el.object3D.position.y = _groundY + 0.01;
 
             // Frustum Culling
             const dist = Math.hypot(camPos.x - arrow.el.object3D.position.x, camPos.z - arrow.el.object3D.position.z);

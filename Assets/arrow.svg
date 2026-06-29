@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComponentTransfer in="blur" result="glow1">
+          <feFuncA type="linear" slope="1.5"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="glow1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4285f4" />
+      <stop offset="100%" stop-color="#1a73e8" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer glowing chevron -->
+  <path d="M 128 40 L 220 190 L 128 150 L 36 190 Z" fill="url(#grad)" filter="url(#glow)"/>
+  
+  <!-- Inner white/bright highlight for a sleek look -->
+  <path d="M 128 50 L 205 180 L 128 145 L 51 180 Z" fill="#8ab4f8"/>
+</svg>
