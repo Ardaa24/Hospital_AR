@@ -308,7 +308,7 @@ const ARRenderer = (function() {
             transparent: true,
             opacity:     0.92,
             depthWrite:  false,
-            depthTest:   false,
+            depthTest:   true,
             side:        THREE.DoubleSide,
             blending:    THREE.NormalBlending,
         });

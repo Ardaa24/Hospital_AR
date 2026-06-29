@@ -62,26 +62,56 @@ const ARCore = (function() {
                 _isLocalFloor = false;
                 xrSession.requestReferenceSpace('local').then(rs => _xrRefSpace = rs);
             });
+            
+            // Hit-Test kaynağı başlat
+            xrSession.requestReferenceSpace('viewer').then(rs => {
+                _xrViewerSpace = rs;
+                xrSession.requestHitTestSource({ space: _xrViewerSpace }).then(source => {
+                    _hitTestSource = source;
+                }).catch(err => console.log('[AR] Hit-test error:', err));
+            });
         }
 
         if (_onEnterCallback) _onEnterCallback();
     }
 
     function _handleExitAR() {
+        if (_hitTestSource) {
+            try { _hitTestSource.cancel(); } catch (_) {}
+            _hitTestSource = null;
+        }
         if (_onExitCallback) _onExitCallback();
     }
 
     function updateGroundY(scene, camY) {
-        // Cihaz native local-floor destekliyorsa, zemin daima kusursuz sekilde 0'dir.
         if (_isLocalFloor) {
             _groundY = 0;
             return;
         }
 
-        // Desteklemiyorsa (local uzaya dustuyse) ilk acilistaki yuksekligi kitle
+        // Lazer (hit-test) aktifse sürekli (yumuşatılmış şekilde) zemini güncelle
+        if (scene.is('ar-mode') && _hitTestSource) {
+            const frame = scene.frame;
+            if (frame) {
+                const results = frame.getHitTestResults(_hitTestSource);
+                if (results.length > 0) {
+                    const pose = results[0].getPose(_xrRefSpace);
+                    if (pose && pose.transform.position.y < camY - 0.4) {
+                        const targetY = pose.transform.position.y;
+                        if (!_isGroundLocked) {
+                            _groundY = targetY;
+                            _isGroundLocked = true;
+                        } else {
+                            _groundY += (targetY - _groundY) * 0.1; // Smooth lerp
+                        }
+                    }
+                }
+            }
+        }
+
+        // Desteklemiyorsa veya lazer henüz yeri bulamadıysa varsayılanı kullan
         if (!_isGroundLocked) {
             _groundY = camY - 1.65;
-            _isGroundLocked = true;
         }
     }
 
