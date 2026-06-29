@@ -1,5 +1,6 @@
 /**
  * js/ar-renderer.js
+ * AR Navigasyon Three.js Renderer (Gerçek 3D Hacimli Chevron Sistemi )
  */
 
 'use strict';
@@ -10,83 +11,86 @@ const ARRenderer = (function() {
     // -------------------------------------------------------------------------
     const _state = {
         chevrons: [],
-        materials: {},
-        geometries: {},
+        materials: null,
+        geometry: null,
         groundY: 0
     };
 
     const CONFIG = {
-        SPACING: 1.2,        // Her 1.2 metrede bir ok
-        SIZE: 1.2,           // Ok boyutu (Plane genişliği)
-        FLOAT_SPEED: 0.003,  // Havada süzülme hızı
-        FLOAT_HEIGHT: 0.05,  // Havada süzülme genişliği
-        WAVE_SPEED: 0.005,   // İleri doğru akan dalga animasyon hızı
-        COLOR_BORDER: 'rgba(255, 255, 255, 1.0)',
-        COLOR_FILL: 'rgba(26, 115, 232, 0.95)'
+        SPACING: 1.5,        // Her 1.5 metrede bir ok (Karmaşayı azaltır, premium his verir)
+        FLOAT_HEIGHT: 0.03,  // Süzülme genliği (Zeminin içine girmeyi engellemek için daraltıldı)
+        WAVE_SPEED: 0.004,   // Dalga hızı
+        COLOR_FACE: 0x1A73E8, //  Mavi (Üst ve alt yüzey)
+        COLOR_SIDE: 0xFFFFFF  // Beyaz (Kenarlar ve pah kısımları)
     };
 
     // -------------------------------------------------------------------------
-    //  TEXTURE & MATERIAL GENERATION 
+    // 2. GEOMETRY & MATERIAL (TRUE 3D VOLUME)
     // -------------------------------------------------------------------------
-    function _getChevronTexture() {
-        if (_state.materials.chevronTex) return _state.materials.chevronTex;
+    function _initGeomAndMats() {
+        if (_state.geometry) return;
 
-        const size = 256;
-        const canvas = document.createElement('canvas');
-        canvas.width = size; 
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
+        // 2A. 3 Boyutlu Chevron (Ok) Şeklini Çiz
+        const width = 0.85;   // Genişlik
+        const length = 1.0;   // Uzunluk
+        const armW = 0.28;    // Kol kalınlığı
 
-        ctx.clearRect(0, 0, size, size);
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
+        const shape = new THREE.Shape();
+        // Yukarıyı (Plane Y ekseni) gösteren mükemmel "V" çizimi
+        shape.moveTo(0, length / 2);                       // En Uç Nokta (Tepe)
+        shape.lineTo(width / 2, -length / 2);              // Sağ Dış Alt
+        shape.lineTo(width / 2 - armW, -length / 2);       // Sağ İç Alt
+        shape.lineTo(0, length / 2 - armW * 1.5);          // İç Tepe Noktası (V oyuğu)
+        shape.lineTo(-width / 2 + armW, -length / 2);      // Sol İç Alt
+        shape.lineTo(-width / 2, -length / 2);             // Sol Dış Alt
+        shape.lineTo(0, length / 2);                       // Tekrar En Uç
+
+        // 2B. Şekli 3 Boyutlu Hacme Dönüştür (Extrude)
+        const extrudeSettings = {
+            depth: 0.025,       // 2.5 cm kalınlık (Zemine gömülü, sağlam his)
+            bevelEnabled: true, // Kenar yumuşatma (Enterprise UI detayı)
+            bevelSegments: 2,
+            steps: 1,
+            bevelSize: 0.015,
+            bevelThickness: 0.015
+        };
+
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         
-        ctx.beginPath();
-        // Ok yönü: Üst (Three.js'de Plane X'de -90 derece dönünce -Z eksenine bakar)
-        ctx.moveTo(size * 0.15, size * 0.85); // Sol alt
-        ctx.lineTo(size * 0.50, size * 0.15); // Uç noktası
-        ctx.lineTo(size * 0.85, size * 0.85); // Sağ alt
-        ctx.lineTo(size * 0.50, size * 0.55); // İç girinti
-        ctx.closePath();
+        // Geometrinin merkezini ayarla ki dönüşler tam ortadan yapılsın
+        geo.center(); 
+        
+        // Zeminle hizalamak için X ekseninde -90 derece yatır.
+        // Bu işlem sonucunda ok şeklinin ucu (Tepe) otomatik olarak Three.js'in ileri yönü olan -Z'ye bakar.
+        geo.rotateX(-Math.PI / 2); 
+        
+        _state.geometry = geo;
 
-        // Dış Beyaz Çerçeve
-        ctx.lineWidth = 16;
-        ctx.strokeStyle = CONFIG.COLOR_BORDER;
-        ctx.stroke();
-
-        // İç Mavi Dolgu
-        ctx.fillStyle = CONFIG.COLOR_FILL;
-        ctx.fill();
-
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.anisotropy = 4; // Eğik açılarda netlik için
-        _state.materials.chevronTex = tex;
-        return tex;
-    }
-
-    function _getSharedMaterial() {
-        if (_state.materials.chevron) return _state.materials.chevron;
-        _state.materials.chevron = new THREE.MeshBasicMaterial({
-            map: _getChevronTexture(),
+        // 2C. Materyaller (Işık gerektirmeyen MeshBasicMaterial ile maksimum canlılık)
+        const faceMat = new THREE.MeshBasicMaterial({
+            color: CONFIG.COLOR_FACE,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.85,
             depthTest: true,
-            depthWrite: false, // Saydam objelerde arka plan çizim hatasını (Z-fighting) önler
+            depthWrite: true, // 3D objelerin kendi içinde doğru görünmesi için GEREKLİ
             side: THREE.DoubleSide
         });
-        return _state.materials.chevron;
-    }
 
-    function _getSharedGeometry() {
-        if (_state.geometries.plane) return _state.geometries.plane;
-        _state.geometries.plane = new THREE.PlaneGeometry(CONFIG.SIZE, CONFIG.SIZE);
-        // Geometriyi yere paralel hale getir (-90 derece)
-        _state.geometries.plane.rotateX(-Math.PI / 2);
-        return _state.geometries.plane;
+        const sideMat = new THREE.MeshBasicMaterial({
+            color: CONFIG.COLOR_SIDE,
+            transparent: true,
+            opacity: 0.95,
+            depthTest: true,
+            depthWrite: true,
+            side: THREE.DoubleSide
+        });
+
+        // ExtrudeGeometry, [0] indisini ön/arka yüzler, [1] indisini yan/pah yüzleri için kullanır.
+        _state.materials = [faceMat, sideMat];
     }
 
     // -------------------------------------------------------------------------
-    // RENDER LOGIC (LOCALIZATION & INSTANTIATION)
+    // 3. RENDER LOGIC (OFFSET FIX & TRUE ROTATION)
     // -------------------------------------------------------------------------
     function clearPath(parent) {
         if (!parent) return;
@@ -94,8 +98,8 @@ const ARRenderer = (function() {
             if (ch.mesh.parent) {
                 ch.mesh.parent.remove(ch.mesh);
             }
-            if (ch.material && ch.material !== _state.materials.chevron) {
-                ch.material.dispose(); // Klonlanmış materyalleri bellekten sil
+            if (ch.materials) {
+                ch.materials.forEach(m => m.dispose()); // Klonlanmış materyalleri serbest bırak
             }
         });
         _state.chevrons = [];
@@ -105,17 +109,17 @@ const ARRenderer = (function() {
         clearPath(parent);
         if (!leg?.path || leg.path.length < 2) return;
 
+        _initGeomAndMats();
         _state.groundY = groundY;
 
-        //  Koordinatları Ayrıştır
+        // 1. Koordinatları Ayrıştır
         const rawPoints = leg.path.map(pt => {
             const [px, py, pz] = (pt.pos || '').split(' ').map(Number);
             return new THREE.Vector3(px || 0, 0, pz || 0);
         });
 
-        // LOKALİZASYON (OFFSET FIX)
-        // İkinci bacağın haritada uzağa çizilmesini engeller.
-        // Rotanın haritadaki başlangıç noktasını, kameranın AR ortamındaki merkezine (0,0) çeker.
+        // 2. LOKALİZASYON (İkinci Bacak İleriye Çizilme Hatasının Kesin Çözümü)
+        // Rotanın ilk noktasını orijin (0,0,0) kabul ederek diğer tüm noktaları ona göre hizala.
         const mapOrigin = rawPoints[0].clone();
         const localPoints = rawPoints.map(p => {
             return new THREE.Vector3(
@@ -125,37 +129,43 @@ const ARRenderer = (function() {
             );
         });
 
-        //  Yumuşak Eğri (CatmullRomCurve3)
+        // 3. Eğri (CatmullRomCurve3)
         const curve = new THREE.CatmullRomCurve3(localPoints);
         const curveLength = curve.getLength();
         if (curveLength < 0.1) return;
 
-        // Eğri boyunca ayrık Chevron objelerini diz
+        // 4. Chevron Objelerini Diz
         const count = Math.max(1, Math.floor(curveLength / CONFIG.SPACING));
-        const geo = _getSharedGeometry();
-        const baseMat = _getSharedMaterial();
 
         for (let i = 1; i <= count; i++) {
             const t = i / count;
             const pos = curve.getPointAt(t);
             const tangent = curve.getTangentAt(t).normalize();
 
-            // Her ok için bağımsız materyal 
-            const mat = baseMat.clone();
-            const mesh = new THREE.Mesh(geo, mat);
+            // Animasyonlarda bağımsız parlama için materyalleri klonla
+            const mats = [
+                _state.materials[0].clone(), 
+                _state.materials[1].clone()
+            ];
 
-            // Zemin üzerine hafifçe kaldırarak (Y=0.02) fiziksel zeminle çakışmayı engelle
-            mesh.position.set(pos.x, groundY + 0.02, pos.z);
+            const mesh = new THREE.Mesh(_state.geometry, mats);
 
-            // Okun ucu rotanın bir sonraki noktasına baksın
-            mesh.rotation.y = Math.atan2(tangent.x, tangent.z);
+            // Yükseklik: Zemin Y + kalınlığın yarısı (içeri batmasın diye)
+            const baseY = groundY + 0.02; 
+            mesh.position.set(pos.x, baseY, pos.z);
+
+            // YÖN DÜZELTMESİ (TERS V HATASININ ÇÖZÜMÜ)
+            // Ok objemizin sivri ucu -Z yönünde modellendi. 
+            // Tanjant (yolun gidiş yönü) hedefine doğru bakmasını sağla:
+            const targetPos = pos.clone().add(tangent);
+            mesh.lookAt(targetPos);
 
             parent.add(mesh);
 
             _state.chevrons.push({
                 mesh: mesh,
-                material: mat,
-                baseY: groundY + 0.02,
+                materials: mats,
+                baseY: baseY,
                 index: i
             });
         }
@@ -177,22 +187,24 @@ const ARRenderer = (function() {
         const now = performance.now();
         
         _state.chevrons.forEach(ch => {
-            const mesh = ch.mesh;
-            
-            // Dalga (Pulse Wave) efekti (Arkadan öne doğru akar)
-            const wavePhase = (now * CONFIG.WAVE_SPEED) - (ch.index * 0.6);
-            const wave = Math.sin(wavePhase);
+            // Dalga (Pulse Wave) efekti
+            const wavePhase = (now * CONFIG.WAVE_SPEED) - (ch.index * 0.8);
+            const wave = Math.sin(wavePhase); // -1 to 1
 
-            // Opaklık (Oklar ardışık parlar)
-            ch.material.opacity = 0.55 + (wave * 0.35); // 0.20 - 0.90 arası
+            // Opaklık (0.35 ile 0.95 arası organik parlama)
+            const baseOp = 0.65 + (wave * 0.30); 
+            ch.materials[0].opacity = baseOp;
+            ch.materials[1].opacity = Math.min(1.0, baseOp + 0.15); // Kenar çizgileri biraz daha parlak
 
-            // Süzülme (Hover) (Oklar yavaşça aşağı yukarı süzülür)
-            mesh.position.y = ch.baseY + (wave * CONFIG.FLOAT_HEIGHT);
+            // Süzülme (Hover) efekti (Alt limit BaseModel baseY)
+            // Sadece yukarı doğru hafifçe süzülüp tekrar yerine oturur
+            const floatOffset = Math.max(0, wave * CONFIG.FLOAT_HEIGHT);
+            ch.mesh.position.y = ch.baseY + floatOffset;
         });
     }
 
     function updateUniforms(time) {
-        // Eski ribbon altyapısından kalan fonksiyon, geriye dönük uyumluluk için boş
+        // Uyumluluk için boş
     }
 
     return {
