@@ -39,21 +39,22 @@ function _unwrapAngle(newAngle, lastAngle) {
 AFRAME.registerComponent('google-chevron', {
     init: function () {
         const shape = new THREE.Shape();
-        shape.moveTo(0, 0.4);
-        shape.lineTo(0.35, -0.4);
-        shape.lineTo(0.15, -0.4);
+        // %30 büyütülmüş kordinatlar
+        shape.moveTo(0, 0.52);
+        shape.lineTo(0.455, -0.52);
+        shape.lineTo(0.195, -0.52);
         shape.lineTo(0, 0.0);
-        shape.lineTo(-0.15, -0.4);
-        shape.lineTo(-0.35, -0.4);
-        shape.lineTo(0, 0.4);
+        shape.lineTo(-0.195, -0.52);
+        shape.lineTo(-0.455, -0.52);
+        shape.lineTo(0, 0.52);
 
         const extrudeSettings = {
-            depth: 0.02,
+            depth: 0.035, // Daha kalın (etli)
             bevelEnabled: true,
             bevelSegments: 2,
             steps: 1,
-            bevelSize: 0.015,
-            bevelThickness: 0.015
+            bevelSize: 0.02,
+            bevelThickness: 0.02
         };
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -62,8 +63,10 @@ AFRAME.registerComponent('google-chevron', {
         geometry.translate(0, yOffset, 0);
 
         const material = new THREE.MeshStandardMaterial({
-            color: 0x1a73e8, // Google Mavisi
-            roughness: 0.2,
+            color: 0x0066ff, // Yüksek kontrastlı parlak Google Mavisi
+            emissive: 0x0033ff, // Etrafa hafif parlama hissi (Glow)
+            emissiveIntensity: 0.4,
+            roughness: 0.1,
             metalness: 0.1,
             transparent: true,
             opacity: 0.95
@@ -439,26 +442,15 @@ function _tick(time) {
     const camPos = new THREE.Vector3();
     cam.getWorldPosition(camPos);
     
-    // 1. Sürekli WebXR Hit Test (Drift Düzeltmesi)
+    // 1. Kusursuz Zemin Kilidi (Hit-Test kaldırıldı, Donanımsal Y=0 baz alınır)
     const scene = _dom.scene();
-    if (_hitTestSource && scene.frame && _xrRefSpace) {
-        const hitTestResults = scene.frame.getHitTestResults(_hitTestSource);
-        if (hitTestResults.length > 0) {
-            const pose = hitTestResults[0].getPose(_xrRefSpace);
-            // Duvara kitlenmesini önlemek için kameradan biraz aşağıda olmasını teyit et
-            if (pose && pose.transform.position.y < camPos.y - 0.4) {
-                const targetY = pose.transform.position.y;
-                if (_groundY === -1.5) {
-                    _groundY = targetY; // İlk vuruşta anında otur
-                } else if (Date.now() - AppState.arStartTime < 3000) {
-                    // TİTREMEYİ ÖNLEMEK İÇİN: Sadece ilk 3 saniye yeri kalibre et, sonra ZEMİNİ KİLİTLE
-                    _groundY += (targetY - _groundY) * 0.1;
-                }
-            }
+    if (scene.is('ar-mode')) {
+        // local-floor aktifse kamera 0.8 metrenin üzerindedir (fiziksel boy).
+        if (camPos.y > 0.8) {
+            _groundY = 0; // %100 Zemine oturur, Lazer okuma hatası bitti.
+        } else {
+            _groundY = camPos.y - 1.5; // Fallback
         }
-    } else if (camPos.y !== 0 && _groundY === -1.5) {
-        // Fallback: camera Y - 1.5m
-        _groundY = camPos.y - 1.5;
     }
     
 
@@ -538,7 +530,28 @@ function _tick(time) {
     const estSec = Math.ceil(remain * 1.5);
     document.getElementById('ar-time').textContent = estSec >= 60 ? `${Math.ceil(estSec / 60)}dk` : `${estSec}sn`;
 
-    /* Dönüş uyarısı (Dalgalanmayı önleyen sabit hedef hesabı ile) */
+    // Üst Paneli (HUD) Dinamik Olarak Sonraki Bacağı (Dönüşü) Gösterecek Şekilde Güncelle
+    const nextLegHUD = AppState.arLegs[AppState.legIdx + 1];
+    const actionEl = document.getElementById('ar-nc-action');
+    const ncIconEl = document.getElementById('ar-nc-icon');
+    if (nextLegHUD) {
+        const ins = (nextLegHUD.instruction || nextLegHUD.title || '').toLowerCase();
+        if (TURN_KEYWORDS_LEFT.some(kw => ins.includes(kw))) {
+            actionEl.textContent = "Sola Dönülecek";
+            ncIconEl.textContent = "↖";
+        } else if (TURN_KEYWORDS_RIGHT.some(kw => ins.includes(kw))) {
+            actionEl.textContent = "Sağa Dönülecek";
+            ncIconEl.textContent = "↗";
+        } else {
+            actionEl.textContent = "Düz Devam";
+            ncIconEl.textContent = "⬆";
+        }
+    } else {
+        actionEl.textContent = "Hedef";
+        ncIconEl.textContent = "📍";
+    }
+
+    /* Dönüş uyarısı (Büyük ekran uyarıcı - Dalgalanmayı önleyen sabit hedef hesabı ile) */
     _handleTurnWarning(distToTurn);
 
     /* Sonraki Bölüm butonu kilit açma (grace period dışında, 0.5m eşiğinde) */
