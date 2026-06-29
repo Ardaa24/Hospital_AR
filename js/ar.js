@@ -19,7 +19,7 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M          = 1.2;   // GLB ok arası mesafe (metre)
+const ARROW_SPACING_M          = 0.6;   // Native geometriler için ideal aralık
 const ARRIVAL_THRESHOLD        = 0.5;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2000;  // AR açıldıktan sonra varış sayılmaz
@@ -287,13 +287,32 @@ function _setArrivedBtnLocked(locked) {
 ════════════════════════════════════════════════════ */
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
-    const yPos = _groundY; 
+    const yPos = _groundY + 0.05; 
     
     el.setAttribute('position', `${px} ${yPos} ${pz}`);
-    el.setAttribute('gltf-model', 'url(Assets/Blue_Arrow_0629181858_texture.glb)');
+    // angleDeg zaten tam ileriye bakacak şekilde hesaplandı
     el.setAttribute('rotation', `0 ${angleDeg} 0`);
-    el.setAttribute('scale', '1 1 1'); 
-    el.setAttribute('shadow', 'receive: false');
+
+    // Sol kanat (Google Maps tarzı kalın, dolgulu ve etli)
+    const left = document.createElement('a-box');
+    left.setAttribute('position', '-0.15 0 0.15');
+    left.setAttribute('rotation', '0 35 0');
+    left.setAttribute('width', '0.5');
+    left.setAttribute('height', '0.02');
+    left.setAttribute('depth', '0.1');
+    left.setAttribute('material', 'shader: flat; color: #1a73e8; transparent: true; opacity: 0.9');
+
+    // Sağ kanat
+    const right = document.createElement('a-box');
+    right.setAttribute('position', '0.15 0 0.15');
+    right.setAttribute('rotation', '0 -35 0');
+    right.setAttribute('width', '0.5');
+    right.setAttribute('height', '0.02');
+    right.setAttribute('depth', '0.1');
+    right.setAttribute('material', 'shader: flat; color: #1a73e8; transparent: true; opacity: 0.9');
+
+    el.appendChild(left);
+    el.appendChild(right);
 
     return { el, baseY: yPos, index: indexOffset };
 }
@@ -440,7 +459,8 @@ function _tick(time) {
         const deg = THREE.MathUtils.radToDeg(relativeAngle);
         
         const arrowEl = document.getElementById('ar-hud-arrow');
-        if (arrowEl) arrowEl.style.transform = `rotate(${deg - 45}deg)`; 
+        // Pusula tam tersini gösterdiği için 180 derece (135 = 180 - 45) ekleyerek tersine çevirdik.
+        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 135}deg)`; 
     }
 
     /* Gerçek hedefe olan (bacak bitişi) uzaklık */
