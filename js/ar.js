@@ -29,6 +29,14 @@ const TURN_KEYWORDS_RIGHT      = ['sağa'];
 
 
 /* ── Mesafe Hesaplama Yardımcısı ── */
+function _parsePos(pt) {
+    if (!pt || !pt.pos) return { x: 0, y: 0, z: 0 };
+    const [x, y, z] = pt.pos.split(' ').map(Number);
+    return { x: x||0, y: y||0, z: z||0 };
+}
+
+let _activeArrows = []; // Animasyon ve culling için ok listesi
+
 function _calcLegDistance(path) {
     if (!path || path.length < 2) return 0;
     let dist = 0;
