@@ -142,8 +142,6 @@ function _onEnterARCallback() {
     document.getElementById('ar-dest').textContent = AppState.activeRoute.name;
     _updateArrivedBtn();
 
-    // In local space, starting a new XR session automatically places the origin (0,0,0)
-    // at the user's current physical position. We don't need any offset!
     _drawCurrentLegPath();
 
     _lastTickTime = 0;
@@ -272,6 +270,15 @@ async function _drawCurrentLegPath() {
     arrowsObj.rotation.y = containerRotY;
     arrowsObj.updateMatrixWorld(true);
 
+    // Navigasyon hesaplamaları için lokalize edilmiş path (offsetten arındırılmış)
+    AppState.localizedCurrentPath = leg.path.map(pt => {
+        const raw = pt.pos.split(' ').map(Number);
+        return {
+            ...pt,
+            pos: `${raw[0] - p1[0]} ${raw[1]} ${raw[2] - p1[2]}`
+        };
+    });
+
     // Draw the path locally starting from (0,0,0)
     ARRenderer.drawPath(leg, arrowsObj, ARCore.getGroundY(), {x: 0, z: 0});
 }
@@ -313,25 +320,20 @@ function _tick(time) {
     ARCompass.updateHUD(arrowEl, _camPosCache, cam, curLeg);
 
     let distToTurn = Infinity;
-    if (curLeg?.path?.length > 0) {
-        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
-        // Origin offset ile düzeltilmiş hedef pozisyon
-        const fp = { x: fpRaw[0], z: fpRaw[2] };
-    }
-    
-    // Mesafe ve İlerleme
     let remain = 0;
-    if (curLeg?.path) {
-        const totalDist = ARNavigation.calcLegDistance(curLeg.path);
+    const localizedPath = AppState.localizedCurrentPath;
+
+    if (localizedPath && localizedPath.length > 0) {
+        const totalDist = ARNavigation.calcLegDistance(localizedPath);
       
         // Convert world cam position to local arrowsObj space
         const localCamPos = _camPosCache.clone();
         arrowsObj.worldToLocal(localCamPos);
 
-        const covered = ARNavigation.getProgress(localCamPos, curLeg.path);
+        const covered = ARNavigation.getProgress(localCamPos, localizedPath);
         remain = Math.max(0, totalDist - covered);
         
-        const fpRaw = curLeg.path[curLeg.path.length - 1].pos.split(' ').map(Number);
+        const fpRaw = localizedPath[localizedPath.length - 1].pos.split(' ').map(Number);
         distToTurn = Math.hypot(localCamPos.x - fpRaw[0], localCamPos.z - fpRaw[2]);
     }
 
