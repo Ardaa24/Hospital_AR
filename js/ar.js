@@ -19,13 +19,63 @@ const _dom = {
 };
 
 /* ── Sabitler ── */
-const ARROW_SPACING_M          = 1.0;   // Yerdeki holografik şeritler için ideal aralık
+const ARROW_SPACING_M          = 0.8;  
 const ARRIVAL_THRESHOLD        = 0.5;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2000;  // AR açıldıktan sonra varış sayılmaz
 const NEXT_SECTION_UNLOCK_DIST = 0.5;   // Sonraki Bölüm butonu kilit açma mesafesi
 const TURN_KEYWORDS_LEFT       = ['sola'];
 const TURN_KEYWORDS_RIGHT      = ['sağa'];
+
+/* ── Pusula Sarmal Çözücü (Anti-Spinning) ── */
+let _lastCompassDeg = 0;
+function _unwrapAngle(newAngle, lastAngle) {
+    let diff = newAngle - (lastAngle % 360);
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    return lastAngle + diff;
+}
+
+AFRAME.registerComponent('google-chevron', {
+    init: function () {
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0.4);
+        shape.lineTo(0.35, -0.4);
+        shape.lineTo(0.15, -0.4);
+        shape.lineTo(0, 0.0);
+        shape.lineTo(-0.15, -0.4);
+        shape.lineTo(-0.35, -0.4);
+        shape.lineTo(0, 0.4);
+
+        const extrudeSettings = {
+            depth: 0.02,
+            bevelEnabled: true,
+            bevelSegments: 2,
+            steps: 1,
+            bevelSize: 0.015,
+            bevelThickness: 0.015
+        };
+
+        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geometry.computeBoundingBox();
+        const yOffset = -0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
+        geometry.translate(0, yOffset, 0);
+
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x1a73e8, // Google Mavisi
+            roughness: 0.2,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.95
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        // XY düzleminden XZ (zemin) düzlemine yatır
+        mesh.rotation.x = -Math.PI / 2;
+
+        this.el.setObject3D('mesh', mesh);
+    }
+});
 
 
 /* ── Mesafe Hesaplama Yardımcısı ── */
@@ -179,7 +229,14 @@ function _onEnterAR() {
     const scene = _dom.scene();
     if (scene.is('ar-mode') && scene.renderer.xr.getSession()) {
         const xrSession = scene.renderer.xr.getSession();
-        xrSession.requestReferenceSpace('local').then((refSpace) => { _xrRefSpace = refSpace; });
+        
+        // Önce local-floor (zemin çıpası) iste, Drift'i devasa oranda azaltır
+        xrSession.requestReferenceSpace('local-floor').then((refSpace) => { 
+            _xrRefSpace = refSpace; 
+        }).catch(() => {
+            // Desteklemiyorsa fallback local
+            xrSession.requestReferenceSpace('local').then((refSpace) => { _xrRefSpace = refSpace; });
+        });
         xrSession.requestReferenceSpace('viewer').then((refSpace) => {
             _xrViewerSpace = refSpace;
             xrSession.requestHitTestSource({ space: _xrViewerSpace }).then((source) => {
@@ -287,19 +344,14 @@ function _setArrivedBtnLocked(locked) {
 ════════════════════════════════════════════════════ */
 function _createChevron(px, pz, angleDeg, indexOffset) {
     const el = document.createElement('a-entity');
-    const yPos = _groundY + 0.01; // Zemine tam yapışık (Z-fighting'i önlemek için +1cm)
+    const yPos = _groundY + 0.02; // Z-fighting önlemek ve hafif havada zarif durması için
     
     el.setAttribute('position', `${px} ${yPos} ${pz}`);
-    // SVG ucu yukarı baktığı için X ekseninde -90 çevirerek yere yatırırız, Y rotasyonu da hedefi bulur.
-    el.setAttribute('rotation', `-90 ${angleDeg} 0`);
-
-    // Holografik Zemin Şeridi (Google Maps Style)
-    const plane = document.createElement('a-plane');
-    plane.setAttribute('width', '1.0');
-    plane.setAttribute('height', '1.0');
-    plane.setAttribute('material', 'src: url(Assets/arrow.svg); transparent: true; alphaTest: 0.05; opacity: 0.9');
-
-    el.appendChild(plane);
+    // Bileşenimiz native A-Frame transformasyon sistemini kullanır, bu yüzden yere TAM oturur.
+    el.setAttribute('rotation', `0 ${angleDeg} 0`);
+    
+    // Özel 3D Extruded Geometry Bileşeni
+    el.setAttribute('google-chevron', '');
 
     return { el, baseY: yPos, index: indexOffset };
 }
@@ -449,11 +501,16 @@ function _tick(time) {
         const camRotY = Math.atan2(dir.x, -dir.z); 
 
         const relativeAngle = targetAngleRad - camRotY;
-        const deg = THREE.MathUtils.radToDeg(relativeAngle);
+        const rawDeg = THREE.MathUtils.radToDeg(relativeAngle);
+        
+        // Pusula tam tersini gösterdiği için 180 derece (135 = 180 - 45) ekleyerek tersine çevirdik.
+        const targetDeg = rawDeg + 135;
+        
+        // Unwrap algoritması ile 360 derece fırıldak dönmesini (Spinning) engelliyoruz
+        _lastCompassDeg = _unwrapAngle(targetDeg, _lastCompassDeg);
         
         const arrowEl = document.getElementById('ar-hud-arrow');
-        // Pusula tam tersini gösterdiği için 180 derece (135 = 180 - 45) ekleyerek tersine çevirdik.
-        if (arrowEl) arrowEl.style.transform = `rotate(${deg + 135}deg)`; 
+        if (arrowEl) arrowEl.style.transform = `rotate(${_lastCompassDeg}deg)`; 
     }
 
     /* Gerçek hedefe olan (bacak bitişi) uzaklık */
