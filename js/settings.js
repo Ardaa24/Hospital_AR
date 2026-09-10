@@ -186,6 +186,12 @@ function resetCameraPermission() {
 
 function clearSessionData() {
     sessionStorage.clear();
+
+    // PWA önbelleğini de boşalt — bozuk/eski önbellek AR'ı kilitleyebilir
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHES' });
+    }
+
     updatePermissionBadges();
     showToast("Tüm oturum verileri ve geçici izinler sıfırlandı.");
 }
