@@ -19,11 +19,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="AR Navigasyon">
-    <link rel="apple-touch-icon" href="Assets/icons/icon-512.png">
+    <!-- iOS ana ekran ikonları: şeffaflık desteklenmez, bu dosyalar beyaz zeminlidir -->
+    <link rel="apple-touch-icon" sizes="180x180" href="Assets/icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="Assets/icons/apple-touch-icon-167.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="Assets/icons/apple-touch-icon-152.png">
+
+    <!-- ── PWA: Windows / Eski Edge kutucuğu ── -->
+    <meta name="msapplication-TileColor" content="#FFFFFF">
+    <meta name="msapplication-TileImage" content="Assets/icons/icon-144.png">
+    <meta name="msapplication-tap-highlight" content="no">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="Assets/icons/icon-512.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="Assets/icons/icon-512.png">
+    <link rel="icon" href="Assets/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="16x16" href="Assets/icons/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="Assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="Assets/icons/favicon-48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="Assets/icons/icon-192.png">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -524,7 +535,7 @@
      5. ar.js           — AR Motoru Coordinator (Rollback to 70f67bd)
      6. pwa.js          — Service Worker kaydı + yükleme kartı
 ════════════════════════════════════════════════════ -->
-<script src="js/router.js?v=2.1.0"></script>
+<script src="js/router.js?v=2.2.0"></script>
 <script src="js/settings.js?v=2.2.0"></script>
 <script src="js/list.js?v=2.1.0"></script>
 <script src="js/detail.js?v=2.1.0"></script>

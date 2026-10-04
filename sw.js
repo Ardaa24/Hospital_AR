@@ -12,7 +12,7 @@
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -33,19 +33,46 @@ const PRECACHE_URLS = [
     './index.html',
     './manifest.webmanifest',
     './config.js?v=1.0.2',
+
+    // Stiller
     './css/base.css?v=1.3.0',
     './css/screens.css?v=1.2.0',
     './css/ar.css?v=1.2.0',
-    './js/router.js?v=2.1.0',
+
+    // Betikler
+    './js/router.js?v=2.2.0',
     './js/settings.js?v=2.2.0',
     './js/list.js?v=2.1.0',
     './js/detail.js?v=2.1.0',
+    './js/ar.js?v=2.3.7',
     './js/pwa.js?v=1.0.0',
+
+    // Arayüz görselleri
     './Assets/logo.png',
     './Assets/favicon.ico',
+
+    // AR tabela dokuları (js/ar.js) — ilk AR oturumu çevrimdışı da çalışsın
+    './Assets/asansor_yeni.png',
+    './Assets/danisma_yeni.png',
+    './Assets/laboratuvar_yeni.png',
+    './Assets/noroloji_yeni.png',
+    './Assets/tuvalet_yeni.png',
+
+    // PWA ikonları — yükleme kartı, ana ekran, sekme simgesi
+    './Assets/icons/icon-96.png',
+    './Assets/icons/icon-144.png',
     './Assets/icons/icon-192.png',
+    './Assets/icons/icon-256.png',
+    './Assets/icons/icon-384.png',
     './Assets/icons/icon-512.png',
-    './Assets/icons/apple-touch-icon.png'
+    './Assets/icons/icon-192-maskable.png',
+    './Assets/icons/icon-512-maskable.png',
+    './Assets/icons/apple-touch-icon.png',
+    './Assets/icons/apple-touch-icon-167.png',
+    './Assets/icons/apple-touch-icon-152.png',
+    './Assets/icons/favicon-16.png',
+    './Assets/icons/favicon-32.png',
+    './Assets/icons/favicon-48.png'
 ];
 
 /**

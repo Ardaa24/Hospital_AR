@@ -50,19 +50,35 @@ function vibrate(pattern) {
     }
 }
 
-/* ── Başlangıçta dönüş parametresini işle (ar.html uyumu için) ── */
+/* ── Başlangıçta URL parametrelerini işle ──
+   ?done=<rotaId>  → ar.html'den dönüş, tamamlandı bildirimi
+   ?screen=list    → PWA manifest kısayolu ("Rota Listesi") doğrudan listeyi açar */
 function handleReturnParam() {
     const params = new URLSearchParams(location.search);
     const doneId = params.get('done');
-    if (!doneId) return false;
+    const screen = params.get('screen');
 
+    if (!doneId && !screen) return false;
+
+    // Parametreyi adres çubuğundan temizle; yenilemede tekrar tetiklenmesin
     history.replaceState(null, '', 'index.html');
-    renderList();
-    showScreen('s-routes');
 
-    const doneRoute = NAV_ROUTES.find(r => r.id === doneId);
-    if (doneRoute) {
-        setTimeout(() => showToast(`✓ ${doneRoute.shortName || doneRoute.name} tamamlandı`), 350);
+    if (doneId) {
+        renderList();
+        showScreen('s-routes');
+
+        const doneRoute = NAV_ROUTES.find(r => r.id === doneId);
+        if (doneRoute) {
+            setTimeout(() => showToast(`✓ ${doneRoute.shortName || doneRoute.name} tamamlandı`), 350);
+        }
+        return true;
     }
-    return true;
+
+    if (screen === 'list') {
+        renderList();
+        showScreen('s-routes');
+        return true;
+    }
+
+    return false;
 }
