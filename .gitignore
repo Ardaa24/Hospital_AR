@@ -8,3 +8,6 @@ Thumbs.db
 
 # Eğer ileride Node.js eklemeyi düşünürsem
 node_modules/
+
+# Ham tanıtım görselleri (README görselleri docs/screenshots altında tutulur)
+Tanıtım/
