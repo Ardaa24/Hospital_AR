@@ -216,4 +216,4 @@ Bu projenin kaynak kodu [MIT Lisansı](LICENSE) ile lisanslanmıştır ve telif 
 
 ---
 
-<p align="center"><sub>Öğr. Gör. Yiğit Balcı'nın doktora tezi kapsamında, Tarsus Devlet Hastanesi için geliştirilmiştir.</sub></p>
+
