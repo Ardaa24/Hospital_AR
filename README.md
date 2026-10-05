@@ -189,7 +189,6 @@ Yeni bir birim eklemek için `config.js` içindeki `NAV_ROUTES` dizisine aşağ�
 ## 🗺 Yol Haritası
 
 - [ ] Kalan 29 birim için AR rota verisinin (path/leg) oluşturulması
-- [ ] Sesli arama özelliğinin aktifleştirilmesi (arayüz hazır, `btn-voice-search`)
 - [ ] Çoklu dil desteği (EN)
 - [ ] Analitik: en çok aranan/ziyaret edilen birimlerin ölçümü
 
