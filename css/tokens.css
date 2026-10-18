@@ -70,7 +70,7 @@
     --touch-min:    64px;
     --card-min:     80px;
 
-    /* AR alt paneli içerik yüksekliği (güvenli alan hariç); uyarı ve toast bunun üstüne dizilir */
+    /* AR alt paneli içerik yüksekliği (güvenli alan hariç); dönüş uyarısı bandı bunun üstüne dizilir */
     --ar-panel-h:   140px;
 
     --shadow-sm:    0 1px 3px rgba(0,0,0,.06);

@@ -46,7 +46,6 @@ function _initDom() {
     _dom.turnText       = document.getElementById('ar-turn-text');
     _dom.turnDist       = document.getElementById('ar-turn-dist');
     _dom.mappingOverlay = document.getElementById('ar-mapping-overlay');
-    _dom.actionToast    = document.getElementById('ar-action-toast');
     _dom.srStatus       = document.getElementById('ar-sr-status');
 }
 
@@ -67,6 +66,8 @@ const DYNAMIC_COMPASS_CORRECTION_DEG = -45; // Dinamik pusula için (Lucide navi
 const TURN_KEYWORDS_LEFT       = ['sola'];
 const TURN_KEYWORDS_RIGHT      = ['sağa'];
 const ACTION_MODE_LOCK_MS      = 700;   // Ana buton kipi değişince bu süre dokunuşlar yok sayılır (yanlışlıkla çift dokunuş)
+const CHROME_NOTICE_MS         = 8000;  // AR oturumu açılınca Chrome alt kısımda ~6 sn bir uyarı gösterir (butonu örter);
+                                        // yeşil "Sonraki Bölüm" geçişi bu süre dolmadan yapılmaz. 0 → gecikme yok.
 
 /* ── Performans Sabitleri ── */
 const TARGET_FPS    = 30;
@@ -307,6 +308,7 @@ let _groundY        = -1.5; // Fallback zemin Y değeri
 function _onEnterAR() {
     AppState.arActive    = true;
     AppState.arStartTime = AppState.arStartTime || Date.now();
+    _unlockNotBefore     = Date.now() + CHROME_NOTICE_MS; // Her yeni XR oturumunda Chrome uyarısı yeniden çıkar
     document.body.style.background = 'transparent';
 
     const scene = _dom.scene;
@@ -358,10 +360,6 @@ function _onExitAR() {
     _dom.bottomPanel.style.display = 'none';
     _dom.turnOverlay.classList.remove('visible');
     if (_dom.hudArrow)       _dom.hudArrow.style.display = 'none';
-    if (_dom.actionToast) {
-        _dom.actionToast.classList.remove('visible');
-        _dom.actionToast.classList.remove('toast-noroloji');
-    }
     if (_dom.mappingOverlay) _dom.mappingOverlay.classList.remove('visible');
     _dom.arrows.innerHTML = '';
     _dom.scene.classList.remove('ar-active');
@@ -451,6 +449,7 @@ function _refreshHUD(distToTurn, remain, covered = 0, localCamPos = new THREE.Ve
 ════════════════════════════════════════════════════ */
 let _actionMode      = null;
 let _actionLockUntil = 0;   // Kip değişince bu ana kadar dokunuşlar yok sayılır
+let _unlockNotBefore = 0;   // Oturum açıldıktan sonra Chrome uyarısı geçene kadar yeşil kipe geçilmez
 
 function _setActionMode(mode, { restartLock = false } = {}) {
     const { arrivedBtn, arArriveLabel } = _dom;
@@ -492,39 +491,21 @@ function _updateArrivedBtn() {
 
 /** locked=true → "Bölüm Seç" kipi; locked=false → varış bölgesinde "Sonraki Bölüm" kipi */
 function _setArrivedBtnLocked(locked) {
-    const { arrivedBtn, actionToast } = _dom;
-    if (!arrivedBtn) return;
+    if (!_dom.arrivedBtn) return;
 
     if (locked) {
         _setActionMode('select');
-        if (actionToast) actionToast.classList.remove('visible');
         return;
     }
+
+    // Chrome'un alttaki uyarısı butonu örtüyor: o süre dolana kadar yeşile geçme.
+    // Kullanıcı bölgedeyse bir sonraki karede (tick) geçiş zaten yapılır.
+    if (Date.now() < _unlockNotBefore) return;
 
     // Sadece durum değişiyorsa tetikle (DOM thrashing önleme)
     if (_actionMode === 'next') return;
 
     _setActionMode('next');
-
-    if (actionToast) {
-        const isNoroloji = AppState.activeRoute && AppState.activeRoute.id === 'noroloji';
-        const isLast = AppState.legIdx === AppState.arLegs.length - 1;
-
-        let msg;
-        if (isNoroloji) {
-            actionToast.classList.add('toast-noroloji');
-            msg = 'Sonraki Bölüm';
-        } else {
-            actionToast.classList.remove('toast-noroloji');
-            msg = isLast
-                ? 'Hedefe ulaştınız, Sonraki Bölüm butonuna basın'
-                : 'Sonraki Bölüm butonuna basın';
-        }
-
-        actionToast.innerHTML = `<i data-lucide="check-circle" width="18" height="18" style="vertical-align:middle;margin-right:8px;display:inline-block"></i><span style="vertical-align:middle">${msg}</span>`;
-        if (window.lucide) lucide.createIcons({ root: actionToast });
-        actionToast.classList.add('visible');
-    }
 
     const isLast = AppState.legIdx === AppState.arLegs.length - 1;
     _announce(isLast
@@ -1143,10 +1124,6 @@ function onArrived() {
     _hideTurn();
     vibrate([100, 50, 100]);
 
-    if (_dom.actionToast) {
-        _dom.actionToast.classList.remove('visible');
-    }
-
     AppState.legIdx++;
     AppState.arStartTime = Date.now();
 
@@ -1165,14 +1142,6 @@ function onArrived() {
     } else {
         // Seamless geçiş: Okları anında çiz ve devam et
         _drawArrows();
-        
-        // Yenilenme bildirimi için hafif vurgu
-        if (_dom.actionToast) {
-            _dom.actionToast.innerHTML = `<i data-lucide="refresh-cw" width="18" height="18" style="vertical-align:middle;margin-right:8px;display:inline-block"></i><span style="vertical-align:middle">Rota yenilendi</span>`;
-            if (window.lucide) lucide.createIcons({ root: _dom.actionToast });
-            _dom.actionToast.classList.add('visible');
-            setTimeout(() => _dom.actionToast.classList.remove('visible'), 2000);
-        }
     }
 }
 
@@ -1241,7 +1210,6 @@ function goToLeg(index, { walkedM = 0 } = {}) {
     }
     _hideTurn();
     vibrate([100, 50, 100]);
-    if (_dom.actionToast) _dom.actionToast.classList.remove('visible');
 
     AppState.legIdx      = index;
     AppState.arStartTime = Date.now();
@@ -1255,14 +1223,6 @@ function goToLeg(index, { walkedM = 0 } = {}) {
 
     _drawArrows();
     if (walkedM > 0) _offsetPathBehindUser(walkedM);
-
-    // onArrived ile aynı "yenilendi" bildirimi
-    if (_dom.actionToast) {
-        _dom.actionToast.innerHTML = `<i data-lucide="refresh-cw" width="18" height="18" style="vertical-align:middle;margin-right:8px;display:inline-block"></i><span style="vertical-align:middle">Rota yenilendi</span>`;
-        if (window.lucide) lucide.createIcons({ root: _dom.actionToast });
-        _dom.actionToast.classList.add('visible');
-        setTimeout(() => _dom.actionToast.classList.remove('visible'), 2000);
-    }
 }
 
 /* ════════════════════════════════════════════════════

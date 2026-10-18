@@ -515,40 +515,4 @@ a-scene.ar-active {
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* ── Yeni Aksiyon Toast (HUD Üstü Zarif Bildirim) ── */
-.ar-action-toast {
-    position: absolute;
-    /* Alt panel + dönüş uyarısı bandının üstü: ikisi üst üste binmesin */
-    bottom: calc(var(--ar-panel-h) + env(safe-area-inset-bottom, 0px) + 88px);
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 15px;
-    font-weight: 600;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    white-space: nowrap;
-    z-index: 9999;
-}
-.ar-action-toast.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-.ar-action-toast.toast-noroloji {
-    background: var(--success);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 24px rgb(var(--success-rgb) / .45);
-    font-weight: 700;
-}
-.ar-action-toast.toast-noroloji:active {
-    transform: translateX(-50%) scale(0.96);
-}
-
 
