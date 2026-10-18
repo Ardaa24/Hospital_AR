@@ -101,10 +101,10 @@ Rota verisi `config.js` içinde tanımlanan `NAV_ROUTES` dizisinden gelir. Her r
 
 - **[A-Frame 1.6.0](https://aframe.io/)** — WebXR tabanlı AR sahne motoru (ARCore/ARKit `hit-test`, `local-floor`)
 - **Vanilla JavaScript (ES6+)** — Herhangi bir framework/derleme adımı yok, modüler `js/` dosyaları (`router`, `settings`, `list`, `detail`, `ar`, `pwa`)
-- **Katmanlı CSS** — `base.css`, `screens.css`, `ar.css`
+- **Katmanlı CSS** — `tokens.css`, `base.css`, `screens.css`, `ar.css`
 - **[Lucide Icons](https://lucide.dev/)** — İkon seti
 - **Service Worker + Web App Manifest** — PWA çevrimdışı destek ve kurulabilirlik
-- **Google Fonts — Inter** — Tipografi
+- **Inter** — Tipografi (değişken yazı tipi, kendi sunucumuzdan; SIL OFL 1.1)
 
 > Build aracı, paket yöneticisi veya backend sunucu **yoktur** — proje saf statik dosyalardan oluşur ve herhangi bir statik dosya sunucusuyla (veya GitHub Pages ile) servis edilebilir.
 
@@ -117,15 +117,18 @@ Hastane AR MVP/
 ├── manifest.webmanifest     # PWA manifest
 ├── sw.js                    # Service worker (önbellekleme / offline)
 ├── css/
+│   ├── tokens.css            # Renk ve yazı tipi token'ları (@font-face dahil)
 │   ├── base.css              # Genel/tema stilleri
 │   ├── screens.css           # Liste, detay, ayarlar ekranları
-│   └── ar.css                 # AR HUD ve overlay stilleri
+│   ├── ar.css                 # AR HUD ve overlay stilleri
+│   └── sections.css          # "Bölüm Seç" çekmecesi
 ├── js/
 │   ├── router.js              # Global state + ekran geçişleri
 │   ├── settings.js            # Ayarlar paneli mantığı
 │   ├── list.js                 # Rota listesi render + arama
 │   ├── detail.js               # Birim detay ekranı render
 │   ├── ar.js                    # AR motoru koordinatörü (WebXR, hit-test, HUD)
+│   ├── sections.js            # "Bölüm Seç" çekmecesi (bacak seçimi + yeniden başlatma)
 │   └── pwa.js                   # Service worker kaydı + yükleme/güncelleme bildirimleri
 ├── Assets/                   # Logo, ikonlar, PWA görselleri (gitignored ham tanıtım hariç)
 └── docs/screenshots/         # Bu README'deki ekran görüntüleri

@@ -6,13 +6,13 @@
  *   - Navigasyon (HTML)      → Network-First  (çevrimdışıysa önbellekten)
  *   - Çekirdek CSS/JS        → Stale-While-Revalidate (anında aç, arkada güncelle)
  *   - 3D model & doku & görsel → Cache-First (ilk indirmeden sonra ağa çıkmaz)
- *   - Harici CDN (A-Frame, Lucide, Fonts) → Stale-While-Revalidate
+ *   - Harici CDN (A-Frame, Lucide) → Stale-While-Revalidate
  *
  * SÜRÜM YÜKSELTME: Dosyalarda değişiklik yaptığınızda CACHE_VERSION'ı artırın.
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.1.0';
+const CACHE_VERSION = 'v1.3.0';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -35,16 +35,23 @@ const PRECACHE_URLS = [
     './config.js?v=1.0.2',
 
     // Stiller
-    './css/base.css?v=1.3.0',
-    './css/screens.css?v=1.2.0',
-    './css/ar.css?v=1.2.0',
+    './css/tokens.css?v=1.1.0',
+    './css/base.css?v=1.5.0',
+    './css/screens.css?v=1.3.0',
+    './css/ar.css?v=1.4.0',
+    './css/sections.css?v=1.0.0',
+
+    // Yazı tipi (Inter) — çevrimdışı ilk açılışta da gelsin
+    './Assets/fonts/inter-latin.woff2',
+    './Assets/fonts/inter-latin-ext.woff2',
 
     // Betikler
-    './js/router.js?v=2.2.0',
+    './js/router.js?v=2.3.0',
     './js/settings.js?v=2.2.0',
     './js/list.js?v=2.1.0',
-    './js/detail.js?v=2.1.0',
-    './js/ar.js?v=2.3.7',
+    './js/detail.js?v=2.2.0',
+    './js/ar.js?v=2.4.2',
+    './js/sections.js?v=1.0.1',
     './js/pwa.js?v=1.0.0',
 
     // Arayüz görselleri
@@ -79,15 +86,13 @@ const PRECACHE_URLS = [
  * Cache-First uygulanacak ağır varlıklar.
  * AR projelerinde 3D model ve dokular büyüktür; bir kez indirilir, tekrar ağa çıkılmaz.
  */
-const HEAVY_ASSET_RE = /\.(?:glb|gltf|bin|ktx2|basis|hdr|drc|fbx|obj|mtl|png|jpe?g|webp|avif|svg|ico|mp3|ogg|wav)$/i;
+const HEAVY_ASSET_RE = /\.(?:glb|gltf|bin|ktx2|basis|hdr|drc|fbx|obj|mtl|png|jpe?g|webp|avif|svg|ico|woff2|mp3|ogg|wav)$/i;
 
 /** Harici (cross-origin) izin verilen kaynaklar — sadece bunlar önbelleklenir */
 const ALLOWED_CDN_HOSTS = [
     'aframe.io',
     'unpkg.com',
-    'cdn.jsdelivr.net',
-    'fonts.googleapis.com',
-    'fonts.gstatic.com'
+    'cdn.jsdelivr.net'
 ];
 
 /** Runtime önbelleklerinin üst sınırı (girdi sayısı) */
@@ -152,7 +157,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2) Harici CDN (A-Frame, Lucide, Google Fonts) → Stale-While-Revalidate
+    // 2) Harici CDN (A-Frame, Lucide) → Stale-While-Revalidate
     if (!sameOrigin) {
         if (ALLOWED_CDN_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith('.' + host))) {
             event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE, MAX_RUNTIME_ENTRIES));

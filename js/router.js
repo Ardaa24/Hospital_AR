@@ -5,6 +5,7 @@
  *   - Ekranlar arası geçiş
  *   - Toast bildirimleri
  *   - Paylaşılan uygulama durumu
+ *   - Ortak yardımcılar (titreşim, bölüm metni / metre biçimi)
  *
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
  */
@@ -48,6 +49,22 @@ function vibrate(pattern) {
     if ('vibrate' in navigator) {
         navigator.vibrate(pattern);
     }
+}
+
+/* ── Bölüm (bacak) metni: ekranda ve ekran okuyucuda gösterilecek hali ──
+   config.js talimatları "4.5 metre ilerleyin ⬆️" biçiminde tutulur; emoji atılır,
+   ondalık ayırıcı Türkçe olur ("4,5 metre ilerleyin"). */
+function formatLegText(text) {
+    return (text || '')
+        .replace(/[\p{Extended_Pictographic}️‍]/gu, '')
+        .replace(/(\d)\.(\d)/g, '$1,$2')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/* ── Metre biçimi: 4.5 → "4,5 m", 17.25 → "17,25 m" ── */
+function formatMeters(meters) {
+    return `${meters.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} m`;
 }
 
 /* ── Başlangıçta URL parametrelerini işle ──

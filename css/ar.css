@@ -150,7 +150,7 @@ a-scene.ar-active {
 ──────────────────────────────────────────────────── */
 #ar-turn {
     position: absolute;
-    bottom: 130px; /* Above compact bottom panel */
+    bottom: calc(var(--ar-panel-h) + env(safe-area-inset-bottom, 0px) + 12px); /* Alt panelin hemen üstü */
     left: 16px;
     right: 16px;
     padding: 14px 18px;
@@ -159,17 +159,17 @@ a-scene.ar-active {
     flex-direction: row;
     align-items: center;
     gap: 12px;
-    background: rgba(22, 163, 74, 0.95);
+    background: rgb(var(--success-rgb) / .95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.4);
+    box-shadow: 0 8px 24px rgb(var(--success-rgb) / .4);
     pointer-events: none;
     z-index: 100;
 }
 #ar-turn.visible { display: flex; }
 #ar-turn.guidance {
-    background: rgba(29, 78, 216, 0.95);
-    box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4);
+    background: rgb(var(--primary-rgb) / .95);
+    box-shadow: 0 8px 24px rgb(var(--primary-rgb) / .4);
 }
 
 .turn-icon {
@@ -204,59 +204,76 @@ a-scene.ar-active {
 /* ────────────────────────────────────────────────────
    AR HUD — BOTTOM PANEL
 ──────────────────────────────────────────────────── */
+/* Opak panel (kamera görüntüsü üstünde okunurluk için bulanıklık yok).
+   Üst satır: hedef + kalan mesafe/süre. Alt satır: tam genişlikte ana eylem butonu. */
 #ar-bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    background: rgba(255,255,255,0.97);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 24px 24px 0 0;
-    padding: 24px 20px calc(env(safe-area-inset-bottom,20px) + 20px);
+    min-height: calc(var(--ar-panel-h) + env(safe-area-inset-bottom, 0px));
+    background: var(--card);
+    border-top: 1.5px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: flex-end;
     gap: 12px;
     pointer-events: auto;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
     z-index: 10;
 }
 
-.arb-info { flex: 1; min-width: 0; padding-left: 16px; }
+.arb-info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
 .arb-dest {
-    font-size: 15px; font-weight: 700;
+    font-size: 16px; font-weight: 700;
     color: var(--ink);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 2px;
+    min-width: 0;
 }
-.arb-metrics { display: flex; align-items: baseline; gap: 6px; }
+.arb-metrics {
+    display: flex; align-items: baseline; gap: 8px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
 .arb-dist {
-    font-size: 26px; font-weight: 800;
-    color: var(--primary); letter-spacing: -0.5px;
+    font-size: 22px; font-weight: 700;
+    color: var(--primary);
 }
 .arb-time {
-    font-size: 18px; font-weight: 700;
-    color: var(--ink);
+    font-size: 16px; font-weight: 600;
+    color: var(--muted);
 }
 
-/* Sonraki Bölüm / Ulaştım Butonu */
+/* ── Ana eylem butonu ──
+   data-mode="select" → mavi "Bölüm Seç"  |  data-mode="next" → yeşil "Sonraki Bölüm".
+   Durum yalnızca renkle değil etiket ve ikonla da değişir. */
 .arb-next-btn {
-    min-height: 52px;
+    width: 100%;
+    min-height: var(--touch-min);
     padding: 0 20px;
     border-radius: 12px;
-    font-size: 15px; font-weight: 700;
-    background: #D1D1D6;
-    color: #1C1C1E;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: none;
+    font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    background: var(--primary);
+    color: #fff;
     white-space: nowrap;
-    transition: transform .12s, opacity .15s;
     cursor: pointer;
-    flex-shrink: 0;
+    transition: transform .12s, background-color .15s;
 }
-.arb-next-btn:active:not(:disabled) { transform: scale(0.96); opacity: 0.85; }
-.arb-next-btn:disabled {
-    opacity: 0.4; cursor: not-allowed;
-}
+.arb-next-btn:active { transform: scale(0.98); background: var(--primary-dark); }
+
+.arb-next-btn[data-mode="next"]        { background: var(--success); }
+.arb-next-btn[data-mode="next"]:active { background: var(--success-dark); }
+
+.arb-icon { width: 24px; height: 24px; flex-shrink: 0; }
+.arb-next-btn[data-mode="select"] .arb-icon-next   { display: none; }
+.arb-next-btn[data-mode="next"]   .arb-icon-select { display: none; }
 
 /* ────────────────────────────────────────────────────
    AR — BİLGİ EKRANI (Asansör vb. ara adım)
@@ -378,13 +395,12 @@ a-scene.ar-active {
     width: 46px;
     height: 46px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #E8F7EF, #C6EFDA);
+    background: var(--success-light);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(24,165,88,.2);
 }
 .done-head-title  { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
 .done-head-sub    { font-size: 13px; color: var(--muted); font-weight: 500; }
@@ -487,7 +503,7 @@ a-scene.ar-active {
     width: 48px;
     height: 48px;
     border: 4px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--primary);
+    border-top-color: #fff; /* Koyu zemin üstünde görünür kalsın (koyu mavi burada ~2:1) */
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -502,7 +518,8 @@ a-scene.ar-active {
 /* ── Yeni Aksiyon Toast (HUD Üstü Zarif Bildirim) ── */
 .ar-action-toast {
     position: absolute;
-    bottom: 140px; /* HUD panelinin tam üstü */
+    /* Alt panel + dönüş uyarısı bandının üstü: ikisi üst üste binmesin */
+    bottom: calc(var(--ar-panel-h) + env(safe-area-inset-bottom, 0px) + 88px);
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: rgba(15, 23, 42, 0.9);
@@ -525,26 +542,13 @@ a-scene.ar-active {
     transform: translateX(-50%) translateY(0);
 }
 .ar-action-toast.toast-noroloji {
-    background: #059669;
+    background: var(--success);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45);
+    box-shadow: 0 8px 24px rgb(var(--success-rgb) / .45);
     font-weight: 700;
 }
 .ar-action-toast.toast-noroloji:active {
     transform: translateX(-50%) scale(0.96);
 }
 
-/* ── "Sonraki Bölüm" Butonu Glow Efekti ── */
-.arb-next-btn.btn-glow {
-    background: var(--success);
-    color: white;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
-    animation: pulse-glow 2s infinite;
-}
-
-@keyframes pulse-glow {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
 

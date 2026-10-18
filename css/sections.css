@@ -1,0 +1,161 @@
+/* ════════════════════════════════════════════════════
+   sections.css — "Bölüm Seç" Çekmecesi (AR HUD içinde)
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+
+   Düz dolgu, 1,5 px kenarlık, tek köşe ölçeği (8 / 12 px); gölge, gradyan ve
+   bulanıklık yok. Satırlar ≥72 px, düğmeler ≥64 px (tekerlekli sandalye / titreme).
+════════════════════════════════════════════════════ */
+
+[hidden] { display: none !important; }
+
+.sections-sheet {
+    position: absolute;
+    inset: 0;
+    z-index: 10001;              /* Haritalama ekranı (10000) ve toast (9999) üstünde */
+    display: none;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.sections-sheet.is-open { display: flex; }
+
+.sections-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(15 25 35 / .6);
+}
+
+.sections-panel {
+    position: relative;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border-top: 1.5px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+
+.sections-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+}
+
+/* ── Başlık ── */
+.sections-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.sections-title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--ink);
+}
+.sections-title:focus { outline: none; }   /* Odak yalnızca ekran okuyucu içindir (tabindex=-1) */
+.sections-sub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+}
+.sections-close {
+    margin-left: auto;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--ink);
+}
+.sections-close:active { background: var(--border); }
+
+/* ── Bölüm listesi ── */
+.sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.section-row {
+    width: 100%;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--ink);
+    font-size: 16px;
+    transition: background-color .12s;
+}
+.section-row:active { background: var(--bg); }
+
+.section-row.is-current {
+    background: var(--primary-light);
+    border: 2px solid var(--primary);
+}
+
+.section-num {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.section-row.is-done .section-num { background: var(--success); }
+
+.section-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.section-text {
+    font-weight: 600;
+    line-height: 1.35;
+}
+.section-meta {
+    font-size: 14px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.section-state {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.section-row.is-current .section-state { background: var(--primary); color: #fff; }
+.section-row.is-done .section-state    { background: var(--success-light); color: var(--success); }
+
+/* ── Onay adımı ── */
+.sections-confirm-text {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink);
+}
+.sections-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

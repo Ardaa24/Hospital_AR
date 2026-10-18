@@ -6,7 +6,7 @@
  *   - Hero kart, stat grid, etiketler, konum bilgileri render
  *   - AR butonuna tıklandığında startAR() çağrısı
  *
- * Bağımlılıklar: router.js (showScreen), ar.js (startAR)
+ * Bağımlılıklar: router.js (showScreen), ar.js (startAR, _calcLegDistance)
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
  */
 
@@ -21,7 +21,7 @@ function _calcStats(route) {
 
     (route.legs || []).forEach(leg => {
         if (leg.type === 'ar') {
-            if (leg.path) totalDist += leg.path.length;
+            totalDist += _calcLegDistance(leg.path); // ar.js: path noktaları arası gerçek metre
             const ins = (leg.instruction || '').toLowerCase();
             if (TURN_KEYWORDS.some(kw => ins.includes(kw))) turns++;
         }
@@ -29,7 +29,7 @@ function _calcStats(route) {
     });
 
     const estMin = Math.max(1, Math.ceil(totalDist * 1.5 / 60));
-    return { totalDist, turns, hasElev, estMin };
+    return { totalDist: Math.round(totalDist), turns, hasElev, estMin };
 }
 
 /* ── Bilgi Satırı Fabrikası (DRY) ── */

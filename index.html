@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <!-- Uygulama arayüzü açık temalı: durum çubuğu kurumsal mavi kalır.
          Manifest'teki #000000 yalnızca açılış (splash) ekranı içindir. -->
-    <meta name="theme-color" content="#1A6FD4">
+    <meta name="theme-color" content="#0055A5">
     <meta name="color-scheme" content="light">
     <meta name="application-name" content="AR Navigasyon">
 
@@ -35,10 +35,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="Assets/icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="48x48" href="Assets/icons/favicon-48.png">
     <link rel="icon" type="image/png" sizes="192x192" href="Assets/icons/icon-192.png">
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Yazı tipi: Inter, kendi sunucumuzdan (@font-face: css/tokens.css) -->
+    <link rel="preload" href="Assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- A-Frame AR Motoru -->
     <!-- A-Frame AR Motoru v1.6.0 (ARKit/ARCore iyileştirmeleri, local-floor stabilitesi) -->
@@ -80,9 +78,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Stiller (ayrı katmanlar) -->
-    <link rel="stylesheet" href="css/base.css?v=1.3.0">
-    <link rel="stylesheet" href="css/screens.css?v=1.2.0">
-    <link rel="stylesheet" href="css/ar.css?v=1.2.0">
+    <link rel="stylesheet" href="css/tokens.css?v=1.1.0">
+    <link rel="stylesheet" href="css/base.css?v=1.5.0">
+    <link rel="stylesheet" href="css/screens.css?v=1.3.0">
+    <link rel="stylesheet" href="css/ar.css?v=1.4.0">
+    <link rel="stylesheet" href="css/sections.css?v=1.0.0">
 </head>
 <body>
 
@@ -216,7 +216,13 @@
 <!-- ════════════════════════════════════════════════════
      AR — HUD OVERLAY
 ════════════════════════════════════════════════════ -->
-<div id="ar-overlay" aria-hidden="true">
+<!-- aria-hidden YOK: Voice Access / Switch Access kullanan kişiler HUD düğmelerine erişebilsin.
+     Sürekli güncellenen metinler (mesafe, süre, dönüş uyarısı) tek tek aria-hidden'dır;
+     önemli değişiklikler #ar-sr-status ile duyurulur. -->
+<div id="ar-overlay">
+
+  <!-- Ekran okuyucu duyuruları (görünmez) -->
+  <div id="ar-sr-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Ortam Haritalama Bekleme Ekranı -->
   <div id="ar-mapping-overlay">
@@ -237,7 +243,7 @@
     </button>
 
     <!-- Orta: Yönlendirme Pill (mesafe + talimat) -->
-    <div class="ar-hud-pill" role="status" aria-live="polite">
+    <div class="ar-hud-pill" aria-hidden="true">
       <div class="ahp-direction-icon" id="ar-nc-icon">←</div>
       <div class="ahp-text">
         <div class="ahp-distance" id="ar-nc-label">-- kaldı</div>
@@ -251,24 +257,66 @@
   </div>
 
   <!-- Dönüş Uyarısı -->
-  <div id="ar-turn" role="alert" aria-live="assertive">
+  <div id="ar-turn" aria-hidden="true">
       <div class="turn-icon" id="ar-turn-icon" aria-hidden="true"><i data-lucide="corner-up-left" width="36" height="36" style="color:white;"></i></div>
       <div class="turn-label" id="ar-turn-text">SOLA DÖN</div>
       <div class="turn-dist" id="ar-turn-dist"></div>
   </div>
 
-  <!-- Alt Panel: Hedef + Metrikler + Sonraki Bölüm Butonu -->
-  <div id="ar-bottom" role="status">
-    <div class="arb-info">
+  <!-- Alt Panel: Hedef + Metrikler + ana eylem butonu.
+       Buton iki kiple çalışır (js/ar.js): "Bölüm Seç" (mavi) ⇄ "Sonraki Bölüm" (yeşil) -->
+  <div id="ar-bottom">
+    <div class="arb-info" aria-hidden="true">
       <div class="arb-dest" id="ar-dest"></div>
       <div class="arb-metrics">
         <span class="arb-dist" id="ar-dist">--</span>
         <span class="arb-time" id="ar-time">--</span>
       </div>
     </div>
-    <button id="ar-arrived-btn" class="arb-next-btn ar-interactive" onclick="onArrived()" aria-label="Sonraki bölüm">
-      <span id="ar-arrive-label">Sonraki Bölüm</span>
+    <button id="ar-arrived-btn" class="arb-next-btn ar-interactive" type="button"
+            data-mode="select" onclick="onMainActionClick()">
+      <i data-lucide="list-ordered" class="arb-icon arb-icon-select" width="24" height="24" aria-hidden="true"></i>
+      <i data-lucide="check" class="arb-icon arb-icon-next" width="24" height="24" aria-hidden="true"></i>
+      <span id="ar-arrive-label">Bölüm Seç</span>
     </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       BÖLÜM SEÇ ÇEKMECESİ (js/sections.js)
+       #ar-overlay İÇİNDE olmalı: WebXR DOM overlay yalnızca bu elementi gösterir.
+  ════════════════════════════════════════════════════ -->
+  <div id="sections-sheet" class="sections-sheet ar-interactive">
+    <div id="sections-backdrop" class="sections-backdrop"></div>
+
+    <div class="sections-panel" role="dialog" aria-modal="true" aria-labelledby="sections-title">
+
+      <!-- Görünüm 1: bölüm listesi -->
+      <div id="sections-view-list" class="sections-view">
+        <div class="sections-head">
+          <div>
+            <h2 id="sections-title" class="sections-title">Bölüm Seç</h2>
+            <p id="sections-sub" class="sections-sub"></p>
+          </div>
+          <button id="sections-close" class="sections-close" type="button" aria-label="Kapat">
+            <i data-lucide="x" width="24" height="24" aria-hidden="true"></i>
+          </button>
+        </div>
+        <ul id="sections-list" class="sections-list"></ul>
+        <button id="sections-cancel" class="btn btn-ghost" type="button">Kapat</button>
+      </div>
+
+      <!-- Görünüm 2: onay adımı -->
+      <div id="sections-view-confirm" class="sections-view" hidden>
+        <h2 id="sections-confirm-title" class="sections-title" tabindex="-1"></h2>
+        <p id="sections-confirm-text" class="sections-confirm-text"></p>
+        <div class="sections-actions">
+          <button id="sections-confirm-ok" class="btn btn-primary" type="button"></button>
+          <button id="sections-confirm-alt" class="btn btn-ghost" type="button" hidden></button>
+          <button id="sections-confirm-back" class="btn btn-ghost" type="button">Geri</button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </div>
@@ -307,7 +355,7 @@
 <div id="ar-done" role="main" aria-label="Navigasyon tamamlandı">
 
     <div class="done-head">
-        <div class="done-badge" aria-hidden="true"><i data-lucide="check" width="24" height="24" style="color:#10b981;"></i></div>
+        <div class="done-badge" aria-hidden="true"><i data-lucide="check" width="24" height="24" style="color:var(--success);"></i></div>
         <div>
             <div class="done-head-title">Hedefinize Ulaştınız</div>
             <div class="done-head-sub" id="done-head-sub">Navigasyon tamamlandı</div>
@@ -533,13 +581,15 @@
      3. list.js         — rota listesi render
      4. detail.js       — detay ekranı render
      5. ar.js           — AR Motoru Coordinator (Rollback to 70f67bd)
-     6. pwa.js          — Service Worker kaydı + yükleme kartı
+     6. sections.js     — Bölüm Seç çekmecesi (ar.js'ten sonra yüklenir)
+     7. pwa.js          — Service Worker kaydı + yükleme kartı
 ════════════════════════════════════════════════════ -->
-<script src="js/router.js?v=2.2.0"></script>
+<script src="js/router.js?v=2.3.0"></script>
 <script src="js/settings.js?v=2.2.0"></script>
 <script src="js/list.js?v=2.1.0"></script>
-<script src="js/detail.js?v=2.1.0"></script>
-<script src="js/ar.js?v=2.3.7"></script>
+<script src="js/detail.js?v=2.2.0"></script>
+<script src="js/ar.js?v=2.4.2"></script>
+<script src="js/sections.js?v=1.0.1"></script>
 <script src="js/pwa.js?v=1.0.0"></script>
 
 <script>
@@ -566,6 +616,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* Ayarlar */
     initSettings();
+
+    /* AR: Bölüm Seç çekmecesi */
+    initSectionPicker();
 
     /* ar.html'den veya done param ile dönüş kontrolü */
     handleReturnParam();
