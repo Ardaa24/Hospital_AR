@@ -54,7 +54,7 @@
 .welcome-title {
     font-size: 28px;
     font-weight: 800;
-    color: #000;
+    color: var(--ink);
     line-height: 1.2;
     letter-spacing: -.6px;
     margin-bottom: 14px;
@@ -62,7 +62,7 @@
 
 .welcome-desc {
     font-size: 16px;
-    color: #8E8E93;
+    color: var(--muted);
     line-height: 1.55;
     font-weight: 500;
     margin-bottom: 40px;
@@ -76,10 +76,9 @@
     border-radius: 14px;
     font-size: 16px;
     font-weight: 600;
-    /* Brand Gradient colors (kurumsal uyum için) */
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: var(--primary);
     color: #fff;
-    box-shadow: 0 6px 20px rgba(26, 111, 212, 0.24);
+    box-shadow: 0 6px 20px rgb(var(--primary-rgb) / .24);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -89,7 +88,8 @@
 }
 .welcome-cta:active {
     transform: scale(0.985);
-    box-shadow: 0 3px 10px rgba(26, 111, 212, 0.15);
+    background: var(--primary-dark);
+    box-shadow: 0 3px 10px rgb(var(--primary-rgb) / .15);
 }
 
 .welcome-location {
@@ -108,7 +108,7 @@
 
 .welcome-disclaimer {
     font-size: 12px;
-    color: #C7C7CC;
+    color: var(--muted);
     line-height: 1.6;
     max-width: 300px;
     text-align: center;
@@ -190,9 +190,9 @@
     animation: voicePulse 1.5s infinite;
 }
 @keyframes voicePulse {
-    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
-    70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    0% { box-shadow: 0 0 0 0 rgb(var(--danger-rgb) / .4); }
+    70% { box-shadow: 0 0 0 8px rgb(var(--danger-rgb) / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(var(--danger-rgb) / 0); }
 }
 
 /* Rota listesi kapsayıcı */
@@ -224,7 +224,7 @@
     gap: 13px;
     /* Erişilebilirlik: minimum kart yüksekliği */
     min-height: var(--card-min);
-    border: 1.5px solid rgba(26,111,212,.16); /* Kurumsal mavi çerçeve */
+    border: 1.5px solid rgb(var(--primary-rgb) / .16); /* Kurumsal mavi çerçeve */
     border-left: 4px solid var(--primary); /* Doğal sol mavi çentik (Samsung Bug Fix) */
     box-shadow: var(--shadow-sm); /* Standart gölge */
     cursor: pointer;
@@ -291,7 +291,7 @@
     line-height: 1;
 }
 .badge-ar      { background: var(--primary); color: #fff; }
-.badge-passive { background: #F0F2F5; color: var(--muted); }
+.badge-passive { background: var(--disabled-bg); color: var(--disabled-fg); }
 
 /* Boş sonuç */
 .no-results {
@@ -413,7 +413,7 @@
     color: var(--primary);
     padding: 3px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(26, 111, 212, 0.15);
+    border: 1px solid rgb(var(--primary-rgb) / .15);
     margin-top: 2px;
 }
 
@@ -429,7 +429,7 @@
     color: var(--danger);
     padding: 3px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(220, 38, 38, 0.15);
+    border: 1px solid rgb(var(--danger-rgb) / .15);
     margin-top: 2px;
 }
 
@@ -783,12 +783,12 @@
     color: var(--danger);
 }
 .perm-badge.status-prompt {
-    background: #FEF3C7;
-    color: #D97706;
+    background: var(--primary-light);
+    color: var(--primary);
 }
 .perm-badge.status-unknown {
-    background: #F3F4F6;
-    color: #9CA3AF;
+    background: var(--disabled-bg);
+    color: var(--disabled-fg);
 }
 
 .settings-btn-reset {
@@ -821,7 +821,7 @@
     gap: 8px;
     background: var(--danger-light);
     color: var(--danger);
-    border: 1px solid rgba(220, 38, 38, 0.2);
+    border: 1px solid rgb(var(--danger-rgb) / .2);
     transition: background 0.15s, color 0.15s, transform 0.1s;
     cursor: pointer;
 }
@@ -869,13 +869,13 @@
 
 /* Seçili kart */
 .arrow-style-card.active {
-    border-color: #0ea5e9;
-    background: rgba(14, 165, 233, 0.08);
+    border-color: var(--primary);
+    background: var(--primary-light);
 }
 
 .arrow-style-card.active .arrow-style-check {
     opacity: 1;
-    color: #0ea5e9;
+    color: var(--primary);
 }
 
 /* Metin bilgileri */

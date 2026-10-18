@@ -3,15 +3,17 @@
  *
  * Sorumluluklar:
  *   - A-Frame sahnesini başlatma / kapatma
- *   - İvmeölçer tabanlı adım sayar (Pedometer) ile mesafe takibi
+ *   - Kamera (VIO) tabanlı mesafe takibi
  *   - 3 farklı ok stili (Chevron / Şerit / Parçacık)
  *   - HUD (Heads-Up Display) güncelleme
- *   - Varış ve geçiş butonu yönetimi
+ *   - Ana eylem butonu: "Bölüm Seç" ⇄ "Sonraki Bölüm" kipleri, goToLeg()
  *
  * Bağımlılıklar:
- *   - router.js  → AppState, showScreen, showToast, vibrate
+ *   - router.js  → AppState, showScreen, showToast, vibrate, formatLegText
  *   - config.js  → STEP_LENGTH_M
  *   - settings.js → getArrowStyle()
+ *   - sections.js → openSectionPicker(), closeSectionPicker()
+ *   (sections.js da ar.js'ten goToLeg, getCurrentLegProgress ve _calcLegDistance'ı kullanır)
  *
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
  */
@@ -45,6 +47,7 @@ function _initDom() {
     _dom.turnDist       = document.getElementById('ar-turn-dist');
     _dom.mappingOverlay = document.getElementById('ar-mapping-overlay');
     _dom.actionToast    = document.getElementById('ar-action-toast');
+    _dom.srStatus       = document.getElementById('ar-sr-status');
 }
 
 /* ════════════════════════════════════════════════════
@@ -63,6 +66,7 @@ const COMPASS_CORRECTION_DEG   = 135;   // Pusula görünüm düzeltmesi (derece
 const DYNAMIC_COMPASS_CORRECTION_DEG = -45; // Dinamik pusula için (Lucide navigation ikonu varsayılan 45 derecedir)
 const TURN_KEYWORDS_LEFT       = ['sola'];
 const TURN_KEYWORDS_RIGHT      = ['sağa'];
+const ACTION_MODE_LOCK_MS      = 700;   // Ana buton kipi değişince bu süre dokunuşlar yok sayılır (yanlışlıkla çift dokunuş)
 
 /* ── Performans Sabitleri ── */
 const TARGET_FPS    = 30;
@@ -343,6 +347,7 @@ function _onExitAR() {
     AppState.arActive = false;
     document.body.style.background = '';
     cancelAnimationFrame(AppState.tickRafId);
+    if (window.closeSectionPicker) closeSectionPicker(); // Açıksa Bölüm Seç çekmecesini kapat
 
     if (_hitTestSource) {
         _hitTestSource.cancel();
@@ -440,35 +445,66 @@ function _refreshHUD(distToTurn, remain, covered = 0, localCamPos = new THREE.Ve
 }
 
 /* ════════════════════════════════════════════════════
-   VARIŞ BUTONU YÖNETİMİ
+   ANA EYLEM BUTONU — "Bölüm Seç" ⇄ "Sonraki Bölüm"
+   select → mavi "Bölüm Seç": bölüm seçim çekmecesini açar (her bacak bu kipte başlar)
+   next   → yeşil "Sonraki Bölüm" / "Hedefe Vardım": varış bölgesinde bacağı bitirir
 ════════════════════════════════════════════════════ */
-function _updateArrivedBtn() {
+let _actionMode      = null;
+let _actionLockUntil = 0;   // Kip değişince bu ana kadar dokunuşlar yok sayılır
+
+function _setActionMode(mode, { restartLock = false } = {}) {
     const { arrivedBtn, arArriveLabel } = _dom;
-    if (!arrivedBtn) return;
+    if (!arrivedBtn || (mode === _actionMode && !restartLock)) return;
 
-    const isLast = AppState.legIdx === AppState.arLegs.length - 1;
-    if (arArriveLabel) arArriveLabel.textContent = isLast ? 'Hedefe Vardım' : 'Sonraki Bölüm';
-    arrivedBtn.setAttribute('aria-label', isLast ? 'Hedefe vardım' : 'Sonraki bölüme geç');
+    _actionMode      = mode;
+    _actionLockUntil = Date.now() + ACTION_MODE_LOCK_MS;
+    arrivedBtn.dataset.mode = mode;
 
-    _setArrivedBtnLocked(true); // Her yeni bacakta buton kilitli başlar
+    if (!arArriveLabel) return;
+    if (mode === 'select') {
+        arArriveLabel.textContent = 'Bölüm Seç';
+    } else {
+        const isLast = AppState.legIdx === AppState.arLegs.length - 1;
+        arArriveLabel.textContent = isLast ? 'Hedefe Vardım' : 'Sonraki Bölüm';
+    }
 }
 
+/** Ekran okuyucuya kısa duyuru (görünmez canlı bölge, #ar-overlay içinde) */
+function _announce(message) {
+    const el = _dom.srStatus;
+    if (!el) return;
+    el.textContent = '';
+    setTimeout(() => { el.textContent = message; }, 60); // Aynı metin tekrar gelse de okunsun
+}
+
+function _updateArrivedBtn() {
+    if (!_dom.arrivedBtn) return;
+
+    _setActionMode('select', { restartLock: true }); // Her yeni bacak "Bölüm Seç" ile başlar
+    _setArrivedBtnLocked(true);
+
+    const leg = AppState.arLegs[AppState.legIdx];
+    if (leg) {
+        const text = formatLegText(leg.type === 'info' ? leg.title : leg.instruction);
+        _announce(`${AppState.legIdx + 1}. bölüm. ${text}`);
+    }
+}
+
+/** locked=true → "Bölüm Seç" kipi; locked=false → varış bölgesinde "Sonraki Bölüm" kipi */
 function _setArrivedBtnLocked(locked) {
     const { arrivedBtn, actionToast } = _dom;
     if (!arrivedBtn) return;
 
     if (locked) {
-        arrivedBtn.disabled = true;
-        arrivedBtn.classList.remove('btn-glow');
+        _setActionMode('select');
         if (actionToast) actionToast.classList.remove('visible');
         return;
     }
 
-    // Sadece durum değişiyorsa animasyonu tetikle (DOM thrashing önleme)
-    if (!arrivedBtn.disabled) return;
+    // Sadece durum değişiyorsa tetikle (DOM thrashing önleme)
+    if (_actionMode === 'next') return;
 
-    arrivedBtn.disabled = false;
-    arrivedBtn.classList.add('btn-glow');
+    _setActionMode('next');
 
     if (actionToast) {
         const isNoroloji = AppState.activeRoute && AppState.activeRoute.id === 'noroloji';
@@ -490,6 +526,10 @@ function _setArrivedBtnLocked(locked) {
         actionToast.classList.add('visible');
     }
 
+    const isLast = AppState.legIdx === AppState.arLegs.length - 1;
+    _announce(isLast
+        ? 'Hedefe ulaştınız. Hedefe Vardım düğmesine basın.'
+        : 'Bölümün sonuna geldiniz. Yeni yönünüze bakın, sonra Sonraki Bölüm düğmesine basın.');
     vibrate([100, 50, 100]);
 }
 
@@ -1137,6 +1177,95 @@ function onArrived() {
 }
 
 /* ════════════════════════════════════════════════════
+   ANA EYLEM BUTONU TIKLAMASI & BÖLÜM SEÇ GEÇİŞİ
+════════════════════════════════════════════════════ */
+
+/* Ana eylem butonu — HTML'den çağrılır.
+   "Bölüm Seç" kipinde çekmeceyi açar, "Sonraki Bölüm" kipinde bacağı bitirir (onArrived). */
+function onMainActionClick() {
+    if (Date.now() < _actionLockUntil) return; // Kip yeni değişti: yanlışlıkla gelen dokunuşu yut
+
+    if (_actionMode === 'next') {
+        onArrived();
+    } else if (window.openSectionPicker) {
+        openSectionPicker();
+    }
+}
+
+/**
+ * Aktif bölümde şu ana kadar kat edilen mesafe. HUD'daki "kalan" ile aynı hesap
+ * (_tick ile aynı yöntem: kamera konumu yol üzerine izdüşürülür). AR kapalıysa null.
+ * @returns {{total:number, covered:number, remaining:number}|null}
+ */
+function getCurrentLegProgress() {
+    const leg = AppState.arLegs[AppState.legIdx];
+    if (!leg || !leg.path || leg.path.length < 2 || !_dom.cam || !_dom.arrows) return null;
+
+    const camPos = new THREE.Vector3();
+    _dom.cam.object3D.getWorldPosition(camPos);
+    _dom.arrows.object3D.worldToLocal(camPos);
+
+    const total   = _calcLegDistance(leg.path);
+    const covered = Math.min(total, _getProgress(camPos, leg.path.map(_parsePos)));
+    return { total, covered, remaining: Math.max(0, total - covered) };
+}
+
+/**
+ * Yeni çizilen yolu, kullanıcı yolun başından `meters` ileride duruyormuş gibi kaydırır:
+ * yolun başı kullanıcının arkasında kalır, bitiş noktası gerçek yerinde görünür.
+ * Çizim fonksiyonlarına dokunmadan, _drawArrows() döndükten sonra uygulanır.
+ */
+function _offsetPathBehindUser(meters) {
+    const root = _dom.arrows.object3D;
+    root.translateZ(meters);          // Kapsayıcının yerel +Z yönü kullanıcının arkasıdır
+    root.updateMatrixWorld(true);
+}
+
+/**
+ * Bölüm Seç çekmecesinden çağrılır: seçilen bölümü, bulunduğunuz nokta ve baktığınız
+ * yönden başlatır. Oklar şu anki kamera konumuna göre yeniden çizilir (_drawArrows,
+ * onArrived ile aynı yol). onArrived'dan farkı: bacak numarasını bir artırmaz,
+ * doğrudan `index`'e geçer; böylece aynı bölümü yeniden başlatmak da mümkündür.
+ *
+ * walkedM: bu bölümde zaten yürünmüş mesafe (m). Aynı bölüm yeniden başlatılırken
+ * verilirse oklar yalnızca KALAN mesafe kadar görünür (3 m'nin 2 m'si yürüdüyse 1 m).
+ */
+function goToLeg(index, { walkedM = 0 } = {}) {
+    const leg = AppState.arLegs[index];
+    if (!leg) return;
+
+    cancelAnimationFrame(AppState.tickRafId);
+    if (_arrivalDebounceId) {          // Son bacakta bekleyen otomatik varışı iptal et
+        clearTimeout(_arrivalDebounceId);
+        _arrivalDebounceId = null;
+    }
+    _hideTurn();
+    vibrate([100, 50, 100]);
+    if (_dom.actionToast) _dom.actionToast.classList.remove('visible');
+
+    AppState.legIdx      = index;
+    AppState.arStartTime = Date.now();
+    _updateArrivedBtn();
+
+    if (leg.type === 'info') {
+        if (_dom.scene && _dom.scene.exitVR) _dom.scene.exitVR();
+        setTimeout(() => _showInfoScreen(leg), 300);
+        return;
+    }
+
+    _drawArrows();
+    if (walkedM > 0) _offsetPathBehindUser(walkedM);
+
+    // onArrived ile aynı "yenilendi" bildirimi
+    if (_dom.actionToast) {
+        _dom.actionToast.innerHTML = `<i data-lucide="refresh-cw" width="18" height="18" style="vertical-align:middle;margin-right:8px;display:inline-block"></i><span style="vertical-align:middle">Rota yenilendi</span>`;
+        if (window.lucide) lucide.createIcons({ root: _dom.actionToast });
+        _dom.actionToast.classList.add('visible');
+        setTimeout(() => _dom.actionToast.classList.remove('visible'), 2000);
+    }
+}
+
+/* ════════════════════════════════════════════════════
    TAMAMLANDI EKRANI
 ════════════════════════════════════════════════════ */
 function _showDone() {
@@ -1187,7 +1316,6 @@ function exitARToRoutes() {
     cancelAnimationFrame(AppState.tickRafId);
     _dom.scene.exitVR();
     _dom.infoScreen.classList.remove('visible');
-    _stopPedometer();
     renderList();
     showScreen('s-routes');
 }

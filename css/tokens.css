@@ -1,0 +1,79 @@
+/* ════════════════════════════════════════════════════
+   tokens.css — Yazı Tipi ve Tasarım Token'ları
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+
+   Renk değerleri tek yerden buradan yönetilir. Diğer stil dosyaları
+   sabit renk kodu yerine bu değişkenleri kullanır.
+════════════════════════════════════════════════════ */
+
+/* ── Inter (değişken yazı tipi, 400–700) ──
+   Kendi sunucumuzdan yüklenir: çevrimdışı çalışır, üçüncü tarafa istek gitmez.
+   Türkçe karakterler için iki parça da gerekir: ç ö ü ı → latin, ş ğ İ → latin-ext.
+   Yazı tipi lisansı: SIL Open Font License 1.1 (bkz. Assets/fonts/README.txt) */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('../Assets/fonts/inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('../Assets/fonts/inter-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+    /* ── Yazı tipi ── */
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    /* ── Marka: mavi (beyaz üstünde 7,4:1) ── */
+    --primary:       #0055A5;
+    --primary-dark:  #00447F;   /* basılı durum */
+    --primary-light: #EBF1F8;   /* açık zemin (rozet, seçili satır) */
+    --primary-rgb:   0 85 165;  /* rgb(var(--primary-rgb) / .2) biçiminde saydamlık için */
+
+    /* ── Marka: yeşil (beyaz üstünde 5,1:1) ── */
+    --success:       #2E7D32;
+    --success-dark:  #225D25;   /* basılı durum */
+    --success-light: #EEF5EF;
+    --success-rgb:   46 125 50;
+
+    /* ── Pasif (devre dışı) durum ──
+       Yazı rengi zemine karşı 6,1:1. Zemin beyaz yüzeyde 1,2:1 ile kaybolur,
+       bu yüzden butonun sınırı 3,5:1 kenarlıkla belirtilir. */
+    --disabled-bg:     #E5E7EB;
+    --disabled-fg:     #4B5563;
+    --disabled-border: #808998;
+
+    /* ── Hata / reddedildi (beyaz üstünde 6,5:1) ── */
+    --danger:        #B91C1C;
+    --danger-light:  #FEE2E2;
+    --danger-rgb:    185 28 28;
+
+    /* ── Nötr ── */
+    --bg:           #F4F5F7;
+    --card:         #FFFFFF;
+    --ink:          #0F1923;
+    --muted:        #4B5563;    /* ikincil metin; beyaz üstünde 7,6:1 */
+    --border:       #E5E8ED;
+
+    --radius-sm:    10px;
+    --radius:       16px;
+    --radius-lg:    20px;
+
+    /* Erişilebilirlik: minimum dokunuş hedefi */
+    --touch-min:    64px;
+    --card-min:     80px;
+
+    /* AR alt paneli içerik yüksekliği (güvenli alan hariç); uyarı ve toast bunun üstüne dizilir */
+    --ar-panel-h:   140px;
+
+    --shadow-sm:    0 1px 3px rgba(0,0,0,.06);
+    --shadow-md:    0 4px 16px rgba(0,0,0,.08);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,.12);
+}

@@ -11,7 +11,7 @@
   "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#FFFFFF",
-  "theme_color": "#1A6FD4",
+  "theme_color": "#0055A5",
   "categories": ["health", "navigation", "medical"],
   "prefer_related_applications": false,
   "launch_handler": {
