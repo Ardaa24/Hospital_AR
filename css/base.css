@@ -310,12 +310,12 @@ body.pwa-banner-open .screen { padding-bottom: 92px; }
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: #1C1C1E;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--ink);
     color: #fff;
-    border-radius: 14px;
-    padding: 12px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    border-radius: var(--radius);
+    padding: 12px 8px 12px 14px;
     box-shadow: 0 8px 28px rgba(0,0,0,.3);
     z-index: 9991;
     opacity: 0;
@@ -328,13 +328,40 @@ body.pwa-banner-open .screen { padding-bottom: 92px; }
     visibility: visible;
     transform: translateY(0);
 }
-.pwa-update-bar button {
-    background: rgba(255,255,255,.14);
+.pwa-update-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+}
+.pwa-update-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.pwa-update-title { font-size: 15px; font-weight: 700; }
+.pwa-update-desc  { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.75); }
+.pwa-update-cta {
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
     color: #fff;
-    border-radius: 9px;
-    padding: 8px 14px;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+.pwa-update-cta:active { background: var(--primary-dark); }
+.pwa-update-cta:disabled { opacity: .7; }
+.pwa-update-close {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    display: grid; place-items: center;
     flex-shrink: 0;
 }
 

@@ -159,18 +159,17 @@ a-scene.ar-active {
     flex-direction: row;
     align-items: center;
     gap: 12px;
-    background: rgb(var(--success-rgb) / .95);
+    /* Mavi: yeşil "Sonraki Bölüm" butonuyla karışmasın. İnce beyaz kenarlık,
+       hemen altındaki mavi "Bölüm Seç" butonundan ayırır. */
+    background: rgb(var(--primary-rgb) / .96);
+    border: 1.5px solid rgba(255,255,255,.35);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 8px 24px rgb(var(--success-rgb) / .4);
+    box-shadow: 0 8px 24px rgb(var(--primary-rgb) / .4);
     pointer-events: none;
     z-index: 100;
 }
 #ar-turn.visible { display: flex; }
-#ar-turn.guidance {
-    background: rgb(var(--primary-rgb) / .95);
-    box-shadow: 0 8px 24px rgb(var(--primary-rgb) / .4);
-}
 
 .turn-icon {
     font-size: 32px;
@@ -271,9 +270,133 @@ a-scene.ar-active {
 .arb-next-btn[data-mode="next"]        { background: var(--success); }
 .arb-next-btn[data-mode="next"]:active { background: var(--success-dark); }
 
-.arb-icon { width: 24px; height: 24px; flex-shrink: 0; }
-.arb-next-btn[data-mode="select"] .arb-icon-next   { display: none; }
-.arb-next-btn[data-mode="next"]   .arb-icon-select { display: none; }
+/* data-mode="wait" → pasif "Hazırlanıyor…" / "Dönüş bekleniyor": dokunuşlar yok sayılır */
+.arb-next-btn[data-mode="wait"],
+.arb-next-btn[data-mode="wait"]:active {
+    background: var(--disabled-bg);
+    color: var(--disabled-fg);
+    border: 1.5px solid var(--disabled-border);
+    transform: none;
+    cursor: default;
+}
+
+.arb-icon { width: 24px; height: 24px; flex-shrink: 0; display: none; }
+.arb-next-btn[data-mode="select"] .arb-icon-select,
+.arb-next-btn[data-mode="next"]   .arb-icon-next,
+.arb-next-btn[data-mode="wait"]   .arb-icon-wait { display: block; }
+
+/* ────────────────────────────────────────────────────
+   AR — GERİ SAYIM HALKASI (hazırlık evresi + dönüş beklemesi)
+   Halka her saniye bir dilim boşalır (js/ar.js → _startCountdown).
+   "Hareketi azalt" açıksa geçişler kapanır, halka adım adım ilerler.
+──────────────────────────────────────────────────── */
+.ar-countdown {
+    position: relative;
+    width: 132px;
+    height: 132px;
+    margin: 0 auto;
+}
+.ar-cd-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);   /* Saat 12 yönünden başla */
+}
+.ar-cd-track,
+.ar-cd-ring {
+    fill: none;
+    stroke-width: 8;
+}
+.ar-cd-track { stroke: var(--primary-light); }
+.ar-cd-ring  { stroke: var(--primary); stroke-linecap: round; }
+.ar-cd-num {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+.ar-cd-num.tick { animation: cd-tick .4s cubic-bezier(.22,1,.36,1); }
+@keyframes cd-tick {
+    from { opacity: 0; transform: translateY(10px) scale(.9); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Koyu zemin (haritalama ekranı) varyantı */
+.ar-countdown--dark .ar-cd-track { stroke: rgba(255,255,255,.2); }
+.ar-countdown--dark .ar-cd-ring  { stroke: #fff; }
+.ar-countdown--dark .ar-cd-num   { color: #fff; }
+
+/* ────────────────────────────────────────────────────
+   AR — DÖNÜŞ BEKLEME KARTI
+   Sağa/sola dönen bir bölüme geçerken oklar çizilmeden önce
+   kullanıcıya dönmesi için süre tanır (tekerlekli sandalye).
+   z-index 5: üst HUD (50) ve alt panel (10) kartın üstünde, görünür kalır.
+──────────────────────────────────────────────────── */
+.ar-turn-wait {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 25, 35, .45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease, visibility .3s;
+    pointer-events: none;
+}
+.ar-turn-wait.visible { opacity: 1; visibility: visible; }
+
+.atw-card {
+    width: 100%;
+    max-width: 340px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 24px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    transform: translateY(16px) scale(.97);
+    transition: transform .4s cubic-bezier(.22,1,.36,1);
+}
+.ar-turn-wait.visible .atw-card { transform: none; }
+
+.atw-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+.atw-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.atw-icon.left  svg { animation: bounceL .6s ease-in-out infinite alternate; }
+.atw-icon.right svg { animation: bounceR .6s ease-in-out infinite alternate; }
+.atw-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+}
+.atw-text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--muted);
+}
 
 /* ────────────────────────────────────────────────────
    AR — BİLGİ EKRANI (Asansör vb. ara adım)
@@ -483,7 +606,9 @@ a-scene.ar-active {
     inset: 0;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(10px);
-    z-index: 10000;
+    /* Üst HUD (50) ve alt panel (10) bu katmanın üstünde kalır: çıkış butonu
+       ve "Hazırlanıyor…" durumu hazırlık evresi boyunca görünür. */
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -498,15 +623,15 @@ a-scene.ar-active {
 .ar-mapping-content {
     text-align: center;
     color: white;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
-.ar-mapping-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    border-top-color: #fff; /* Koyu zemin üstünde görünür kalsın (koyu mavi burada ~2:1) */
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
+.ar-mapping-content .ar-countdown { margin-bottom: 10px; }
+.ar-mapping-title {
+    font-size: 22px;
+    font-weight: 700;
 }
 .ar-mapping-text {
     font-size: 16px;

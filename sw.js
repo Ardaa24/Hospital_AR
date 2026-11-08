@@ -12,7 +12,7 @@
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.4.0';
+const CACHE_VERSION = 'v1.5.1';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -36,9 +36,9 @@ const PRECACHE_URLS = [
 
     // Stiller
     './css/tokens.css?v=1.1.1',
-    './css/base.css?v=1.5.0',
+    './css/base.css?v=1.6.0',
     './css/screens.css?v=1.3.0',
-    './css/ar.css?v=1.5.0',
+    './css/ar.css?v=1.6.0',
     './css/sections.css?v=1.0.0',
 
     // Yazı tipi (Inter) — çevrimdışı ilk açılışta da gelsin
@@ -50,9 +50,9 @@ const PRECACHE_URLS = [
     './js/settings.js?v=2.2.0',
     './js/list.js?v=2.1.0',
     './js/detail.js?v=2.2.0',
-    './js/ar.js?v=2.5.0',
+    './js/ar.js?v=2.6.1',
     './js/sections.js?v=1.0.1',
-    './js/pwa.js?v=1.0.0',
+    './js/pwa.js?v=1.1.0',
 
     // Arayüz görselleri
     './Assets/logo.png',

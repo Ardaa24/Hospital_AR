@@ -79,9 +79,9 @@
 
     <!-- Stiller (ayrı katmanlar) -->
     <link rel="stylesheet" href="css/tokens.css?v=1.1.1">
-    <link rel="stylesheet" href="css/base.css?v=1.5.0">
+    <link rel="stylesheet" href="css/base.css?v=1.6.0">
     <link rel="stylesheet" href="css/screens.css?v=1.3.0">
-    <link rel="stylesheet" href="css/ar.css?v=1.5.0">
+    <link rel="stylesheet" href="css/ar.css?v=1.6.0">
     <link rel="stylesheet" href="css/sections.css?v=1.0.0">
 </head>
 <body>
@@ -225,10 +225,31 @@
   <div id="ar-sr-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Ortam Haritalama Bekleme Ekranı -->
-  <div id="ar-mapping-overlay">
+  <!-- Hazırlık evresi: Chrome'un tam ekran uyarısı alt paneli örttüğü süre boyunca
+       ortam taranır, oklar bu evre bitince çizilir (js/ar.js → PREP_PHASE_SEC). -->
+  <div id="ar-mapping-overlay" aria-hidden="true">
     <div class="ar-mapping-content">
-      <div class="ar-mapping-spinner"></div>
-      <div class="ar-mapping-text">Ortam tanınıyor...<br>Lütfen kamerayı yere doğru tutun.</div>
+      <div class="ar-countdown ar-countdown--dark" id="ar-prep-countdown">
+        <svg class="ar-cd-svg" viewBox="0 0 100 100"><circle class="ar-cd-track" cx="50" cy="50" r="44"/><circle class="ar-cd-ring" cx="50" cy="50" r="44"/></svg>
+        <span class="ar-cd-num"></span>
+      </div>
+      <div class="ar-mapping-title">Ortam tanınıyor</div>
+      <div class="ar-mapping-text">Lütfen kamerayı yere doğru tutun.</div>
+    </div>
+  </div>
+
+  <!-- Dönüş beklemesi: sağa/sola dönen bölüme geçerken oklar çizilmeden önce geri sayar -->
+  <div id="ar-turn-wait" class="ar-turn-wait" aria-hidden="true">
+    <div class="atw-card">
+      <div class="atw-head">
+        <span class="atw-icon" id="ar-turn-wait-icon"></span>
+        <span class="atw-title" id="ar-turn-wait-title">Sola dönün</span>
+      </div>
+      <div class="ar-countdown" id="ar-turn-countdown">
+        <svg class="ar-cd-svg" viewBox="0 0 100 100"><circle class="ar-cd-track" cx="50" cy="50" r="44"/><circle class="ar-cd-ring" cx="50" cy="50" r="44"/></svg>
+        <span class="ar-cd-num"></span>
+      </div>
+      <p class="atw-text">Yeni yönünüze dönün ve bekleyin. Sayaç bitince oklar görünecek.</p>
     </div>
   </div>
 
@@ -261,7 +282,8 @@
   </div>
 
   <!-- Alt Panel: Hedef + Metrikler + ana eylem butonu.
-       Buton iki kiple çalışır (js/ar.js): "Bölüm Seç" (mavi) ⇄ "Sonraki Bölüm" (yeşil) -->
+       Buton üç kiple çalışır (js/ar.js): "Bölüm Seç" (mavi) ⇄ "Sonraki Bölüm" (yeşil),
+       hazırlık evresi ve dönüş beklemesinde pasif "wait" kipi -->
   <div id="ar-bottom">
     <div class="arb-info" aria-hidden="true">
       <div class="arb-dest" id="ar-dest"></div>
@@ -274,6 +296,7 @@
             data-mode="select" onclick="onMainActionClick()">
       <i data-lucide="list-ordered" class="arb-icon arb-icon-select" width="24" height="24" aria-hidden="true"></i>
       <i data-lucide="check" class="arb-icon arb-icon-next" width="24" height="24" aria-hidden="true"></i>
+      <i data-lucide="hourglass" class="arb-icon arb-icon-wait" width="24" height="24" aria-hidden="true"></i>
       <span id="ar-arrive-label">Bölüm Seç</span>
     </button>
   </div>
@@ -523,8 +546,15 @@
 
 <!-- PWA — Yeni sürüm bildirimi -->
 <div id="pwa-update-bar" class="pwa-update-bar" role="status" aria-live="polite">
-    <span>Yeni sürüm hazır.</span>
-    <button id="pwa-update-btn">Güncelle</button>
+    <span class="pwa-update-icon" aria-hidden="true"><i data-lucide="refresh-cw" width="22" height="22"></i></span>
+    <span class="pwa-update-text">
+        <span class="pwa-update-title">Yeni sürüm hazır</span>
+        <span class="pwa-update-desc">Güncellemek birkaç saniye sürer.</span>
+    </span>
+    <button id="pwa-update-btn" class="pwa-update-cta" type="button">Güncelle</button>
+    <button id="pwa-update-later" class="pwa-update-close" type="button" aria-label="Daha sonra">
+        <i data-lucide="x" width="20" height="20" aria-hidden="true"></i>
+    </button>
 </div>
 
 <!-- PWA — iOS "Ana Ekrana Ekle" yönergesi -->
@@ -585,9 +615,9 @@
 <script src="js/settings.js?v=2.2.0"></script>
 <script src="js/list.js?v=2.1.0"></script>
 <script src="js/detail.js?v=2.2.0"></script>
-<script src="js/ar.js?v=2.5.0"></script>
+<script src="js/ar.js?v=2.6.1"></script>
 <script src="js/sections.js?v=1.0.1"></script>
-<script src="js/pwa.js?v=1.0.0"></script>
+<script src="js/pwa.js?v=1.1.0"></script>
 
 <script>
 /* ── Uygulama Başlatma ── */

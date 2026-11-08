@@ -47,6 +47,11 @@ function _initDom() {
     _dom.turnDist       = document.getElementById('ar-turn-dist');
     _dom.mappingOverlay = document.getElementById('ar-mapping-overlay');
     _dom.srStatus       = document.getElementById('ar-sr-status');
+    _dom.prepCountdown  = document.getElementById('ar-prep-countdown');
+    _dom.turnWait       = document.getElementById('ar-turn-wait');
+    _dom.turnWaitIcon   = document.getElementById('ar-turn-wait-icon');
+    _dom.turnWaitTitle  = document.getElementById('ar-turn-wait-title');
+    _dom.turnCountdown  = document.getElementById('ar-turn-countdown');
 }
 
 /* ════════════════════════════════════════════════════
@@ -55,7 +60,8 @@ function _initDom() {
 const ARRIVAL_THRESHOLD        = 1.0;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2500;  // AR açıldıktan sonra ilk X ms içinde varış sayılmaz
-const GROUND_ZONE_RADIUS       = 1.2;   // Zemin bölgesi yarıçapı (metre) - Buton kilit açma eşiği
+const GROUND_ZONE_RADIUS       = 1.5;   // Zemin bölgesi yarıçapı (metre) - Buton kilit açma eşiği.
+                                        // Daire ile eşik aynı değeri kullanır: daireye girince buton açılır.
 const ARROW_SPACING_M          = 0.8;   // Ok arası mesafe (metre)
 const ARROW_CULL_DISTANCE_M    = 10;    // Frustum culling: bu mesafenin ötesi gizlenir (metre)
 const GROUND_ARROW_OFFSET      = 0.01;  // Z-fighting önleme boşluğu (metre)
@@ -68,6 +74,10 @@ const TURN_KEYWORDS_RIGHT      = ['sağa'];
 const ACTION_MODE_LOCK_MS      = 700;   // Ana buton kipi değişince bu süre dokunuşlar yok sayılır (yanlışlıkla çift dokunuş)
 const CHROME_NOTICE_MS         = 8000;  // AR oturumu açılınca Chrome alt kısımda ~6 sn bir uyarı gösterir (butonu örter);
                                         // yeşil "Sonraki Bölüm" geçişi bu süre dolmadan yapılmaz. 0 → gecikme yok.
+const PREP_PHASE_SEC           = 6;     // Hazırlık evresi ("Ortam tanınıyor"): Chrome uyarısı bu sürede geçer,
+                                        // oklar evre bitince çizilir. Uyarı daha uzun sürerse bu değeri artırın.
+const TURN_WAIT_SEC            = 5;     // Sağa/sola dönen bölüme geçerken oklar çizilmeden önce dönüş süresi (sn)
+const CD_CIRCUMFERENCE         = 2 * Math.PI * 44; // Geri sayım halkası çevresi (SVG r=44)
 
 /* ── Performans Sabitleri ── */
 const TARGET_FPS    = 30;
@@ -335,14 +345,138 @@ function _onEnterAR() {
 
     _refreshHUD(Infinity, 0);
     if (_dom.arDest) _dom.arDest.textContent = AppState.activeRoute.name;
-    _updateArrivedBtn();
 
-    // Haritalama bekleme süresi (2s) — zemin stabilitesi için
+    _startPrepPhase();
+}
+
+/* ════════════════════════════════════════════════════
+   GERİ SAYIM HALKASI (hazırlık evresi + dönüş beklemesi)
+════════════════════════════════════════════════════ */
+
+/**
+ * rootEl içindeki .ar-cd-ring halkasını ve .ar-cd-num sayısını `seconds`'tan geriye sayar.
+ * Halka her saniye bir dilim boşalır; süre bitince onDone çağrılır.
+ * Zamanlama Date.now() ile yapılır: sekme yavaşlasa da toplam süre kaymaz.
+ */
+function _startCountdown(rootEl, seconds, onDone) {
+    _stopCountdown(rootEl);
+    if (!rootEl) { onDone(); return; }
+
+    const ring  = rootEl.querySelector('.ar-cd-ring');
+    const num   = rootEl.querySelector('.ar-cd-num');
+    const endAt = Date.now() + seconds * 1000;
+    let shown   = null;
+
+    // Halkayı geçişsiz olarak dolu hâle getir
+    ring.style.strokeDasharray  = CD_CIRCUMFERENCE;
+    ring.style.transition       = 'none';
+    ring.style.strokeDashoffset = '0';
+    ring.getBoundingClientRect(); // reflow: bir sonraki geçiş dolu hâlden başlasın
+
+    const step = () => {
+        const leftMs = endAt - Date.now();
+        if (leftMs <= 0) {
+            _stopCountdown(rootEl);
+            onDone();
+            return;
+        }
+        const left = Math.ceil(leftMs / 1000);
+        if (left === shown) return;
+        shown = left;
+
+        num.textContent = left;
+        num.classList.remove('tick');
+        void num.offsetWidth;           // Animasyonu her saniye yeniden başlat
+        num.classList.add('tick');
+
+        // Bu saniye içinde halka bir sonraki dilime kadar boşalır
+        ring.style.transition       = `stroke-dashoffset ${Math.min(1000, leftMs)}ms linear`;
+        ring.style.strokeDashoffset = String(CD_CIRCUMFERENCE * (1 - (left - 1) / seconds));
+    };
+
+    step();
+    rootEl._cdTimer = setInterval(step, 100);
+}
+
+function _stopCountdown(rootEl) {
+    if (rootEl && rootEl._cdTimer) {
+        clearInterval(rootEl._cdTimer);
+        rootEl._cdTimer = null;
+    }
+}
+
+/* ════════════════════════════════════════════════════
+   HAZIRLIK EVRESİ
+   Her XR oturumu açılışında Chrome alt kısımda ~6 sn "tam ekrandan çıkmak için…"
+   uyarısı gösterir ve ana butonu örter. Bu süre ortam taramasıyla birleştirilir:
+   geri sayım boyunca buton pasif ("Hazırlanıyor…"), bitince oklar çizilir.
+════════════════════════════════════════════════════ */
+function _startPrepPhase() {
+    _setActionMode('wait', { restartLock: true, label: 'Hazırlanıyor…' });
+    _announce(`Ortam tanınıyor. Kamerayı yere doğru tutun. ${PREP_PHASE_SEC} saniye bekleyin.`);
+
     if (_dom.mappingOverlay) _dom.mappingOverlay.classList.add('visible');
-    setTimeout(() => {
+    _startCountdown(_dom.prepCountdown, PREP_PHASE_SEC, () => {
         if (_dom.mappingOverlay) _dom.mappingOverlay.classList.remove('visible');
+        if (!AppState.arActive) return;
+        _updateArrivedBtn();   // "Bölüm Seç" kipine geç ve bölümü duyur
         _drawArrows();
-    }, 2000);
+    });
+}
+
+function _cancelPrepPhase() {
+    _stopCountdown(_dom.prepCountdown);
+    if (_dom.mappingOverlay) _dom.mappingOverlay.classList.remove('visible');
+}
+
+/* ════════════════════════════════════════════════════
+   DÖNÜŞ BEKLEMESİ
+   Sağa/sola dönen bir bölüme "Sonraki Bölüm" ile geçilince oklar hemen çizilmez:
+   oklar çizildiği andaki bakış yönüne göre yerleştiği için kullanıcıya
+   (özellikle tekerlekli sandalyeyle) dönmesi için TURN_WAIT_SEC süre tanınır.
+════════════════════════════════════════════════════ */
+function _startTurnWait(dir, leg) {
+    const isLeft = dir === 'left';
+
+    // Eski bölümün okları dönüş sırasında yanıltmasın
+    _dom.arrows.innerHTML = '';
+    _activeArrows = [];
+
+    if (_dom.turnWaitTitle) _dom.turnWaitTitle.textContent = isLeft ? 'Sola dönün' : 'Sağa dönün';
+    if (_dom.turnWaitIcon) {
+        _dom.turnWaitIcon.className = `atw-icon ${isLeft ? 'left' : 'right'}`;
+        _dom.turnWaitIcon.innerHTML =
+            `<i data-lucide="${isLeft ? 'corner-up-left' : 'corner-up-right'}" width="30" height="30" aria-hidden="true"></i>`;
+        if (window.lucide) lucide.createIcons({ root: _dom.turnWaitIcon });
+    }
+
+    _setActionMode('wait', { restartLock: true, label: 'Dönüş bekleniyor' });
+    _announce(`${formatLegText(leg.instruction)}. ${TURN_WAIT_SEC} saniye içinde yeni yönünüze dönün.`);
+    if (_dom.turnWait) _dom.turnWait.classList.add('visible');
+    vibrate(200);
+
+    _startCountdown(_dom.turnCountdown, TURN_WAIT_SEC, () => {
+        if (_dom.turnWait) _dom.turnWait.classList.remove('visible');
+        if (!AppState.arActive) return;
+        _setActionMode('select', { restartLock: true });
+        _announce('Oklar gösteriliyor. İlerleyin.');
+        vibrate([100, 50, 100]);
+        _drawArrows();
+    });
+}
+
+function _cancelTurnWait() {
+    _stopCountdown(_dom.turnCountdown);
+    if (_dom.turnWait) _dom.turnWait.classList.remove('visible');
+}
+
+/** Bölüm talimatından dönüş yönü: 'left' | 'right' | null */
+function _getTurnDir(leg) {
+    if (!leg) return null;
+    const ins = (leg.instruction || leg.title || '').toLowerCase();
+    if (TURN_KEYWORDS_LEFT.some(kw => ins.includes(kw)))  return 'left';
+    if (TURN_KEYWORDS_RIGHT.some(kw => ins.includes(kw))) return 'right';
+    return null;
 }
 
 function _onExitAR() {
@@ -350,6 +484,8 @@ function _onExitAR() {
     document.body.style.background = '';
     cancelAnimationFrame(AppState.tickRafId);
     if (window.closeSectionPicker) closeSectionPicker(); // Açıksa Bölüm Seç çekmecesini kapat
+    _cancelPrepPhase();
+    _cancelTurnWait();
 
     if (_hitTestSource) {
         _hitTestSource.cancel();
@@ -446,21 +582,26 @@ function _refreshHUD(distToTurn, remain, covered = 0, localCamPos = new THREE.Ve
    ANA EYLEM BUTONU — "Bölüm Seç" ⇄ "Sonraki Bölüm"
    select → mavi "Bölüm Seç": bölüm seçim çekmecesini açar (her bacak bu kipte başlar)
    next   → yeşil "Sonraki Bölüm" / "Hedefe Vardım": varış bölgesinde bacağı bitirir
+   wait   → pasif (hazırlık evresi / dönüş beklemesi): dokunuşlar yok sayılır
 ════════════════════════════════════════════════════ */
 let _actionMode      = null;
 let _actionLockUntil = 0;   // Kip değişince bu ana kadar dokunuşlar yok sayılır
 let _unlockNotBefore = 0;   // Oturum açıldıktan sonra Chrome uyarısı geçene kadar yeşil kipe geçilmez
 
-function _setActionMode(mode, { restartLock = false } = {}) {
+function _setActionMode(mode, { restartLock = false, label = '' } = {}) {
     const { arrivedBtn, arArriveLabel } = _dom;
     if (!arrivedBtn || (mode === _actionMode && !restartLock)) return;
 
     _actionMode      = mode;
     _actionLockUntil = Date.now() + ACTION_MODE_LOCK_MS;
     arrivedBtn.dataset.mode = mode;
+    if (mode === 'wait') arrivedBtn.setAttribute('aria-disabled', 'true');
+    else                 arrivedBtn.removeAttribute('aria-disabled');
 
     if (!arArriveLabel) return;
-    if (mode === 'select') {
+    if (mode === 'wait') {
+        arArriveLabel.textContent = label || 'Lütfen bekleyin';
+    } else if (mode === 'select') {
         arArriveLabel.textContent = 'Bölüm Seç';
     } else {
         const isLast = AppState.legIdx === AppState.arLegs.length - 1;
@@ -492,6 +633,7 @@ function _updateArrivedBtn() {
 /** locked=true → "Bölüm Seç" kipi; locked=false → varış bölgesinde "Sonraki Bölüm" kipi */
 function _setArrivedBtnLocked(locked) {
     if (!_dom.arrivedBtn) return;
+    if (_actionMode === 'wait') return; // Hazırlık / dönüş beklemesi kendi bitişinde kipi değiştirir
 
     if (locked) {
         _setActionMode('select');
@@ -682,7 +824,7 @@ function _placeGroundZone(path, isLast) {
     const ring = document.createElement('a-ring');
     ring.setAttribute('position', `${lastRaw.x} ${_groundY + 0.005} ${lastRaw.z}`);
     ring.setAttribute('rotation', '-90 0 0');
-    ring.setAttribute('radius-inner', (GROUND_ZONE_RADIUS - 0.05).toString());
+    ring.setAttribute('radius-inner', (GROUND_ZONE_RADIUS - 0.08).toString()); // Geniş dairede çizgi de kalınlaşsın
     ring.setAttribute('radius-outer', GROUND_ZONE_RADIUS.toString());
     ring.setAttribute('material', `color:${color}; shader:flat; transparent:true; opacity:0.6`);
     ring.setAttribute('animation', 'property:scale; from:1 1 1; to:1.08 1.08 1; dur:2000; loop:true; dir:alternate; easing:easeInOutSine');
@@ -1036,10 +1178,10 @@ function _handleTurnWarning(distToEnd) {
         _hideTurn();
         return;
     }
-    const ins = (nextLeg.instruction || nextLeg.title || '').toLowerCase();
-    if (TURN_KEYWORDS_LEFT.some(kw => ins.includes(kw))) {
+    const dir = _getTurnDir(nextLeg);
+    if (dir === 'left') {
         _showTurn('corner-up-left', 'Sola Dönün', distToEnd);
-    } else if (TURN_KEYWORDS_RIGHT.some(kw => ins.includes(kw))) {
+    } else if (dir === 'right') {
         _showTurn('corner-up-right', 'Sağa Dönün', distToEnd);
     } else {
         _hideTurn();
@@ -1070,7 +1212,6 @@ function _showTurn(icon, text, dist) {
 function _hideTurn() {
     if (_dom.turnOverlay) {
         _dom.turnOverlay.classList.remove('visible');
-        _dom.turnOverlay.classList.remove('guidance');
     }
 }
 
@@ -1140,8 +1281,14 @@ function onArrived() {
         if (_dom.scene && _dom.scene.exitVR) _dom.scene.exitVR();
         setTimeout(() => _showInfoScreen(nextLeg), 300);
     } else {
-        // Seamless geçiş: Okları anında çiz ve devam et
-        _drawArrows();
+        const dir = _getTurnDir(nextLeg);
+        if (dir) {
+            // Sağa/sola dönüş: önce geri sayım, oklar dönüş tamamlanınca çizilir
+            _startTurnWait(dir, nextLeg);
+        } else {
+            // Düz devam: okları anında çiz
+            _drawArrows();
+        }
     }
 }
 
@@ -1153,6 +1300,7 @@ function onArrived() {
    "Bölüm Seç" kipinde çekmeceyi açar, "Sonraki Bölüm" kipinde bacağı bitirir (onArrived). */
 function onMainActionClick() {
     if (Date.now() < _actionLockUntil) return; // Kip yeni değişti: yanlışlıkla gelen dokunuşu yut
+    if (_actionMode === 'wait') return;        // Hazırlık / dönüş beklemesi sürüyor
 
     if (_actionMode === 'next') {
         onArrived();
@@ -1209,6 +1357,7 @@ function goToLeg(index, { walkedM = 0 } = {}) {
         _arrivalDebounceId = null;
     }
     _hideTurn();
+    _cancelTurnWait();
     vibrate([100, 50, 100]);
 
     AppState.legIdx      = index;
