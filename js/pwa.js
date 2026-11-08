@@ -20,11 +20,15 @@
     const SW_URL              = 'sw.js';
     const DISMISS_KEY         = 'pwa_install_dismissed_at';
     const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 gün sessize alma
+    const UPDATE_CHECK_MS     = 30 * 60 * 1000;          // Açık uygulamada yeni sürüm yoklama aralığı
 
     /* ── Durum ── */
-    let deferredPrompt = null;   // beforeinstallprompt event nesnesi
-    let bannerEl       = null;
-    let iosSheetEl     = null;
+    let deferredPrompt     = null;   // beforeinstallprompt event nesnesi
+    let bannerEl           = null;
+    let iosSheetEl         = null;
+    let waitingReg         = null;   // Bekleyen yeni sürümün kaydı
+    let updatePending      = false;  // AR sürerken gelen güncelleme, çıkışta gösterilecek
+    let userAcceptedUpdate = false;  // Sayfa yalnızca kullanıcı "Güncelle"ye basınca yenilenir
 
     /* ════════════════════════════════════════════════════
        ORTAM TESPİTİ
@@ -65,7 +69,12 @@
 
         navigator.serviceWorker.register(SW_URL)
             .then((reg) => {
-                // Yeni sürüm bulundu → kullanıcıya güncelleme bildir
+                // Sayfa açıldığında zaten bekleyen bir sürüm olabilir (önceki ziyarette indirildi)
+                if (reg.waiting && navigator.serviceWorker.controller) {
+                    promptUpdate(reg);
+                }
+
+                // Yeni sürüm bulundu → kurulum bitince kullanıcıya bildir
                 reg.addEventListener('updatefound', () => {
                     const sw = reg.installing;
                     if (!sw) return;
@@ -76,27 +85,84 @@
                         }
                     });
                 });
+
+                scheduleUpdateChecks(reg);
             })
             .catch((err) => console.error('[PWA] Service Worker kaydı başarısız:', err));
 
-        // Yeni SW devreye girdiğinde sayfayı bir kez tazele
+        // Yeni SW devreye girdiğinde sayfayı bir kez tazele — yalnızca kullanıcı
+        // "Güncelle"ye bastıysa. Başka sekmeden gelen geçiş AR oturumunu kesmesin.
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
+            if (refreshing || !userAcceptedUpdate) return;
             refreshing = true;
             window.location.reload();
         });
     }
 
-    /** Güncelleme mevcut — dokunulabilir toast göster */
-    function promptUpdate(reg) {
-        const el = document.getElementById('pwa-update-bar');
-        if (!el) return;
-        el.classList.add('visible');
-        el.querySelector('#pwa-update-btn').onclick = () => {
-            el.classList.remove('visible');
-            if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    /**
+     * Uygulama açık kaldığı sürece yeni sürümü kendiliğinden yoklar:
+     * sekme/uygulama tekrar öne geldiğinde ve UPDATE_CHECK_MS aralıklarla.
+     * (Tarayıcı varsayılanı yalnızca sayfa gezinmesinde kontrol eder; PWA
+     * tam ekranda günlerce açık kalabilir.)
+     */
+    function scheduleUpdateChecks(reg) {
+        const check = () => {
+            if (!navigator.onLine || isArActive()) return;
+            reg.update().catch(() => { /* çevrimdışı vb. — sessizce geç */ });
         };
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') check();
+        });
+        setInterval(check, UPDATE_CHECK_MS);
+    }
+
+    function isArActive() {
+        // AppState router.js'te `const` ile tanımlı: window üzerinde değil, global kapsamda
+        return typeof AppState !== 'undefined' && !!AppState.arActive;
+    }
+
+    /** Güncelleme mevcut — "Güncelle" butonlu bildirim çubuğunu göster */
+    function promptUpdate(reg) {
+        waitingReg = reg;
+        // AR navigasyonu sürerken gösterme: tıklanınca sayfa yenilenir, rota yarıda kalır.
+        // AR'dan çıkınca (exit-vr) gösterilir.
+        if (isArActive()) { updatePending = true; return; }
+        showUpdateBar();
+    }
+
+    function showUpdateBar() {
+        const el = document.getElementById('pwa-update-bar');
+        if (!el || !waitingReg) return;
+        updatePending = false;
+        if (window.lucide) lucide.createIcons({ root: el });
+        el.classList.add('visible');
+
+        const btn = el.querySelector('#pwa-update-btn');
+        btn.disabled = false;
+        btn.textContent = 'Güncelle';
+        btn.onclick = () => {
+            const waiting = waitingReg && waitingReg.waiting;
+            if (!waiting) { window.location.reload(); return; }
+            userAcceptedUpdate = true;
+            btn.disabled = true;
+            btn.textContent = 'Güncelleniyor…';
+            waiting.postMessage({ type: 'SKIP_WAITING' });
+        };
+
+        el.querySelector('#pwa-update-later').onclick = () => {
+            // Daha sonra: bu oturumda gizle. Bekleyen sürüm, uygulama
+            // tamamen kapatılıp açıldığında zaten kendiliğinden devreye girer.
+            el.classList.remove('visible');
+        };
+    }
+
+    function hideUpdateBar() {
+        const el = document.getElementById('pwa-update-bar');
+        if (el && el.classList.contains('visible')) {
+            el.classList.remove('visible');
+            updatePending = true; // AR bitince yeniden göster
+        }
     }
 
     /* ════════════════════════════════════════════════════
@@ -160,9 +226,13 @@
     function bindArVisibility() {
         const scene = document.getElementById('ar-scene');
         if (!scene) return;
-        scene.addEventListener('enter-vr', hideBanner);
+        scene.addEventListener('enter-vr', () => {
+            hideBanner();
+            hideUpdateBar();
+        });
         scene.addEventListener('exit-vr', () => {
             if (deferredPrompt || isIOS()) showBanner();
+            if (updatePending) setTimeout(showUpdateBar, 600); // Ekran geçişi otursun
         });
     }
 
