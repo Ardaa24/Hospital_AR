@@ -193,14 +193,10 @@ const NAV_ROUTES = [
         accessible: true,
         hasElevator: true,
         desc: "Ana Bina, Zemin Kat — Giriş Holü",
-        detail: "Danışma Noktası. Bu rota Laboratuvar Birimi'nden (-1. Kat) başlamaktadır ve asansör ile Zemin Kata çıkılır.",
+        detail: "Danışma Noktası. Bu rota Laboratuvar Birimi'nin (-1. Kat) önündeki asansörden başlar; Zemin Kata çıkıp asansörden inince düz 10 adım ilerlenir.",
 
+        // 1 adım ≈ 0.75 m (diğer rotalardaki metrajla aynı ölçek) → 10 adım = 7.5 m
         legs: [
-            {
-                type: "ar",
-                instruction: "Koridorda dümdüz 5.25 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }]
-            },
             {
                 type: "info",
                 icon: "arrow-up-down",
@@ -214,13 +210,8 @@ const NAV_ROUTES = [
             },
             {
                 type: "ar",
-                instruction: "Asansörden çıkıp düz 5.25 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }]
-            },
-            {
-                type: "ar",
-                instruction: "Sağa dönüp 22.5 metre ilerleyin ➡️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -22.5" }]
+                instruction: "Asansörden çıkıp düz 10 adım ilerleyin ⬆️",
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -7.5" }]
             }
         ]
     },
