@@ -61,6 +61,7 @@ const ARRIVAL_THRESHOLD        = 1.0;   // Otomatik varış eşiği (metre)
 const TURN_WARN_DISTANCE       = 2.5;   // Dönüş uyarısı başlama mesafesi (metre)
 const GRACE_PERIOD_MS          = 2500;  // AR açıldıktan sonra ilk X ms içinde varış sayılmaz
 const GROUND_ZONE_RADIUS       = 1.5;   // Zemin bölgesi yarıçapı (metre) - Buton kilit açma eşiği.
+const RING_SCALE               = 1.5;   // Bacak sonu halkalarının görsel büyütme katsayısı (10px → 15px)
                                         // Daire ile eşik aynı değeri kullanır: daireye girince buton açılır.
 const ARROW_SPACING_M          = 0.8;   // Ok arası mesafe (metre)
 const ARROW_CULL_DISTANCE_M    = 10;    // Frustum culling: bu mesafenin ötesi gizlenir (metre)
@@ -813,7 +814,7 @@ const DESTINATION_SIGN_MAP = {
     'noroloji':         'Assets/noroloji_yeni.png',
     'engelli-tuvaleti': 'Assets/tuvalet_yeni.png',
     'laboratuvar':      'Assets/laboratuvar_yeni.png',
-    'danisma':          'Assets/danisma_yeni.png'
+    'danisma':          'Assets/danisma.png'
 };
 
 function _placeGroundZone(path, isLast) {
@@ -824,8 +825,10 @@ function _placeGroundZone(path, isLast) {
     const ring = document.createElement('a-ring');
     ring.setAttribute('position', `${lastRaw.x} ${_groundY + 0.005} ${lastRaw.z}`);
     ring.setAttribute('rotation', '-90 0 0');
-    ring.setAttribute('radius-inner', (GROUND_ZONE_RADIUS - 0.08).toString()); // Geniş dairede çizgi de kalınlaşsın
-    ring.setAttribute('radius-outer', GROUND_ZONE_RADIUS.toString());
+    // Yalnızca görsel büyütme; kilit açma eşiği (GROUND_ZONE_RADIUS) aynı kalır
+    const outerR = GROUND_ZONE_RADIUS * RING_SCALE;
+    ring.setAttribute('radius-inner', (outerR - 0.08 * RING_SCALE).toString()); // Geniş dairede çizgi de kalınlaşsın
+    ring.setAttribute('radius-outer', outerR.toString());
     ring.setAttribute('material', `color:${color}; shader:flat; transparent:true; opacity:0.6`);
     ring.setAttribute('animation', 'property:scale; from:1 1 1; to:1.08 1.08 1; dur:2000; loop:true; dir:alternate; easing:easeInOutSine');
     
@@ -845,8 +848,8 @@ function _placeMapPin(path, signType) {
 
     // --- Zemin Ring (Outer) — sübtil pulse ---
     const outerRing = document.createElement('a-ring');
-    outerRing.setAttribute('radius-inner', '0.25');
-    outerRing.setAttribute('radius-outer', '0.32');
+    outerRing.setAttribute('radius-inner', (0.25 * RING_SCALE).toString());
+    outerRing.setAttribute('radius-outer', (0.32 * RING_SCALE).toString());
     outerRing.setAttribute('rotation', '-90 0 0');
     outerRing.setAttribute('position', '0 0.005 0');
     outerRing.setAttribute('material', `color:${RING_COLOR}; shader:flat; transparent:true; opacity:0.55`);
@@ -854,7 +857,7 @@ function _placeMapPin(path, signType) {
 
     // --- Center Dot — sabit referans noktası ---
     const centerDot = document.createElement('a-circle');
-    centerDot.setAttribute('radius', '0.08');
+    centerDot.setAttribute('radius', (0.08 * RING_SCALE).toString());
     centerDot.setAttribute('rotation', '-90 0 0');
     centerDot.setAttribute('position', '0 0.006 0');
     centerDot.setAttribute('material', `color:${RING_COLOR}; shader:flat; transparent:true; opacity:0.95`);

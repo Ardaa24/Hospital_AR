@@ -12,7 +12,7 @@
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.5.1';
+const CACHE_VERSION = 'v1.5.2';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -32,7 +32,7 @@ const PRECACHE_URLS = [
     './',
     './index.html',
     './manifest.webmanifest',
-    './config.js?v=1.0.2',
+    './config.js?v=1.0.3',
 
     // Stiller
     './css/tokens.css?v=1.1.1',
@@ -50,7 +50,7 @@ const PRECACHE_URLS = [
     './js/settings.js?v=2.2.0',
     './js/list.js?v=2.1.0',
     './js/detail.js?v=2.2.0',
-    './js/ar.js?v=2.6.1',
+    './js/ar.js?v=2.6.2',
     './js/sections.js?v=1.0.1',
     './js/pwa.js?v=1.1.0',
 
@@ -60,7 +60,7 @@ const PRECACHE_URLS = [
 
     // AR tabela dokuları (js/ar.js) — ilk AR oturumu çevrimdışı da çalışsın
     './Assets/asansor_yeni.png',
-    './Assets/danisma_yeni.png',
+    './Assets/danisma.png',
     './Assets/laboratuvar_yeni.png',
     './Assets/noroloji_yeni.png',
     './Assets/tuvalet_yeni.png',
