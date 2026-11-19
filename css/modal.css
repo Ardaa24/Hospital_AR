@@ -1,0 +1,67 @@
+/* ════════════════════════════════════════════════════
+   modal.css — Onboarding modalı
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   (screens.css bölünmesinden; yükleme sırası korunur)
+════════════════════════════════════════════════════ */
+
+/* ── Onboarding Modal ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.modal-content {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+.modal-icon-bg {
+    width: 64px;
+    height: 64px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+.modal-icon { width: 32px; height: 32px; animation: modalPulse 2s infinite ease-in-out; }
+@keyframes modalPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+.modal-text { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+.modal-features {
+    text-align: left;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.4;
+}
+.modal-features li i {
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.modal-buttons { display: flex; flex-direction: column; }

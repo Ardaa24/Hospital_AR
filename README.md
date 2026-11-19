@@ -101,7 +101,7 @@ Rota verisi `config.js` içinde tanımlanan `NAV_ROUTES` dizisinden gelir. Her r
 
 - **[A-Frame 1.6.0](https://aframe.io/)** — WebXR tabanlı AR sahne motoru (ARCore/ARKit `hit-test`, `local-floor`)
 - **Vanilla JavaScript (ES6+)** — Herhangi bir framework/derleme adımı yok, modüler `js/` dosyaları (`router`, `settings`, `list`, `detail`, `ar`, `pwa`)
-- **Katmanlı CSS** — `tokens.css`, `base.css`, `screens.css`, `ar.css`
+- **Katmanlı CSS** — `tokens.css`, `base.css`, ekran bazlı `welcome/routes/detail/modal/settings.css`, `ar.css`
 - **[Lucide Icons](https://lucide.dev/)** — İkon seti
 - **Service Worker + Web App Manifest** — PWA çevrimdışı destek ve kurulabilirlik
 - **Inter** — Tipografi (değişken yazı tipi, kendi sunucumuzdan; SIL OFL 1.1)
@@ -119,7 +119,11 @@ Hastane AR MVP/
 ├── css/
 │   ├── tokens.css            # Renk ve yazı tipi token'ları (@font-face dahil)
 │   ├── base.css              # Genel/tema stilleri
-│   ├── screens.css           # Liste, detay, ayarlar ekranları
+│   ├── welcome.css           # Karşılama ekranı
+│   ├── routes.css            # Rota listesi
+│   ├── detail.css            # Rota detayı
+│   ├── modal.css             # Onboarding modalı
+│   ├── settings.css          # Ayarlar çekmecesi
 │   ├── ar.css                 # AR HUD ve overlay stilleri
 │   └── sections.css          # "Bölüm Seç" çekmecesi
 ├── js/

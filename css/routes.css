@@ -1,0 +1,193 @@
+/* ════════════════════════════════════════════════════
+   routes.css — Rota listesi ekranı
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   (screens.css bölünmesinden; yükleme sırası korunur)
+════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────
+   SCREEN 2 — ROTA LİSTESİ (Route List)
+──────────────────────────────────────────────────── */
+
+/* Header Logo + Başlık */
+.list-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px 14px;
+}
+.list-header-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.list-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.2px;
+}
+.list-header-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1px;
+}
+
+/* Arama kutusu */
+.search-wrap {
+    margin: 0 18px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    transition: border-color .2s;
+}
+.search-wrap:focus-within { border-color: var(--primary); }
+.search-wrap svg { flex-shrink: 0; }
+.search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+}
+.search-input::placeholder { color: var(--muted); }
+
+/* Voice Search */
+.btn-voice {
+    background: transparent;
+    color: var(--muted);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.btn-voice:active {
+    background: var(--border);
+}
+.btn-voice.listening {
+    color: var(--danger);
+    animation: voicePulse 1.5s infinite;
+}
+@keyframes voicePulse {
+    0% { box-shadow: 0 0 0 0 rgb(var(--danger-rgb) / .4); }
+    70% { box-shadow: 0 0 0 8px rgb(var(--danger-rgb) / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(var(--danger-rgb) / 0); }
+}
+
+/* Rota listesi kapsayıcı */
+#route-list {
+    padding: 10px 16px 48px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Kategori başlığı */
+.category-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin: 20px 4px 10px;
+}
+.category-label:first-child { margin-top: 8px; }
+
+/* Rota kartı */
+.route-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 15px 14px 20px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    /* Erişilebilirlik: minimum kart yüksekliği */
+    min-height: var(--card-min);
+    border: 1.5px solid rgb(var(--primary-rgb) / .16); /* Kurumsal mavi çerçeve */
+    border-left: 4px solid var(--primary); /* Doğal sol mavi çentik (Samsung Bug Fix) */
+    box-shadow: var(--shadow-sm); /* Standart gölge */
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+    transition: box-shadow .18s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+}
+.route-card:active { transform: scale(.99); }
+
+/* Rota ikonu */
+.rc-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--bg); /* Varsayılan arkaplan */
+    color: var(--ink); /* Orijinal koyu ikon rengi */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+/* Rota bilgisi */
+.rc-info { flex: 1; min-width: 0; }
+.rc-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -.1px;
+}
+.rc-desc {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rota sağ taraf (badge) */
+.rc-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.rc-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+}
+.badge-ar      { background: var(--primary); color: #fff; }
+.badge-passive { background: var(--disabled-bg); color: var(--disabled-fg); }
+
+/* Boş sonuç */
+.no-results {
+    text-align: center;
+    padding: 56px 20px;
+    color: var(--muted);
+}
+.no-results-icon { font-size: 40px; margin-bottom: 12px; }
+.no-results-text { font-size: 15px; font-weight: 500; }

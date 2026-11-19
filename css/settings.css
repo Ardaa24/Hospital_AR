@@ -1,0 +1,377 @@
+/* ════════════════════════════════════════════════════
+   settings.css — Ayarlar çekmecesi
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   (screens.css bölünmesinden; yükleme sırası korunur)
+════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────
+   SETTINGS DRAWER (Bottom Sheet)
+   ──────────────────────────────────────────────────── */
+.btn-settings-toggle {
+    margin-left: auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+}
+.btn-settings-toggle:active {
+    background: var(--border);
+    color: var(--ink);
+    transform: scale(0.95);
+}
+
+.settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.settings-backdrop.visible {
+    opacity: 1;
+}
+
+.settings-drawer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--card);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+    z-index: 101;
+    padding: 0 20px calc(env(safe-area-inset-bottom, 24px) + 20px);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.32, 1, 0.6, 1);
+}
+
+.settings-handle {
+    width: 38px;
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    margin: 10px auto 14px;
+    cursor: grab;
+}
+.settings-handle:active {
+    cursor: grabbing;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.settings-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+}
+
+.btn-settings-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    cursor: pointer;
+}
+.btn-settings-close:active {
+    background: var(--border);
+    color: var(--ink);
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-bottom: 8px;
+}
+
+.settings-section {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-section-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 4px;
+}
+.settings-section-label i {
+    color: var(--primary);
+}
+
+.settings-info-chip {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.settings-row-label {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.settings-row-value {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.settings-row-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-row-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+}
+.settings-row-info i {
+    color: var(--muted);
+    display: flex;
+}
+
+.settings-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.perm-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.perm-badge.status-granted {
+    background: var(--success-light);
+    color: var(--success);
+}
+.perm-badge.status-denied {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+.perm-badge.status-prompt {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+.perm-badge.status-unknown {
+    background: var(--disabled-bg);
+    color: var(--disabled-fg);
+}
+
+.settings-btn-reset {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    cursor: pointer;
+}
+.settings-btn-reset:active {
+    background: var(--primary);
+    color: #fff;
+}
+
+
+
+.btn-settings-danger {
+    width: 100%;
+    min-height: 48px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid rgb(var(--danger-rgb) / .2);
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+}
+.btn-settings-danger:active {
+    background: var(--danger);
+    color: #fff;
+    transform: scale(0.985);
+}
+
+/* ── Ayarlar Bölüm Açıklaması ── */
+.settings-section-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ════════════════════════════════════════════════════
+   AR OK STİLİ SEÇİCİ
+════════════════════════════════════════════════════ */
+.arrow-style-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.arrow-style-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+    position: relative;
+}
+
+.arrow-style-card:active {
+    transform: scale(0.98);
+}
+
+/* Seçili kart */
+.arrow-style-card.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.arrow-style-card.active .arrow-style-check {
+    opacity: 1;
+    color: var(--primary);
+}
+
+/* Metin bilgileri */
+.arrow-style-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.arrow-style-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.arrow-style-desc {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* Seçim işareti */
+.arrow-style-check {
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+/* ── Ayarlar: açık/kapalı anahtarı (role="switch") ──
+   Satırın tamamı dokunma hedefidir (min. 64 px); durum renk + düğme konumuyla gösterilir. */
+.settings-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    min-height: var(--touch-min);
+    padding: 10px 0;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+.settings-switch-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.settings-switch-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.settings-switch-desc  { font-size: 13px; line-height: 1.45; color: var(--muted); }
+
+.settings-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 52px; height: 32px;
+    border-radius: 999px;
+    background: var(--disabled-border);
+    transition: background-color .2s;
+}
+.settings-switch-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: transform .2s;
+}
+.settings-switch-row[aria-checked="true"] .settings-switch       { background: var(--primary); }
+.settings-switch-row[aria-checked="true"] .settings-switch-knob  { transform: translateX(20px); }
+.settings-switch-row:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .settings-switch, .settings-switch-knob { transition: none; }
+}
