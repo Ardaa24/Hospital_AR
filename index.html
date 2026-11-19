@@ -74,15 +74,16 @@
     </script>
 
     <!-- Uygulama Verisi -->
-    <script src="config.js?v=1.0.3"></script>
+    <script src="config.js?v=1.1.0"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Stiller (ayrı katmanlar) -->
     <link rel="stylesheet" href="css/tokens.css?v=1.1.1">
     <link rel="stylesheet" href="css/base.css?v=1.6.0">
-    <link rel="stylesheet" href="css/screens.css?v=1.3.0">
+    <link rel="stylesheet" href="css/screens.css?v=1.4.0">
     <link rel="stylesheet" href="css/ar.css?v=1.6.0">
     <link rel="stylesheet" href="css/sections.css?v=1.0.0">
+    <link rel="stylesheet" href="css/map.css?v=1.1.0">
 </head>
 <body>
 
@@ -281,24 +282,37 @@
       <div class="turn-dist" id="ar-turn-dist"></div>
   </div>
 
-  <!-- Alt Panel: Hedef + Metrikler + ana eylem butonu.
-       Buton üç kiple çalışır (js/ar.js): "Bölüm Seç" (mavi) ⇄ "Sonraki Bölüm" (yeşil),
-       hazırlık evresi ve dönüş beklemesinde pasif "wait" kipi -->
+  <!-- Alt Panel: Hedef + Metrikler + ana eylem butonu + Harita/Kamera düğmesi.
+       Ana buton üç kiple çalışır (js/ar.js): "Bölüm Seç" (mavi) ⇄ "Sonraki Bölüm" (yeşil),
+       hazırlık evresi ve dönüş beklemesinde pasif "wait" kipi.
+       Harita modunda (js/map/*) hedef adı yerine bölüm talimatı gösterilir. -->
   <div id="ar-bottom">
     <div class="arb-info" aria-hidden="true">
       <div class="arb-dest" id="ar-dest"></div>
+      <div class="arb-instr" id="ar-map-instr"></div>
       <div class="arb-metrics">
-        <span class="arb-dist" id="ar-dist">--</span>
-        <span class="arb-time" id="ar-time">--</span>
+        <span class="arb-dist arb-ar-only" id="ar-dist">--</span>
+        <span class="arb-time arb-ar-only" id="ar-time">--</span>
+        <!-- Harita modunda yürünen mesafeden (js/map/map-controller.js) -->
+        <span class="arb-dist arb-map-only" id="ar-map-dist">--</span>
+        <span class="arb-time arb-map-only" id="ar-map-time">--</span>
       </div>
     </div>
-    <button id="ar-arrived-btn" class="arb-next-btn ar-interactive" type="button"
-            data-mode="select" onclick="onMainActionClick()">
-      <i data-lucide="list-ordered" class="arb-icon arb-icon-select" width="24" height="24" aria-hidden="true"></i>
-      <i data-lucide="check" class="arb-icon arb-icon-next" width="24" height="24" aria-hidden="true"></i>
-      <i data-lucide="hourglass" class="arb-icon arb-icon-wait" width="24" height="24" aria-hidden="true"></i>
-      <span id="ar-arrive-label">Bölüm Seç</span>
-    </button>
+    <div class="arb-actions">
+      <button id="ar-arrived-btn" class="arb-next-btn ar-interactive" type="button"
+              data-mode="select" onclick="onMainActionClick()">
+        <i data-lucide="list-ordered" class="arb-icon arb-icon-select" width="24" height="24" aria-hidden="true"></i>
+        <i data-lucide="check" class="arb-icon arb-icon-next" width="24" height="24" aria-hidden="true"></i>
+        <i data-lucide="hourglass" class="arb-icon arb-icon-wait" width="24" height="24" aria-hidden="true"></i>
+        <span id="ar-arrive-label">Bölüm Seç</span>
+      </button>
+      <button id="ar-map-btn" class="arb-map-btn ar-interactive" type="button"
+              aria-pressed="false" data-view="camera">
+        <i data-lucide="map" class="arb-icon arb-icon-map" width="24" height="24" aria-hidden="true"></i>
+        <i data-lucide="camera" class="arb-icon arb-icon-camera" width="24" height="24" aria-hidden="true"></i>
+        <span class="arb-map-label">Harita</span>
+      </button>
+    </div>
   </div>
 
   <!-- ════════════════════════════════════════════════════
@@ -488,6 +502,23 @@
             </div>
         </div>
         
+        <!-- Navigasyon tercihleri -->
+        <div class="settings-section">
+            <div class="settings-section-label">
+                <i data-lucide="navigation" width="14" height="14"></i>
+                Navigasyon
+            </div>
+            <button id="auto-finish-switch" class="settings-switch-row" type="button"
+                    role="switch" aria-checked="true" aria-describedby="auto-finish-desc"
+                    onclick="toggleAutoFinish()">
+                <span class="settings-switch-text">
+                    <span class="settings-switch-title">Otomatik bitiş</span>
+                    <span id="auto-finish-desc" class="settings-switch-desc">Son bölümde hedefe ulaşınca navigasyon kendiliğinden tamamlanır. Kapalıyken "Hedefe Vardım" düğmesine basarsınız.</span>
+                </span>
+                <span class="settings-switch" aria-hidden="true"><span class="settings-switch-knob"></span></span>
+            </button>
+        </div>
+
         <!-- Bölüm B: İzin Yönetimi -->
         <div class="settings-section">
             <div class="settings-section-label">
@@ -612,12 +643,14 @@
      7. pwa.js          — Service Worker kaydı + yükleme kartı
 ════════════════════════════════════════════════════ -->
 <script src="js/router.js?v=2.3.0"></script>
-<script src="js/settings.js?v=2.2.0"></script>
+<script src="js/settings.js?v=2.3.0"></script>
 <script src="js/list.js?v=2.1.0"></script>
 <script src="js/detail.js?v=2.2.0"></script>
-<script src="js/ar.js?v=2.6.2"></script>
+<script src="js/ar.js?v=2.7.1"></script>
 <script src="js/sections.js?v=1.0.1"></script>
 <script src="js/pwa.js?v=1.1.0"></script>
+<!-- 8. map/main.js — Harita modu (ES modülü; AR'ı yalnızca okur, js/map/nav-source.js) -->
+<script type="module" src="js/map/main.js?v=1.1.0"></script>
 
 <script>
 /* ── Uygulama Başlatma ── */
