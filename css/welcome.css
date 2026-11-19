@@ -1,0 +1,116 @@
+/* ════════════════════════════════════════════════════
+   welcome.css — Karşılama ekranı
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   (screens.css bölünmesinden; yükleme sırası korunur)
+════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────
+   SCREEN 1 — KARŞILAMA (Welcome)
+──────────────────────────────────────────────────── */
+#s-welcome {
+    background: var(--card);
+    /* padding: 52px 28px 48px; removed, handled in top and bottom */
+    gap: 0;
+    overflow-y: hidden; /* no scroll on main container */
+}
+
+.welcome-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Dikey olarak ortala */
+    text-align: center;
+    padding: 20px 28px;
+    box-sizing: border-box;
+    min-height: 0;
+}
+
+.welcome-content {
+    margin: auto 0; /* Flexbox dikey ortalama garantisi */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.welcome-bottom {
+    padding: 16px 28px calc(env(safe-area-inset-bottom, 24px) + 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--card);
+    margin-top: auto;
+}
+
+.welcome-logo { margin-bottom: 32px; }
+.welcome-logo img {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,.1));
+}
+
+.welcome-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+    margin-bottom: 14px;
+}
+
+.welcome-desc {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.55;
+    font-weight: 500;
+    margin-bottom: 40px;
+    max-width: 280px;
+}
+
+.welcome-cta {
+    width: 100%;
+    max-width: 320px; /* Enterprise genişlik kısıtı */
+    margin-bottom: 16px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 6px 20px rgb(var(--primary-rgb) / .24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.welcome-cta:active {
+    transform: scale(0.985);
+    background: var(--primary-dark);
+    box-shadow: 0 3px 10px rgb(var(--primary-rgb) / .15);
+}
+
+.welcome-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #1C1C1E;
+    color: #fff;
+    border-radius: 22px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+.welcome-location svg { flex-shrink: 0; }
+
+.welcome-disclaimer {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 300px;
+    text-align: center;
+}

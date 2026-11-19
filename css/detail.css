@@ -1,0 +1,220 @@
+/* ════════════════════════════════════════════════════
+   detail.css — Rota detay ekranı
+   Tarsus Devlet Hastanesi AR Navigasyon Sistemi
+   (screens.css bölünmesinden; yükleme sırası korunur)
+════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────
+   SCREEN 3 — ROTA DETAY (Route Detail)
+──────────────────────────────────────────────────── */
+.detail-back-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.detail-back-btn:active { background: var(--border); }
+
+.detail-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+}
+.detail-header-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.2px;
+}
+
+#detail-body {
+    padding: 16px 16px 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Hero kart yeniden tasarımı */
+.detail-hero {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-md);
+    padding: 16px 0;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.detail-hero-header {
+    padding: 0 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-hero-icon-lg {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius);
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.detail-hero.passive .detail-hero-icon-lg {
+    background: var(--bg);
+}
+
+/* Active icon color is primary, passive is gray */
+.detail-hero-icon-lg i {
+    width: 26px;
+    height: 26px;
+    color: var(--primary);
+}
+.detail-hero.passive .detail-hero-icon-lg i {
+    color: var(--muted);
+}
+
+.detail-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.detail-hero-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* AR badge inside hero card header */
+.detail-hero-badge-ar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgb(var(--primary-rgb) / .15);
+    margin-top: 2px;
+}
+
+.detail-hero-badge-passive {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--danger-light);
+    color: var(--danger);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgb(var(--danger-rgb) / .15);
+    margin-top: 2px;
+}
+
+/* Stat strip below header band */
+.detail-stat-strip {
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+}
+
+.detail-stat-item {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.detail-stat-item i {
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+
+.detail-stat-val {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -.2px;
+    line-height: 1.2;
+}
+
+.detail-stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.detail-stat-sep {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+    margin: 0 24px;
+}
+
+/* Tags container — 2 kolonlu, Samsung uyumlu flex-wrap */
+.detail-tags-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 20px 0;
+}
+
+.detail-tags-flex .tag {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* AR desteksiz bilgi */
+.ar-pending {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+}
+.ar-pending-icon { font-size: 28px; margin-bottom: 6px; }
+.ar-pending-text {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Birim hakkında */
+.detail-about-text {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.65;
+}
