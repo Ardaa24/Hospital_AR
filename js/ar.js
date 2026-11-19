@@ -11,7 +11,8 @@
  * Bağımlılıklar:
  *   - router.js  → AppState, showScreen, showToast, vibrate, formatLegText
  *   - config.js  → STEP_LENGTH_M
- *   - settings.js → getArrowStyle()
+ *   - settings.js → getArrowStyle(), isAutoFinishEnabled()
+ *   - js/map/*    → yalnızca "HARİTA KANCALARI" bloğundaki arSetMapArrival / arRealignLeg'i çağırır
  *   - sections.js → openSectionPicker(), closeSectionPicker()
  *   (sections.js da ar.js'ten goToLeg, getCurrentLegProgress ve _calcLegDistance'ı kullanır)
  *
@@ -162,6 +163,24 @@ function _calcLegDistance(path) {
         dist += Math.hypot(b.x - a.x, b.z - a.z);
     }
     return dist;
+}
+
+/**
+ * Kameranın yatay düzlemdeki yönü (dünya Y açısı, derece; Euler YXZ'nin y'si ile aynı kural).
+ * Euler açısı telefon yere/düz tutulunca (kamera dik aşağı bakınca) belirsizleşir (gimbal kilidi)
+ * ve yol rastgele bir açıyla çizilir. Bu yüzden ileri vektörü kullanılır; ileri vektörü neredeyse
+ * dikse telefonun üst kenarının (kamera "yukarı" vektörü) baktığı yön alınır: düz tutulan
+ * telefonun üst kenarı kullanıcının önünü gösterir.
+ */
+function _cameraYawDeg() {
+    const q = new THREE.Quaternion();
+    _dom.cam.object3D.getWorldQuaternion(q);
+    let v = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+    if (Math.hypot(v.x, v.z) < 0.35) {
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+        v = v.y < 0 ? up : up.negate();
+    }
+    return THREE.MathUtils.radToDeg(Math.atan2(-v.x, -v.z));
 }
 
 /** Pusula açısı sarmalını çözer (Anti-spinning) */
@@ -620,6 +639,7 @@ function _announce(message) {
 
 function _updateArrivedBtn() {
     if (!_dom.arrivedBtn) return;
+    _mapArrival = false;   // Önceki bölümün harita varışı yeni bölüme taşınmasın
 
     _setActionMode('select', { restartLock: true }); // Her yeni bacak "Bölüm Seç" ile başlar
     _setArrivedBtnLocked(true);
@@ -666,7 +686,11 @@ let _activeArrows = [];
  * Geçerli bacak için oku çizer. Ok stili,
  * settings.js'teki getArrowStyle() ile belirlenir.
  */
-function _drawArrows() {
+/**
+ * headingOverrideDeg: verilirse yol kamera yönü yerine bu yöne (dünya Y açısı, derece) çizilir.
+ * Harita modu, yürüyüş doğrultusundan öğrendiği koridor yönüyle yolu yeniden hizalarken kullanır.
+ */
+function _drawArrows(headingOverrideDeg = null) {
     _dom.arrows.innerHTML = '';
     _activeArrows = [];
     _destinationLabelEl = null; // Floating label referansını sıfırla
@@ -683,12 +707,9 @@ function _drawArrows() {
         const camPos = new THREE.Vector3();
         cam.object3D.getWorldPosition(camPos);
 
-        const camQuat = new THREE.Quaternion();
-        cam.object3D.getWorldQuaternion(camQuat);
-        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-        euler.setFromQuaternion(camQuat);
-        
-        const headingDeg = THREE.MathUtils.radToDeg(euler.y);
+        const headingDeg = (typeof headingOverrideDeg === 'number')
+            ? headingOverrideDeg
+            : _cameraYawDeg();
 
         _dom.arrows.setAttribute('position', `${camPos.x} 0 ${camPos.z}`);
         _dom.arrows.setAttribute('rotation', `0 ${headingDeg} 0`);
@@ -1150,11 +1171,13 @@ function _tick(time) {
     _handleTurnWarning(distToTurn);
 
     if (!inGrace) {
-        _setArrivedBtnLocked(distToTurn > GROUND_ZONE_RADIUS);
+        // Harita modu yürünen mesafeyle bölüm sonuna gelindiğini bildirmişse de kilit açılır
+        _setArrivedBtnLocked(distToTurn > GROUND_ZONE_RADIUS && !_mapArrival);
     }
 
-    // Otomatik varış (son bacak)
-    if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1) {
+    // Otomatik varış (son bacak) — Ayarlar > "Otomatik bitiş" kapalıysa kullanıcı düğmeyle bitirir
+    if (distToTurn < ARRIVAL_THRESHOLD && !inGrace && AppState.legIdx === AppState.arLegs.length - 1
+        && _isAutoFinishOn()) {
         if (!_arrivalDebounceId) {
             _arrivalDebounceId = setTimeout(() => {
                 cancelAnimationFrame(AppState.tickRafId);
@@ -1265,6 +1288,11 @@ function onInfoContinue() {
 /* "Sonraki Bölüm / Ulaştım" butonu — HTML'den çağrılır */
 function onArrived() {
     cancelAnimationFrame(AppState.tickRafId);
+    if (_arrivalDebounceId) {          // Bekleyen otomatik varış ikinci kez bitirmesin (harita da bitirebilir)
+        clearTimeout(_arrivalDebounceId);
+        _arrivalDebounceId = null;
+    }
+    if (AppState.legIdx >= AppState.arLegs.length) return;   // Rota zaten tamamlandı
     _hideTurn();
     vibrate([100, 50, 100]);
 
@@ -1421,6 +1449,49 @@ function returnToRoutes() {
     _dom.doneScreen.classList.remove('visible');
     renderList();
     showScreen('s-routes');
+}
+
+/* ════════════════════════════════════════════════════
+   HARİTA KANCALARI (js/map/*)
+   Harita modu AR akışını yönetmez; yalnızca bu iki girişi kullanır.
+   Yol kamera yönüne göre çizildiği için telefon düz/harita açıkken çizilen yol
+   gerçek koridordan sapabilir. Harita, yön gerektirmeyen yürünen mesafeyle
+   (odometri) bölüm sonunu bildirir ve öğrendiği yürüyüş yönüyle yolu yeniden hizalar.
+════════════════════════════════════════════════════ */
+let _mapArrival = false;
+
+/**
+ * Harita modu: yürünen mesafeye göre bölüm sonuna gelindi mi. true iken "Sonraki Bölüm" /
+ * "Hedefe Vardım" kilidi, AR yolundaki konumdan bağımsız olarak açılır. Bölüm değişince sıfırlanır.
+ * @param {boolean} arrived
+ */
+function arSetMapArrival(arrived) {
+    _mapArrival = !!arrived;
+}
+
+/**
+ * Aktif bölümün yolunu, kullanıcının bulunduğu yerden kaldığı mesafeyle yeniden çizer
+ * (bölüm numarası, buton kipi ve duyurular değişmez).
+ *   walkedM    → bölümde yürünen mesafe; yolun başı kullanıcının bu kadar gerisinde kalır
+ *   headingDeg → yolun yönü (dünya Y açısı); verilmezse kameranın o anki yönü
+ * @returns {boolean} yeniden çizildiyse true
+ */
+function arRealignLeg({ walkedM = 0, headingDeg = null } = {}) {
+    const leg = AppState.arLegs[AppState.legIdx];
+    if (!AppState.arActive || !leg || leg.type === 'info' || !leg.path || leg.path.length < 2) return false;
+    if (_actionMode === 'wait') return false;   // Hazırlık / dönüş beklemesi kendi bitişinde çizer
+
+    cancelAnimationFrame(AppState.tickRafId);
+    _drawArrows(headingDeg);
+    const total = _calcLegDistance(leg.path);
+    const walked = Math.max(0, Math.min(walkedM, total));
+    if (walked > 0) _offsetPathBehindUser(walked);
+    return true;
+}
+
+/** Ayarlar > "Otomatik bitiş" (settings.js). Ayar modülü yoksa varsayılan: açık. */
+function _isAutoFinishOn() {
+    return typeof isAutoFinishEnabled === 'function' ? isAutoFinishEnabled() : true;
 }
 
 /* ── AR'dan çık (Geri butonu) — HTML'den çağrılır ── */

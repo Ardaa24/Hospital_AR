@@ -25,6 +25,29 @@
 const STEP_LENGTH_M = 0.75;
 
 /* ─────────────────────────────────────────────────────────────
+   KAT HARİTASI (js/map/*)
+───────────────────────────────────────────────────────────── */
+/**
+ * Harita modunun zemin çizimi. Koordinatlar bu SVG'nin viewBox birimindedir
+ * (Assets/maps/*.png kaynak çizimlerinin 1/4 ölçeği).
+ *
+ * Rotalardaki harita alanları (AR motoru bunları okumaz, yalnızca harita kullanır):
+ *   route.mapDest      → { label, areas: [[[x,y],…],…] }  hedef alan(lar)ı (vurgulanır) ve etiketi
+ *   leg.mapPath        → [[x,y],…]  bacağın haritadaki çizgisi; bir önceki bacağın
+ *                        bittiği noktadan başlar. Bilgi (asansör) bacağında tek nokta.
+ *                        Kullanıcı noktası, AR'da yürünen mesafe oranında bu çizgide ilerler.
+ *   leg.mapNote        → Haritası olmayan bacak (ör. −1. kat) için gösterilecek not.
+ *
+ * Not: Kaynak haritalar şematiktir, ölçek bacaktan bacağa değişir (≈20–37 birim/m).
+ * Bu yüzden ilerleme metre ile değil, bacak içi oranla eşlenir.
+ */
+const HOSPITAL_MAP = {
+    src:    "Assets/maps/zemin-kat.svg",
+    width:  2922,
+    height: 3414
+};
+
+/* ─────────────────────────────────────────────────────────────
    KATEGORİLER
 ───────────────────────────────────────────────────────────── */
 const ROUTE_CATEGORIES = [
@@ -69,19 +92,26 @@ const NAV_ROUTES = [
             {
                 type: "ar",
                 instruction: "Koridorda dümdüz 4.5 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }],
+                mapPath: [[1279, 2583], [1182, 2533]]
             },
             {
                 type: "ar",
                 instruction: "Dümdüz 4.5 metre daha ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }],
+                mapPath: [[1182, 2533], [1060, 2544]]
             },
             {
                 type: "ar",
                 instruction: "Sola dönüp 13.5 metre ilerleyin ⬅️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -13.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -13.5" }],
+                mapPath: [[1060, 2544], [992, 2819]]
             }
-        ]
+        ],
+        mapDest: {
+            label: "Nöroloji Polikliniği",
+            areas: [[[1031, 2831], [997, 2892], [996, 2899], [1134, 2988], [1143, 2991], [1186, 2914], [1188, 2904], [1037, 2831]]]
+        }
      },
 
     /* ══════════════════════════════════════════════════════
@@ -110,14 +140,20 @@ const NAV_ROUTES = [
             {
                 type: "ar",
                 instruction: "Koridorda dümdüz 13.5 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -13.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -13.5" }],
+                mapPath: [[989, 2816], [1060, 2544]]
             },
             {
                 type: "ar",
                 instruction: "Sola dönüp 5.25 metre ilerleyin ⬅️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }],
+                mapPath: [[1060, 2544], [864, 2540]]
             }
-        ]
+        ],
+        mapDest: {
+            label: "Engelli Tuvaleti",
+            areas: [[[798, 2328], [784, 2352], [771, 2387], [758, 2439], [751, 2485], [791, 2487], [884, 2485], [883, 2465], [871, 2407], [860, 2371], [846, 2339], [839, 2328]]]
+        }
     },
 
     /* ══════════════════════════════════════════════════════
@@ -147,12 +183,14 @@ const NAV_ROUTES = [
             {
                 type: "ar",
                 instruction: "Koridorda dümdüz 17.25 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -17.25" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -17.25" }],
+                mapPath: [[832, 2545], [1441, 2541]]
             },
             {
                 type: "ar",
                 instruction: "Sola dönüp 22.5 metre ilerleyin ⬅️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -22.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -22.5" }],
+                mapPath: [[1441, 2541], [1441, 1875], [1300, 1877]]
             },
             {
                 type: "info",
@@ -163,14 +201,24 @@ const NAV_ROUTES = [
                     "Panel üzerinden  −1  tuşuna basın.",
                     "Kapı açılınca asansörden çıkıp düz ilerleyin.",
                     "Hazır olduğunuzda aşağıdaki butonuna basın."
-                ]
+                ],
+                mapPath: [[1300, 1877]]
             },
             {
                 type: "ar",
                 instruction: "Asansörden çıkıp düz 5.25 metre ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -5.25" }],
+                mapNote: "−1. kattasınız. Bu katın haritası henüz yok; okları takip edin."
             }
-        ]
+        ],
+        // −1. kat haritası olmadığından zemin katta varış noktası asansörlerdir
+        mapDest: {
+            label: "Asansör (−1. kat Laboratuvar)",
+            areas: [
+                [[1259, 1920], [1253, 1921], [1190, 1979], [1191, 1985], [1224, 2021], [1231, 2020], [1294, 1962], [1294, 1958]],
+                [[1190, 1844], [1183, 1846], [1121, 1903], [1121, 1908], [1155, 1945], [1161, 1945], [1225, 1886], [1225, 1882]]
+            ]
+        }
     },
 
     /* ══════════════════════════════════════════════════════
@@ -206,14 +254,20 @@ const NAV_ROUTES = [
                     "Panel üzerinden Zemin Kat (0) tuşuna basın.",
                     "Zemin katta asansörden inip navigasyonu başlatın.",
                     "Hazır olduğunuzda aşağıdaki 'AR'yi Başlat' butonuna basın."
-                ]
+                ],
+                mapPath: [[1268, 1883]]
             },
             {
                 type: "ar",
                 instruction: "Asansörden çıkıp düz 10 adım ilerleyin ⬆️",
-                path: [{ pos: "0 0 0" }, { pos: "0 0 -7.5" }]
+                path: [{ pos: "0 0 0" }, { pos: "0 0 -7.5" }],
+                mapPath: [[1268, 1883], [1439, 1884], [1440, 1754]]
             }
-        ]
+        ],
+        mapDest: {
+            label: "Danışma",
+            areas: [[[1308, 1688], [1570, 1688], [1557, 1660], [1544, 1642], [1527, 1625], [1512, 1614], [1491, 1603], [1474, 1597], [1447, 1592], [1422, 1592], [1398, 1596], [1373, 1605], [1355, 1615], [1338, 1628], [1322, 1645], [1308, 1666]]]
+        }
     },
 
     /* ══════════════════════════════════════════════════════

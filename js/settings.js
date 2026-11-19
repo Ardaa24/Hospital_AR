@@ -5,6 +5,7 @@
  *   - Ayarlar çekmecesini açma/kapama
  *   - İzin rozetlerini güncelleme
  *   - AR Ok Stili tercihi (localStorage'a kaydedilir)
+ *   - Otomatik bitiş tercihi (son bölüm; localStorage)
  *
  * Bağımlılıklar: router.js (showToast)
  * Tarsus Devlet Hastanesi AR Navigasyon Sistemi
@@ -47,6 +48,35 @@ function _updateArrowStyleUI() {
             btn.setAttribute('aria-pressed', style === current ? 'true' : 'false');
         }
     });
+}
+
+/* ════════════════════════════════════════════════════
+   OTOMATİK BİTİŞ
+   Açık: son bölümde hedefe ulaşılınca navigasyon kendiliğinden tamamlanır
+   (AR'da ve harita modunda). Kapalı: kullanıcı "Hedefe Vardım" düğmesiyle bitirir.
+   Ara bölümler her zaman "Sonraki Bölüm" onayıyla geçilir (kullanıcı önce dönmeli).
+════════════════════════════════════════════════════ */
+const AUTO_FINISH_KEY = 'ar_auto_finish';
+
+/** Varsayılan: açık */
+function isAutoFinishEnabled() {
+    try { return localStorage.getItem(AUTO_FINISH_KEY) !== 'off'; }
+    catch (e) { return true; }
+}
+
+function setAutoFinish(enabled) {
+    try { localStorage.setItem(AUTO_FINISH_KEY, enabled ? 'on' : 'off'); } catch (e) { /* gizli mod */ }
+    _updateAutoFinishUI();
+    showToast(enabled ? 'Otomatik bitiş açıldı' : 'Otomatik bitiş kapatıldı');
+}
+
+function toggleAutoFinish() {
+    setAutoFinish(!isAutoFinishEnabled());
+}
+
+function _updateAutoFinishUI() {
+    const sw = document.getElementById('auto-finish-switch');
+    if (sw) sw.setAttribute('aria-checked', isAutoFinishEnabled() ? 'true' : 'false');
 }
 
 let _settingsBackdrop, _settingsDrawer;
@@ -128,6 +158,7 @@ function openSettingsDrawer() {
 
     updatePermissionBadges();
     _updateArrowStyleUI();
+    _updateAutoFinishUI();
 
     // Rerender Lucide icons inside settings drawer
     if (window.lucide) {
