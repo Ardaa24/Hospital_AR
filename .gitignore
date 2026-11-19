@@ -11,3 +11,5 @@ node_modules/
 
 # Ham tanıtım görselleri (README görselleri docs/screenshots altında tutulur)
 Tanıtım/
+# Ham kat planı çizimleri (~4 MB/adet). Uygulama yalnızca Assets/maps/zemin-kat.svg kullanır.
+Assets/maps/*.png
