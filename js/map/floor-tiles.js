@@ -8,7 +8,7 @@
  * dönüştürülerek basılır (drawImage). Karolar ekran çözünürlüğünde üretildiği için keskindir.
  * Komşu karolar PAD kadar üst üste biner: dönüş sırasında birleşim çizgisi görünmez.
  */
-import { MAP_THEME as T } from './map-theme.js?v=1.1.0';
+import { MAP_THEME as T } from './map-theme.js?v=1.2.0';
 
 /** @typedef {import('./floor-plan.js').FloorLayer} FloorLayer */
 
@@ -99,11 +99,17 @@ export class FloorTiles {
         g.scale(px / span, px / span);
         g.translate(-(tx * TILE_UNITS - PAD_UNITS), -(ty * TILE_UNITS - PAD_UNITS));
 
-        // Zemin beyaz; dış alan, atriyum, odalar ve çizgiler üstüne
+        // Zemin beyaz; dış alan, atriyum, odalar ve çizgiler üstüne (tasarımcı çıktısında SVG sırasıyla)
         g.fillStyle = T.floor;
         g.fillRect(0, 0, this._w, this._h);
         const unitPx = px / span;   // Bir harita birimi kaç karo pikseli
         for (const layer of this._layers) {
+            const st = layer.style;
+            if (st) {   // Tasarımcı çıktısı: renkler SVG'nin kendisinden
+                if (st.fill)   { g.fillStyle = st.fill; g.fill(layer.path, st.rule); }
+                if (st.stroke) { g.strokeStyle = st.stroke; g.lineWidth = st.strokeWidth; g.stroke(layer.path); }
+                continue;
+            }
             switch (layer.kind) {
                 case 'o': g.fillStyle = T.outside; g.fill(layer.path, 'evenodd'); break;
                 case 's': g.fillStyle = T.stairs;  g.fill(layer.path, 'evenodd'); break;

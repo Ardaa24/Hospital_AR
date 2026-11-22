@@ -7,7 +7,7 @@
  * Kaynak haritalar şematik olduğu için eşleme metreyle değil, bacak içi oranla yapılır:
  * AR'da bacağın %40'ı yüründüyse nokta, o bacağın harita çizgisinin %40'ındadır.
  */
-import { distance, headingDeg, pointAlong, polylineLength, centroid } from './geometry.js?v=1.1.0';
+import { distance, headingDeg, pointAlong, polylineLength, centroid } from './geometry.js?v=1.2.0';
 
 /** @typedef {import('./geometry.js').Point} Point */
 

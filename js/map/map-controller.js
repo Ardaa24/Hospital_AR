@@ -7,12 +7,12 @@
  * elle kaydırma ve "Ortala". Çizim MapView'de, AR okuma nav-source'ta, bölüm sonu /
  * bitiş / yeniden hizalama kuralları ArrivalPolicy'de, geometri geometry/route-track'te.
  */
-import { RouteTrack } from './route-track.js?v=1.1.0';
-import { MapView } from './map-view.js?v=1.1.0';
-import { TiltDetector } from './tilt-detector.js?v=1.1.0';
-import { loadFloorPlan } from './floor-plan.js?v=1.1.0';
-import { pointAlong, angleDelta } from './geometry.js?v=1.1.0';
-import { ArrivalPolicy } from './arrival-policy.js?v=1.1.0';
+import { RouteTrack } from './route-track.js?v=1.2.0';
+import { MapView } from './map-view.js?v=1.2.0';
+import { TiltDetector } from './tilt-detector.js?v=1.2.0';
+import { loadFloorPlan } from './floor-plan.js?v=1.2.0';
+import { pointAlong, angleDelta } from './geometry.js?v=1.2.0';
+import { ArrivalPolicy } from './arrival-policy.js?v=1.2.0';
 
 /** @typedef {import('./geometry.js').Point} Point */
 /** @typedef {import('./nav-source.js').NavSnapshot} NavSnapshot */
@@ -34,7 +34,15 @@ const FACING_TAU_MS   = 120;        // Bakış konisi yumuşatması
  * @property {() => number|null} readPitchY
  * @property {(leg: any) => string} formatInstruction
  * @property {(msg: string) => void} announce
- * @property {{ src: string, width: number, height: number }} floor
+ * @property {FloorSpec} floor                 Ortak kat planı (route.map'i olmayan rotalar)
+ */
+
+/**
+ * @typedef {Object} FloorSpec
+ * @property {string} src
+ * @property {number} width
+ * @property {number} height
+ * @property {string} [background]  Planın dışında kalan alanın rengi
  */
 
 export class MapController {
@@ -77,9 +85,9 @@ export class MapController {
             onRaise: () => { if (this._visible && this._openedBy === 'tilt') this.close(); }
         });
 
-        loadFloorPlan(deps.floor.src)
-            .then(layers => this._view.setFloor(layers, deps.floor.width, deps.floor.height))
-            .catch(err => console.warn('[harita]', err));
+        /** @type {string|null} */
+        this._floorSrc = null;
+        this._useFloor(deps.floor);
 
         deps.toggleButton.addEventListener('click', () => {
             if (this._visible) this.close(); else this.open('button');
@@ -195,9 +203,29 @@ export class MapController {
         const key = route ? route.id : null;
         if (key === this._trackKey) return;
         this._trackKey = key;
+        // Rotanın kendi planı varsa (route.map) onu, yoksa ortak kat planını çiz.
+        // Rota koordinatları hangi planın birimindeyse o plan seçilmelidir.
+        this._useFloor((route && route.map) || this._d.floor);
         this._track = route ? new RouteTrack(route) : null;
         this._view.setTrack(this._track);
         this._snapInstant = true;
+    }
+
+    /**
+     * Kat planını değiştirir (aynıysa dokunmaz). Yeni plan yüklenene dek eski plan,
+     * başka birimdeki rotanın altında yanlış görünmesin diye boş bırakılır.
+     * @param {FloorSpec} floor
+     */
+    _useFloor(floor) {
+        if (floor.src === this._floorSrc) return;
+        this._floorSrc = floor.src;
+        this._view.setFloor([], floor.width, floor.height, floor.background);
+        loadFloorPlan(floor.src)
+            .then(layers => {
+                if (this._floorSrc !== floor.src) return;   // Bu arada başka plana geçildi
+                this._view.setFloor(layers, floor.width, floor.height, floor.background);
+            })
+            .catch(err => console.warn('[harita]', err));
     }
 
     /**

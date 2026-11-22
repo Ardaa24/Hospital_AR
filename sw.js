@@ -12,7 +12,7 @@
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.8.0';
+const CACHE_VERSION = 'v1.9.0';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -32,7 +32,7 @@ const PRECACHE_URLS = [
     './',
     './index.html',
     './manifest.webmanifest',
-    './config.js?v=1.1.0',
+    './config.js?v=1.2.0',
 
     // Stiller
     './css/tokens.css?v=1.1.1',
@@ -61,19 +61,20 @@ const PRECACHE_URLS = [
 
     // Harita modu (ES modülleri). İç import'lar da aynı ?v etiketini taşır (aynı URL = tek modül örneği);
     // bir modül değişince js/map/*.js ve burada TÜM ?v etiketlerini birlikte artırın.
-    './js/map/main.js?v=1.1.0',
-    './js/map/map-controller.js?v=1.1.0',
-    './js/map/map-view.js?v=1.1.0',
-    './js/map/map-theme.js?v=1.1.0',
-    './js/map/route-track.js?v=1.1.0',
-    './js/map/geometry.js?v=1.1.0',
-    './js/map/nav-source.js?v=1.1.0',
-    './js/map/tilt-detector.js?v=1.1.0',
-    './js/map/floor-plan.js?v=1.1.0',
-    './js/map/floor-tiles.js?v=1.1.0',
-    './js/map/arrival-policy.js?v=1.1.0',
-    './js/map/ar-commands.js?v=1.1.0',
+    './js/map/main.js?v=1.2.0',
+    './js/map/map-controller.js?v=1.2.0',
+    './js/map/map-view.js?v=1.2.0',
+    './js/map/map-theme.js?v=1.2.0',
+    './js/map/route-track.js?v=1.2.0',
+    './js/map/geometry.js?v=1.2.0',
+    './js/map/nav-source.js?v=1.2.0',
+    './js/map/tilt-detector.js?v=1.2.0',
+    './js/map/floor-plan.js?v=1.2.0',
+    './js/map/floor-tiles.js?v=1.2.0',
+    './js/map/arrival-policy.js?v=1.2.0',
+    './js/map/ar-commands.js?v=1.2.0',
     './Assets/maps/zemin-kat.svg',
+    './Assets/maps/noroloji-map-02.svg',
 
     // Arayüz görselleri
     './Assets/logo.png',
