@@ -12,7 +12,7 @@
  * activate aşamasında eski sürüme ait tüm önbellekler silinir.
  */
 
-const CACHE_VERSION = 'v1.9.0';
+const CACHE_VERSION = 'v1.9.1';
 
 const CORE_CACHE    = `hastane-ar-core-${CACHE_VERSION}`;   // install'da yüklenen çekirdek
 const RUNTIME_CACHE = `hastane-ar-runtime-${CACHE_VERSION}`; // CSS/JS/CDN — SWR
@@ -32,7 +32,7 @@ const PRECACHE_URLS = [
     './',
     './index.html',
     './manifest.webmanifest',
-    './config.js?v=1.2.0',
+    './config.js?v=1.2.1',
 
     // Stiller
     './css/tokens.css?v=1.1.1',
