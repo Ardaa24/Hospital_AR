@@ -272,7 +272,8 @@ const NAV_ROUTES = [
                 type: "ar",
                 instruction: "Asansörden çıkıp düz 10 adım ilerleyin ⬆️",
                 path: [{ pos: "0 0 0" }, { pos: "0 0 -7.5" }],
-                mapPath: [[1268, 1883], [1439, 1884], [1440, 1754]]
+                // AR'daki tek düz adımla aynı: dönüş yok, Danışma yürüyüşün hemen solunda kalır
+                mapPath: [[1268, 1883], [1439, 1884]]
             }
         ],
         mapDest: {
