@@ -9,9 +9,9 @@
  *
  * Kamera: ekran = çapa + R(θ) · s · (p − merkez). Route-up: θ = −(rota yönü).
  */
-import { MAP_THEME as T } from './map-theme.js?v=1.1.0';
-import { splitAt } from './geometry.js?v=1.1.0';
-import { FloorTiles } from './floor-tiles.js?v=1.1.0';
+import { MAP_THEME as T } from './map-theme.js?v=1.2.0';
+import { splitAt } from './geometry.js?v=1.2.0';
+import { FloorTiles } from './floor-tiles.js?v=1.2.0';
 
 /** @typedef {import('./geometry.js').Point} Point */
 /** @typedef {import('./floor-plan.js').FloorLayer} FloorLayer */
@@ -52,6 +52,7 @@ export class MapView {
         this._h = 0;
         this._bottomInset = 0;
         this._scale = 1;
+        this._background = T.background;
 
         this.root = document.createElement('div');
         this.root.id = 'ar-map';
@@ -86,9 +87,13 @@ export class MapView {
         if (/** @type {any} */ (window).lucide) /** @type {any} */ (window).lucide.createIcons({ root: this.root });
     }
 
-    /** @param {FloorLayer[]} layers @param {number} width @param {number} height */
-    setFloor(layers, width, height) {
+    /**
+     * @param {FloorLayer[]} layers @param {number} width @param {number} height
+     * @param {string} [background]  Planın dışında kalan alanın rengi (yoksa temadaki)
+     */
+    setFloor(layers, width, height, background) {
         this._tiles.setFloor(layers, width, height);
+        this._background = background || T.background;
         this._needsRedraw = true;
     }
 
@@ -184,7 +189,7 @@ export class MapView {
 
         const ctx = this._ctx, s = this._scale, a = this.anchor;
         ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
-        ctx.fillStyle = T.background;
+        ctx.fillStyle = this._background;
         ctx.fillRect(0, 0, this._w, this._h);
 
         ctx.translate(a[0] + cam.pan[0], a[1] + cam.pan[1]);

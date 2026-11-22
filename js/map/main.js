@@ -6,9 +6,9 @@
  * config.js'teki HOSPITAL_MAP. Modüller birbirini değil, buradan verilen arayüzleri tanır.
  * Modül betikleri ertelenmiş çalışır: DOM ve klasik betikler (router/ar/config) hazırdır.
  */
-import { MapController } from './map-controller.js?v=1.1.0';
-import { readNavSnapshot, readCameraPitchY, formatInstruction } from './nav-source.js?v=1.1.0';
-import * as arCommands from './ar-commands.js?v=1.1.0';
+import { MapController } from './map-controller.js?v=1.2.0';
+import { readNavSnapshot, readCameraPitchY, formatInstruction } from './nav-source.js?v=1.2.0';
+import * as arCommands from './ar-commands.js?v=1.2.0';
 
 function boot() {
     const overlay = document.getElementById('ar-overlay');

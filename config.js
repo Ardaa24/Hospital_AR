@@ -37,6 +37,9 @@ const STEP_LENGTH_M = 0.75;
  *                        bittiği noktadan başlar. Bilgi (asansör) bacağında tek nokta.
  *                        Kullanıcı noktası, AR'da yürünen mesafe oranında bu çizgide ilerler.
  *   leg.mapNote        → Haritası olmayan bacak (ör. −1. kat) için gösterilecek not.
+ *   route.map          → { src, width, height, background? }  Rotanın kendi tasarım planı. Yoksa
+ *                        HOSPITAL_MAP kullanılır. Bu rotanın mapPath/mapDest koordinatları, kendi
+ *                        planının viewBox biriminde olmalıdır.
  *
  * Not: Kaynak haritalar şematiktir, ölçek bacaktan bacağa değişir (≈20–37 birim/m).
  * Bu yüzden ilerleme metre ile değil, bacak içi oranla eşlenir.
@@ -93,24 +96,32 @@ const NAV_ROUTES = [
                 type: "ar",
                 instruction: "Koridorda dümdüz 4.5 metre ilerleyin ⬆️",
                 path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }],
-                mapPath: [[1279, 2583], [1182, 2533]]
+                mapPath: [[976, 1028], [883, 980]]
             },
             {
                 type: "ar",
                 instruction: "Dümdüz 4.5 metre daha ilerleyin ⬆️",
                 path: [{ pos: "0 0 0" }, { pos: "0 0 -4.5" }],
-                mapPath: [[1182, 2533], [1060, 2544]]
+                mapPath: [[883, 980], [766, 991]]
             },
             {
                 type: "ar",
                 instruction: "Sola dönüp 13.5 metre ilerleyin ⬅️",
                 path: [{ pos: "0 0 0" }, { pos: "0 0 -13.5" }],
-                mapPath: [[1060, 2544], [992, 2819]]
+                mapPath: [[766, 991], [701, 1255]]
             }
         ],
+        /* Bu rota kendi tasarım planını kullanır; mapPath/mapDest koordinatları bu SVG'nin
+           birimindedir (eski zemin-kat.svg'ye göre ×0,96 ölçekli, (−252, −1453) kaydırmalı). */
+        map: {
+            src:        "Assets/maps/noroloji-map-02.svg",
+            width:      1714.29,
+            height:     1766.4,
+            background: "#B0C6AF"   // Planın dışı, SVG'deki dış alan (yeşil) ile aynı renk
+        },
         mapDest: {
             label: "Nöroloji Polikliniği",
-            areas: [[[1031, 2831], [997, 2892], [996, 2899], [1134, 2988], [1143, 2991], [1186, 2914], [1188, 2904], [1037, 2831]]]
+            areas: [[[738, 1266], [705, 1325], [704, 1332], [837, 1417], [846, 1420], [887, 1346], [889, 1337], [744, 1266]]]
         }
      },
 
